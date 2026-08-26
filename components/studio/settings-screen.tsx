@@ -33,7 +33,8 @@ export function SettingsScreen({
   onThemeChange,
   onLanguageChange,
   onSidebarStateChange,
-  onSettingChange
+  onSettingChange,
+  onNotionConnectionVerified
 }: {
   theme: ThemeMode;
   language: Language;
@@ -44,6 +45,7 @@ export function SettingsScreen({
   onLanguageChange: (value: Language) => void;
   onSidebarStateChange: (value: SidebarState) => void;
   onSettingChange: (key: keyof PersistedStudioSettings, value: string | boolean) => void;
+  onNotionConnectionVerified: (pageId: string, pageTitle: string) => void;
 }) {
   const copy = uiCopy[language];
   const [notionRootPage, setNotionRootPage] = React.useState(settings.notionRootPageId);
@@ -51,10 +53,12 @@ export function SettingsScreen({
   const [notionConnectionState, setNotionConnectionState] =
     React.useState<NotionConnectionState>("idle");
   const [notionMessage, setNotionMessage] = React.useState("");
+  const [notionPageTitle, setNotionPageTitle] = React.useState(settings.notionRootPageTitle);
 
   React.useEffect(() => {
     setNotionRootPage(settings.notionRootPageId);
-  }, [settings.notionRootPageId]);
+    setNotionPageTitle(settings.notionRootPageTitle);
+  }, [settings.notionRootPageId, settings.notionRootPageTitle]);
 
   React.useEffect(() => {
     let active = true;
@@ -89,15 +93,17 @@ export function SettingsScreen({
       const result = (await response.json()) as {
         ok?: boolean;
         pageId?: string;
+        pageTitle?: string;
         message?: string;
       };
 
-      if (!response.ok || !result.ok || !result.pageId) {
+      if (!response.ok || !result.ok || !result.pageId || !result.pageTitle) {
         throw new Error(result.message ?? "Could not connect to Notion.");
       }
 
       setNotionRootPage(result.pageId);
-      onSettingChange("notionRootPageId", result.pageId);
+      setNotionPageTitle(result.pageTitle);
+      onNotionConnectionVerified(result.pageId, result.pageTitle);
       setNotionConfigured(true);
       setNotionConnectionState("success");
       setNotionMessage(result.message ?? "Connection successful.");
@@ -230,6 +236,7 @@ export function SettingsScreen({
                   value={notionRootPage}
                   onChange={(event) => {
                     setNotionRootPage(event.target.value);
+                    setNotionPageTitle("");
                     setNotionConnectionState("idle");
                     setNotionMessage("");
                   }}
@@ -240,6 +247,15 @@ export function SettingsScreen({
                   )}
                 </p>
               </div>
+
+              {notionPageTitle ? (
+                <div
+                  className="rounded-lg border border-success/35 bg-success/10 px-3 py-2 text-sm text-success"
+                  role="status"
+                >
+                  {translate("Connected root page")}: <strong>{notionPageTitle}</strong>
+                </div>
+              ) : null}
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button
@@ -255,8 +271,8 @@ export function SettingsScreen({
                   {notionConfigured === null
                     ? translate("Checking server configuration...")
                     : notionConfigured
-                      ? translate("Server token configured")
-                      : translate("Server token not configured")}
+                      ? translate("Private server integration ready")
+                      : translate("Private server integration unavailable")}
                 </span>
               </div>
 

@@ -20,6 +20,7 @@ const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = 
   exportDefaults: [],
   typewriterFont: ["true", "false"],
   notionRootPageId: [],
+  notionRootPageTitle: [],
   notionAutosyncEnabled: ["true", "false"],
   notionAutosyncIntervalMinutes: ["1", "2", "5", "10", "15", "30"],
   dailyWordGoal: ["500", "1000", "1500", "2000", "3000"]

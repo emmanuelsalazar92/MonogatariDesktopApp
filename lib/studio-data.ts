@@ -58,6 +58,7 @@ export type PersistedStudioSettings = {
   exportDefaults: string;
   typewriterFont: boolean;
   notionRootPageId: string;
+  notionRootPageTitle: string;
   notionAutosyncEnabled: boolean;
   notionAutosyncIntervalMinutes: string;
   dailyWordGoal: string;
@@ -132,6 +133,7 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   exportDefaults: "EPUB, include cover and metadata",
   typewriterFont: true,
   notionRootPageId: "",
+  notionRootPageTitle: "",
   notionAutosyncEnabled: false,
   notionAutosyncIntervalMinutes: "5",
   dailyWordGoal: "1500"

@@ -560,7 +560,7 @@ export async function createBackupRecord(input: {
   };
 }
 
-export async function updateStudioSettings(input: Record<string, unknown>) {
+async function persistStudioSettings(input: Record<string, unknown>) {
   if (!hasOnlyKnownStudioSettings(input)) {
     throw new Error("settings contain unsupported keys");
   }
@@ -581,6 +581,18 @@ export async function updateStudioSettings(input: Record<string, unknown>) {
     });
     return next;
   });
+}
+
+export async function updateStudioSettings(input: Record<string, unknown>) {
+  if ("notionRootPageId" in input || "notionRootPageTitle" in input) {
+    throw new Error("Notion connection settings must be verified by the server");
+  }
+
+  return persistStudioSettings(input);
+}
+
+export async function saveValidatedNotionConnection(pageId: string, pageTitle: string) {
+  return persistStudioSettings({ notionRootPageId: pageId, notionRootPageTitle: pageTitle });
 }
 
 export async function getStudioSettings() {

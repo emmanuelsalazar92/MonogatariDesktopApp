@@ -520,6 +520,14 @@ export default function PrivateNovelStudioPage() {
     [persistSettings, showToast]
   );
 
+  const applyVerifiedNotionConnection = React.useCallback((pageId: string, pageTitle: string) => {
+    setStudioSettings((current) => ({
+      ...current,
+      notionRootPageId: pageId,
+      notionRootPageTitle: pageTitle
+    }));
+  }, []);
+
   const setActiveNovel = React.useCallback(
     async (novelId: string, nextPage?: PageId) => {
       if (!(await flushPendingChanges())) {
@@ -1427,6 +1435,7 @@ export default function PrivateNovelStudioPage() {
                   onLanguageChange={updateLanguage}
                   onSidebarStateChange={updateSidebarState}
                   onSettingChange={updateStudioSetting}
+                  onNotionConnectionVerified={applyVerifiedNotionConnection}
                 />
               ) : null}
             </div>

@@ -413,6 +413,7 @@ async function main() {
         exportDefaults: "EPUB, include cover and metadata",
         typewriterFont: true,
         notionRootPageId: "",
+        notionRootPageTitle: "",
         notionAutosyncEnabled: false,
         notionAutosyncIntervalMinutes: "5",
         dailyWordGoal: "1500"
