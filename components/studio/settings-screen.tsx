@@ -1,6 +1,8 @@
 "use client";
 
+import * as React from "react";
 import { FieldLine, SectionHeader } from "@/components/studio/shared";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +22,7 @@ import { type PersistedStudioSettings } from "@/lib/studio-data";
 import { type SidebarState } from "@/lib/studio-domain";
 
 type ThemeMode = "light" | "dark" | "system";
+type NotionConnectionState = "idle" | "testing" | "success" | "error";
 
 export function SettingsScreen({
   theme,
@@ -43,6 +46,68 @@ export function SettingsScreen({
   onSettingChange: (key: keyof PersistedStudioSettings, value: string | boolean) => void;
 }) {
   const copy = uiCopy[language];
+  const [notionRootPage, setNotionRootPage] = React.useState(settings.notionRootPageId);
+  const [notionConfigured, setNotionConfigured] = React.useState<boolean | null>(null);
+  const [notionConnectionState, setNotionConnectionState] =
+    React.useState<NotionConnectionState>("idle");
+  const [notionMessage, setNotionMessage] = React.useState("");
+
+  React.useEffect(() => {
+    setNotionRootPage(settings.notionRootPageId);
+  }, [settings.notionRootPageId]);
+
+  React.useEffect(() => {
+    let active = true;
+
+    void fetch("/api/integrations/notion", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not read Notion configuration");
+        return (await response.json()) as { configured?: boolean };
+      })
+      .then((result) => {
+        if (active) setNotionConfigured(Boolean(result.configured));
+      })
+      .catch(() => {
+        if (active) setNotionConfigured(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const testNotionConnection = async () => {
+    setNotionConnectionState("testing");
+    setNotionMessage("");
+
+    try {
+      const response = await fetch("/api/integrations/notion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rootPage: notionRootPage })
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        pageId?: string;
+        message?: string;
+      };
+
+      if (!response.ok || !result.ok || !result.pageId) {
+        throw new Error(result.message ?? "Could not connect to Notion.");
+      }
+
+      setNotionRootPage(result.pageId);
+      onSettingChange("notionRootPageId", result.pageId);
+      setNotionConfigured(true);
+      setNotionConnectionState("success");
+      setNotionMessage(result.message ?? "Connection successful.");
+    } catch (error) {
+      setNotionConnectionState("error");
+      setNotionMessage(
+        error instanceof Error ? error.message : "Could not connect to Notion."
+      );
+    }
+  };
 
   return (
     <div className="grid gap-6">
@@ -141,6 +206,68 @@ export function SettingsScreen({
         </Card>
 
         <div className="grid gap-4">
+          <Card className="surface-panel">
+            <CardHeader>
+              <CardTitle>{translate("Private Notion connection")}</CardTitle>
+              <CardDescription>
+                {translate("Authorize one root page without exposing your token to the browser.")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="notion-root-page">{translate("Authorized root page")}</Label>
+                <Input
+                  id="notion-root-page"
+                  className="mt-2"
+                  placeholder={translate("Notion page URL or ID")}
+                  value={notionRootPage}
+                  onChange={(event) => {
+                    setNotionRootPage(event.target.value);
+                    setNotionConnectionState("idle");
+                    setNotionMessage("");
+                  }}
+                />
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {translate(
+                    "Only the page ID is stored locally. NOTION_API_TOKEN is read exclusively by the server."
+                  )}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={() => void testNotionConnection()}
+                  disabled={notionConnectionState === "testing" || !notionRootPage.trim()}
+                >
+                  {notionConnectionState === "testing"
+                    ? translate("Testing connection...")
+                    : translate("Test Notion connection")}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  {notionConfigured === null
+                    ? translate("Checking server configuration...")
+                    : notionConfigured
+                      ? translate("Server token configured")
+                      : translate("Server token not configured")}
+                </span>
+              </div>
+
+              {notionMessage ? (
+                <div
+                  className={`rounded-lg border px-3 py-2 text-sm ${
+                    notionConnectionState === "success"
+                      ? "border-success/35 bg-success/10 text-success"
+                      : "border-destructive/35 bg-destructive/10 text-destructive"
+                  }`}
+                  role="status"
+                >
+                  {translate(notionMessage)}
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
           <Card className="surface-panel">
             <CardHeader>
               <CardTitle>{copy.localServer}</CardTitle>

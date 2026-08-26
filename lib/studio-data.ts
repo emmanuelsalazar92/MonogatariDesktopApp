@@ -45,6 +45,7 @@ export type PersistedStudioSettings = {
   localServerDisplayName: string;
   exportDefaults: string;
   typewriterFont: boolean;
+  notionRootPageId: string;
 };
 
 export const emptyStudioData: StudioData = {
@@ -108,7 +109,8 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   backupRetention: "30 daily backups",
   localServerDisplayName: "novel.local",
   exportDefaults: "EPUB, include cover and metadata",
-  typewriterFont: true
+  typewriterFont: true,
+  notionRootPageId: ""
 };
 
 export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
