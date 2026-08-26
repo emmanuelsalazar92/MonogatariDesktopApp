@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Novel {
+  id            String          @id
+  title         String
+  synopsis      String          @default("")
+  status        String          @default("Idea")
+  coverImage    String          @default("")
+  genre         String          @default("")
+  tags          String          @default("[]")
+  wordCount     Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  volumes       Volume[]
+  characters    Character[]
+  locations     Location[]
+  relationships Relationship[]
+  timelineEvents TimelineEvent[]
+  notes         Note[]
+  backups       Backup[]
+}
+
+model Volume {
+  id        String    @id
+  novelId   String
+  title     String
+  sortOrder Int       @default(0)
+  summary   String    @default("")
+  novel     Novel     @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  chapters  Chapter[]
+
+  @@index([novelId, sortOrder])
+}
+
+model Chapter {
+  id        String   @id
+  volumeId  String
+  title     String
+  summary   String   @default("")
+  status    String   @default("Idea")
+  sortOrder Int      @default(0)
+  wordCount Int      @default(0)
+  volume    Volume   @relation(fields: [volumeId], references: [id], onDelete: Cascade)
+  scenes    Scene[]
+  timelineEvents TimelineEvent[]
+
+  @@index([volumeId, sortOrder])
+}
+
+model Scene {
+  id         String    @id
+  chapterId  String
+  title      String
+  content    String    @default("")
+  summary    String    @default("")
+  status     String    @default("Idea")
+  locationId String?
+  sortOrder  Int       @default(0)
+  wordCount  Int       @default(0)
+  objective  String    @default("")
+  chapter    Chapter   @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  timelineEvents TimelineEvent[]
+
+  @@index([chapterId, sortOrder])
+  @@index([locationId])
+}
+
+model Character {
+  id                  String         @id
+  novelId             String
+  name                String
+  alias               String         @default("")
+  age                 String         @default("")
+  role                String         @default("")
+  appearance          String         @default("")
+  personality         String         @default("")
+  wayOfSpeaking       String         @default("")
+  goal                String         @default("")
+  fear                String         @default("")
+  secret              String         @default("")
+  notes               String         @default("")
+  firstAppearance     String         @default("")
+  status              String         @default("Active")
+  image               String         @default("")
+  scenesCount         Int            @default(0)
+  novel               Novel          @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  outgoingRelationships Relationship[] @relation("RelationshipFrom")
+  incomingRelationships Relationship[] @relation("RelationshipTo")
+
+  @@index([novelId, name])
+}
+
+model Location {
+  id              String          @id
+  novelId         String
+  name            String
+  type            String          @default("Other")
+  region          String          @default("")
+  description     String          @default("")
+  importance      String          @default("")
+  visualNotes     String          @default("")
+  rules           String          @default("")
+  firstAppearance String          @default("")
+  notes           String          @default("")
+  novel           Novel           @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  scenes          Scene[]
+  timelineEvents  TimelineEvent[]
+
+  @@index([novelId, name])
+}
+
+model Relationship {
+  id               String    @id
+  novelId          String
+  fromCharacterId  String
+  toCharacterId    String
+  relationshipType String
+  category         String
+  direction        String    @default("Directional")
+  description      String    @default("")
+  isSpoiler        Boolean   @default(false)
+  status           String    @default("")
+  since            String    @default("")
+  notes            String    @default("")
+  novel            Novel     @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  fromCharacter    Character @relation("RelationshipFrom", fields: [fromCharacterId], references: [id], onDelete: Cascade)
+  toCharacter      Character @relation("RelationshipTo", fields: [toCharacterId], references: [id], onDelete: Cascade)
+
+  @@index([novelId])
+  @@index([fromCharacterId])
+  @@index([toCharacterId])
+}
+
+model TimelineEvent {
+  id           String    @id
+  novelId      String
+  title        String
+  internalDate String    @default("")
+  volumeId     String?
+  chapterId    String?
+  sceneId      String?
+  locationId   String?
+  characterIds String    @default("[]")
+  description  String    @default("")
+  isSpoiler    Boolean   @default(false)
+  novel        Novel     @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  chapter      Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  scene        Scene?    @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  location     Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([novelId])
+  @@index([chapterId])
+  @@index([sceneId])
+  @@index([locationId])
+}
+
+model Note {
+  id         String   @id
+  novelId    String
+  linkedType String
+  linkedId   String
+  title      String
+  content    String   @default("")
+  tags       String   @default("[]")
+  updatedAt  DateTime @updatedAt
+  novel      Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  @@index([novelId])
+  @@index([linkedType, linkedId])
+}
+
+model Backup {
+  id             String   @id
+  novelId        String?
+  filename       String
+  size           String   @default("")
+  includedNovels Int      @default(0)
+  status         String   @default("Complete")
+  createdAt      DateTime @default(now())
+  novel          Novel?   @relation(fields: [novelId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

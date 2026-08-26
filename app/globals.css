@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 40 50% 95%;
+  --foreground: 26 30% 15%;
+  --surface: 38 40% 96%;
+  --surface-elevated: 38 55% 98%;
+  --surface-muted: 36 32% 92%;
+  --card: 38 48% 97%;
+  --card-foreground: 26 30% 15%;
+  --popover: 38 55% 98%;
+  --popover-foreground: 26 30% 15%;
+  --primary: 27 40% 35%;
+  --primary-foreground: 40 65% 97%;
+  --secondary: 37 31% 88%;
+  --secondary-foreground: 26 30% 18%;
+  --muted: 35 24% 90%;
+  --muted-foreground: 25 18% 39%;
+  --accent: 32 54% 50%;
+  --accent-foreground: 37 40% 97%;
+  --destructive: 8 62% 43%;
+  --destructive-foreground: 42 61% 95%;
+  --success: 147 34% 39%;
+  --success-foreground: 40 65% 97%;
+  --warning: 33 67% 50%;
+  --warning-foreground: 26 30% 15%;
+  --border: 31 28% 82%;
+  --input: 31 28% 82%;
+  --ring: 31 54% 52%;
+  --editor: 38 54% 97%;
+  --editor-foreground: 26 30% 15%;
+  --radius: 0.5rem;
+  --shadow-soft: 0 1px 1px rgba(58, 42, 28, 0.03), 0 12px 28px rgba(58, 42, 28, 0.05);
+  --shadow-paper: 0 10px 24px rgba(58, 42, 28, 0.06);
+  --shadow-lift: 0 18px 42px rgba(58, 42, 28, 0.08);
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+}
+
+.dark {
+  --background: 28 18% 9%;
+  --foreground: 39 34% 88%;
+  --surface: 28 18% 11%;
+  --surface-elevated: 28 18% 14%;
+  --surface-muted: 28 14% 16%;
+  --card: 28 18% 12%;
+  --card-foreground: 39 34% 88%;
+  --popover: 28 18% 14%;
+  --popover-foreground: 39 34% 88%;
+  --primary: 34 60% 60%;
+  --primary-foreground: 26 22% 10%;
+  --secondary: 28 14% 18%;
+  --secondary-foreground: 39 34% 88%;
+  --muted: 28 12% 19%;
+  --muted-foreground: 35 18% 67%;
+  --accent: 34 54% 58%;
+  --accent-foreground: 26 22% 10%;
+  --destructive: 8 62% 43%;
+  --destructive-foreground: 39 34% 88%;
+  --success: 147 40% 48%;
+  --success-foreground: 26 22% 10%;
+  --warning: 34 65% 56%;
+  --warning-foreground: 26 22% 10%;
+  --border: 29 12% 22%;
+  --input: 29 12% 22%;
+  --ring: 34 54% 58%;
+  --editor: 28 16% 10%;
+  --editor-foreground: 39 34% 88%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(201, 148, 82, 0.16), transparent 30rem),
+    radial-gradient(circle at 100% 0%, rgba(151, 107, 62, 0.06), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.86) 0%, rgba(245, 238, 226, 0.78) 100%),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: Inter, system-ui, sans-serif;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+textarea {
+  resize: none;
+}
+
+::selection {
+  background: hsla(var(--accent), 0.22);
+  color: hsl(var(--foreground));
+}
+
+.paper-texture {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@layer base {
+  h1,
+  h2 {
+    font-family: Iowan Old Style, Palatino Linotype, Book Antiqua, Georgia, serif;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: 0;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(123, 93, 61, 0.26);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .surface-shell {
+    background: linear-gradient(180deg, rgba(255, 252, 246, 0.94), rgba(250, 244, 235, 0.92));
+    box-shadow: var(--shadow-soft);
+  }
+
+  .surface-panel {
+    background: hsla(var(--surface), 0.92);
+    box-shadow: var(--shadow-paper);
+  }
+
+  .surface-elevated {
+    background: hsla(var(--surface-elevated), 0.96);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .soft-divider {
+    border-color: hsla(var(--border), 0.6);
+  }
+
+  .editor-grid {
+    background-image:
+      linear-gradient(rgba(126, 97, 67, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(126, 97, 67, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}

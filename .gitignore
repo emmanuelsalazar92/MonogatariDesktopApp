@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+next-dev.log
+next-dev.err.log
+tsconfig.tsbuildinfo
+.env*.local
+prisma/*.db
+prisma/*.db-journal
