@@ -395,7 +395,8 @@ export const ModelName = {
   Note: 'Note',
   Backup: 'Backup',
   AppSetting: 'AppSetting',
-  NotionMapping: 'NotionMapping'
+  NotionMapping: 'NotionMapping',
+  NotionSyncState: 'NotionSyncState'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "volume" | "chapter" | "scene" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "notionMapping"
+    modelProps: "novel" | "volume" | "chapter" | "scene" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1303,6 +1304,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    NotionSyncState: {
+      payload: Prisma.$NotionSyncStatePayload<ExtArgs>
+      fields: Prisma.NotionSyncStateFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NotionSyncStateFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NotionSyncStateFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>
+        }
+        findFirst: {
+          args: Prisma.NotionSyncStateFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NotionSyncStateFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>
+        }
+        findMany: {
+          args: Prisma.NotionSyncStateFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>[]
+        }
+        create: {
+          args: Prisma.NotionSyncStateCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>
+        }
+        createMany: {
+          args: Prisma.NotionSyncStateCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NotionSyncStateCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>[]
+        }
+        delete: {
+          args: Prisma.NotionSyncStateDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>
+        }
+        update: {
+          args: Prisma.NotionSyncStateUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>
+        }
+        deleteMany: {
+          args: Prisma.NotionSyncStateDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NotionSyncStateUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NotionSyncStateUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>[]
+        }
+        upsert: {
+          args: Prisma.NotionSyncStateUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionSyncStatePayload>
+        }
+        aggregate: {
+          args: Prisma.NotionSyncStateAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotionSyncState>
+        }
+        groupBy: {
+          args: Prisma.NotionSyncStateGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotionSyncStateGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NotionSyncStateCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotionSyncStateCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1521,6 +1596,16 @@ export const NotionMappingScalarFieldEnum = {
 export type NotionMappingScalarFieldEnum = (typeof NotionMappingScalarFieldEnum)[keyof typeof NotionMappingScalarFieldEnum]
 
 
+export const NotionSyncStateScalarFieldEnum = {
+  novelId: 'novelId',
+  isDirty: 'isDirty',
+  lastNotionSync: 'lastNotionSync',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotionSyncStateScalarFieldEnum = (typeof NotionSyncStateScalarFieldEnum)[keyof typeof NotionSyncStateScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1699,6 +1784,7 @@ export type GlobalOmitConfig = {
   backup?: Prisma.BackupOmit
   appSetting?: Prisma.AppSettingOmit
   notionMapping?: Prisma.NotionMappingOmit
+  notionSyncState?: Prisma.NotionSyncStateOmit
 }
 
 /* Types for Logging */

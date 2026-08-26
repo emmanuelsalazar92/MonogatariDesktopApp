@@ -31,6 +31,11 @@ export type StudioData = {
   notes: import("@/lib/studio-domain").Note[];
   backups: StudioBackup[];
   settings: Record<string, string>;
+  notionSyncStates: Array<{
+    novelId: string;
+    isDirty: boolean;
+    lastNotionSync: string | null;
+  }>;
 };
 
 export type DataStatus = "loading" | "ready" | "fallback";
@@ -59,7 +64,8 @@ export const emptyStudioData: StudioData = {
   timelineEvents: [],
   notes: [],
   backups: [],
-  settings: {}
+  settings: {},
+  notionSyncStates: []
 };
 
 export const emptyNovel: Novel = {
@@ -134,7 +140,10 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
     settings:
       payload.settings && typeof payload.settings === "object"
         ? payload.settings
-        : emptyStudioData.settings
+        : emptyStudioData.settings,
+    notionSyncStates: Array.isArray(payload.notionSyncStates)
+      ? payload.notionSyncStates
+      : emptyStudioData.notionSyncStates
   };
 }
 

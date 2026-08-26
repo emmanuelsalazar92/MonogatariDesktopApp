@@ -209,3 +209,10 @@ model NotionMapping {
 
   @@index([novelId, entityType])
 }
+
+model NotionSyncState {
+  novelId        String   @id
+  isDirty        Boolean  @default(true)
+  lastNotionSync DateTime?
+  updatedAt      DateTime @updatedAt
+}
