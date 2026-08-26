@@ -47,11 +47,13 @@ const dashboardActions = [
 export function DashboardScreen({
   data,
   translate,
+  dailyWordGoal,
   onSelectPage,
   onOpenNovel
 }: {
   data: StudioData;
   translate: (value: string) => string;
+  dailyWordGoal: string;
   onSelectPage: (page: PageId) => void;
   onOpenNovel: (novelId: string, nextPage?: PageId) => void;
 }) {
@@ -60,7 +62,7 @@ export function DashboardScreen({
   const activeScene = getActiveScene(data);
   const dailyMetrics = getDailyWritingMetrics(
     data.writingActivities,
-    Number(data.settings.dailyWordGoal)
+    Number(dailyWordGoal)
   );
   const stats = [
     {
