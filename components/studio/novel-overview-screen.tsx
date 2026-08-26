@@ -11,6 +11,7 @@ import {
   Network,
   PenLine,
   Plus,
+  Upload,
   UserRound,
   UsersRound
 } from "lucide-react";
@@ -36,14 +37,26 @@ import {
 import { formatNumber, getCurrentNovel, type StudioData } from "@/lib/studio-data";
 import { type PageId } from "@/lib/studio-domain";
 
+type NotionPublishState = "idle" | "publishing" | "success" | "error";
+
 export function NovelOverviewScreen({
   data,
   translate,
-  onSelectPage
+  onSelectPage,
+  onPublishToNotion,
+  notionPublishState,
+  notionPublishMessage,
+  notionPublishUrl,
+  notionRootConfigured
 }: {
   data: StudioData;
   translate: (value: string) => string;
   onSelectPage: (page: PageId) => void;
+  onPublishToNotion: () => void;
+  notionPublishState: NotionPublishState;
+  notionPublishMessage: string;
+  notionPublishUrl: string;
+  notionRootConfigured: boolean;
 }) {
   const currentNovel = getCurrentNovel(data);
   const stats = [
@@ -81,9 +94,48 @@ export function NovelOverviewScreen({
               <BookOpen className="size-4" />
               {translate("Open reader")}
             </Button>
+            <Button
+              variant="outline"
+              onClick={onPublishToNotion}
+              disabled={!notionRootConfigured || notionPublishState === "publishing"}
+            >
+              <Upload className="size-4" />
+              {notionPublishState === "publishing"
+                ? translate("Publishing to Notion...")
+                : translate("Publish to Notion")}
+            </Button>
           </>
         }
       />
+
+      {!notionRootConfigured ? (
+        <p className="rounded-lg border border-border/60 bg-surface/74 px-4 py-3 text-sm text-muted-foreground">
+          {translate("Configure and validate a Notion root page before publishing.")}
+        </p>
+      ) : null}
+
+      {notionPublishMessage ? (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            notionPublishState === "success"
+              ? "border-success/35 bg-success/10 text-success"
+              : "border-destructive/35 bg-destructive/10 text-destructive"
+          }`}
+          role="status"
+        >
+          <p>{translate(notionPublishMessage)}</p>
+          {notionPublishUrl ? (
+            <a
+              className="mt-1 inline-block underline underline-offset-4"
+              href={notionPublishUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {translate("Open published novel in Notion")}
+            </a>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
         <div className="grid gap-4">

@@ -61,7 +61,8 @@ export const ModelName = {
   TimelineEvent: 'TimelineEvent',
   Note: 'Note',
   Backup: 'Backup',
-  AppSetting: 'AppSetting'
+  AppSetting: 'AppSetting',
+  NotionMapping: 'NotionMapping'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -245,6 +246,18 @@ export const AppSettingScalarFieldEnum = {
 } as const
 
 export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
+
+
+export const NotionMappingScalarFieldEnum = {
+  localId: 'localId',
+  entityType: 'entityType',
+  novelId: 'novelId',
+  notionPageId: 'notionPageId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotionMappingScalarFieldEnum = (typeof NotionMappingScalarFieldEnum)[keyof typeof NotionMappingScalarFieldEnum]
 
 
 export const SortOrder = {

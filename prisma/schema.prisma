@@ -198,3 +198,14 @@ model AppSetting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model NotionMapping {
+  localId      String   @id
+  entityType   String
+  novelId      String
+  notionPageId String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([novelId, entityType])
+}
