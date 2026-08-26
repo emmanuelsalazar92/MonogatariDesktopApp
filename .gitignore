@@ -4,6 +4,8 @@ out/
 next-dev.log
 next-dev.err.log
 tsconfig.tsbuildinfo
-.env*.local
+.env
+.env.*
+!.env.example
 prisma/*.db
 prisma/*.db-journal
