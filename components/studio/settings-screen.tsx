@@ -182,6 +182,13 @@ export function SettingsScreen({
               translate={translate}
             />
             <SettingsSelect
+              label={translate("Daily writing goal")}
+              value={settings.dailyWordGoal}
+              values={["500", "1000", "1500", "2000", "3000"]}
+              onChange={(value) => onSettingChange("dailyWordGoal", value)}
+              translate={(value) => `${value} ${translate("words")}`}
+            />
+            <SettingsSelect
               label={translate("Default focus mode")}
               value={settings.defaultFocusMode}
               values={["Writing", "Reading", "Off"]}

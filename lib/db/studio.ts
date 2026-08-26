@@ -194,6 +194,7 @@ export async function getStudioSnapshot() {
     timelineEvents,
     notes,
     backups,
+    writingActivities,
     settings,
     notionSyncStates
   ] = await Promise.all([
@@ -207,6 +208,7 @@ export async function getStudioSnapshot() {
     prisma.timelineEvent.findMany({ orderBy: { id: "asc" } }),
     prisma.note.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.backup.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.writingActivity.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.appSetting.findMany({ orderBy: { key: "asc" } }),
     prisma.notionSyncState.findMany({ orderBy: { novelId: "asc" } })
   ]);
@@ -228,6 +230,10 @@ export async function getStudioSnapshot() {
       ...backup,
       date: dateOnly(backup.createdAt),
       name: backup.filename
+    })),
+    writingActivities: writingActivities.map((activity) => ({
+      ...activity,
+      createdAt: activity.createdAt.toISOString()
     })),
     settings: Object.fromEntries(settings.map((setting) => [setting.key, setting.value])),
     notionSyncStates: notionSyncStates.map((state) => ({
@@ -575,6 +581,7 @@ export async function updateScene(
     });
     const nextWordCount =
       typeof input.content === "string" ? countWords(input.content) : existing.wordCount;
+    const wordDelta = nextWordCount - existing.wordCount;
     const scene = await tx.scene.update({
       where: { id: sceneId },
       data: {
@@ -616,6 +623,15 @@ export async function updateScene(
         wordCount: novelWords._sum.wordCount ?? 0
       }
     });
+    if (typeof input.content === "string" && wordDelta !== 0) {
+      await tx.writingActivity.create({
+        data: {
+          novelId: existing.chapter.volume.novelId,
+          sceneId: existing.id,
+          wordDelta
+        }
+      });
+    }
     await markNotionDirty(tx, existing.chapter.volume.novelId);
 
     return scene;

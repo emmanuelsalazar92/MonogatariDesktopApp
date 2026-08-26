@@ -25,6 +25,7 @@ model Novel {
   timelineEvents TimelineEvent[]
   notes          Note[]
   backups        Backup[]
+  writingActivities WritingActivity[]
 }
 
 model Volume {
@@ -71,9 +72,23 @@ model Scene {
   chapter        Chapter         @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   location       Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
   timelineEvents TimelineEvent[]
+  writingActivities WritingActivity[]
 
   @@index([chapterId, sortOrder])
   @@index([locationId])
+}
+
+model WritingActivity {
+  id        String   @id @default(cuid())
+  novelId   String
+  sceneId   String
+  wordDelta Int
+  createdAt DateTime @default(now())
+  novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  scene     Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([novelId, createdAt])
+  @@index([sceneId, createdAt])
 }
 
 model Character {

@@ -263,6 +263,7 @@ export type NovelWhereInput = {
   timelineEvents?: Prisma.TimelineEventListRelationFilter
   notes?: Prisma.NoteListRelationFilter
   backups?: Prisma.BackupListRelationFilter
+  writingActivities?: Prisma.WritingActivityListRelationFilter
 }
 
 export type NovelOrderByWithRelationInput = {
@@ -283,6 +284,7 @@ export type NovelOrderByWithRelationInput = {
   timelineEvents?: Prisma.TimelineEventOrderByRelationAggregateInput
   notes?: Prisma.NoteOrderByRelationAggregateInput
   backups?: Prisma.BackupOrderByRelationAggregateInput
+  writingActivities?: Prisma.WritingActivityOrderByRelationAggregateInput
 }
 
 export type NovelWhereUniqueInput = Prisma.AtLeast<{
@@ -306,6 +308,7 @@ export type NovelWhereUniqueInput = Prisma.AtLeast<{
   timelineEvents?: Prisma.TimelineEventListRelationFilter
   notes?: Prisma.NoteListRelationFilter
   backups?: Prisma.BackupListRelationFilter
+  writingActivities?: Prisma.WritingActivityListRelationFilter
 }, "id">
 
 export type NovelOrderByWithAggregationInput = {
@@ -360,6 +363,7 @@ export type NovelCreateInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateInput = {
@@ -380,6 +384,7 @@ export type NovelUncheckedCreateInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUpdateInput = {
@@ -400,6 +405,7 @@ export type NovelUpdateInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateInput = {
@@ -420,6 +426,7 @@ export type NovelUncheckedUpdateInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateManyInput = {
@@ -548,6 +555,20 @@ export type NovelUpdateOneRequiredWithoutVolumesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.NovelUpdateToOneWithWhereWithoutVolumesInput, Prisma.NovelUpdateWithoutVolumesInput>, Prisma.NovelUncheckedUpdateWithoutVolumesInput>
 }
 
+export type NovelCreateNestedOneWithoutWritingActivitiesInput = {
+  create?: Prisma.XOR<Prisma.NovelCreateWithoutWritingActivitiesInput, Prisma.NovelUncheckedCreateWithoutWritingActivitiesInput>
+  connectOrCreate?: Prisma.NovelCreateOrConnectWithoutWritingActivitiesInput
+  connect?: Prisma.NovelWhereUniqueInput
+}
+
+export type NovelUpdateOneRequiredWithoutWritingActivitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.NovelCreateWithoutWritingActivitiesInput, Prisma.NovelUncheckedCreateWithoutWritingActivitiesInput>
+  connectOrCreate?: Prisma.NovelCreateOrConnectWithoutWritingActivitiesInput
+  upsert?: Prisma.NovelUpsertWithoutWritingActivitiesInput
+  connect?: Prisma.NovelWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NovelUpdateToOneWithWhereWithoutWritingActivitiesInput, Prisma.NovelUpdateWithoutWritingActivitiesInput>, Prisma.NovelUncheckedUpdateWithoutWritingActivitiesInput>
+}
+
 export type NovelCreateNestedOneWithoutCharactersInput = {
   create?: Prisma.XOR<Prisma.NovelCreateWithoutCharactersInput, Prisma.NovelUncheckedCreateWithoutCharactersInput>
   connectOrCreate?: Prisma.NovelCreateOrConnectWithoutCharactersInput
@@ -651,6 +672,7 @@ export type NovelCreateWithoutVolumesInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutVolumesInput = {
@@ -670,6 +692,7 @@ export type NovelUncheckedCreateWithoutVolumesInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutVolumesInput = {
@@ -705,6 +728,7 @@ export type NovelUpdateWithoutVolumesInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutVolumesInput = {
@@ -718,6 +742,103 @@ export type NovelUncheckedUpdateWithoutVolumesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
+  locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
+  relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
+  timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
+  backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+}
+
+export type NovelCreateWithoutWritingActivitiesInput = {
+  id: string
+  title: string
+  synopsis?: string
+  status?: string
+  coverImage?: string
+  genre?: string
+  tags?: string
+  wordCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
+  characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
+  locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
+  relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
+  timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
+  notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
+  backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+}
+
+export type NovelUncheckedCreateWithoutWritingActivitiesInput = {
+  id: string
+  title: string
+  synopsis?: string
+  status?: string
+  coverImage?: string
+  genre?: string
+  tags?: string
+  wordCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
+  characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
+  locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
+  relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
+  timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
+  backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+}
+
+export type NovelCreateOrConnectWithoutWritingActivitiesInput = {
+  where: Prisma.NovelWhereUniqueInput
+  create: Prisma.XOR<Prisma.NovelCreateWithoutWritingActivitiesInput, Prisma.NovelUncheckedCreateWithoutWritingActivitiesInput>
+}
+
+export type NovelUpsertWithoutWritingActivitiesInput = {
+  update: Prisma.XOR<Prisma.NovelUpdateWithoutWritingActivitiesInput, Prisma.NovelUncheckedUpdateWithoutWritingActivitiesInput>
+  create: Prisma.XOR<Prisma.NovelCreateWithoutWritingActivitiesInput, Prisma.NovelUncheckedCreateWithoutWritingActivitiesInput>
+  where?: Prisma.NovelWhereInput
+}
+
+export type NovelUpdateToOneWithWhereWithoutWritingActivitiesInput = {
+  where?: Prisma.NovelWhereInput
+  data: Prisma.XOR<Prisma.NovelUpdateWithoutWritingActivitiesInput, Prisma.NovelUncheckedUpdateWithoutWritingActivitiesInput>
+}
+
+export type NovelUpdateWithoutWritingActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  coverImage?: Prisma.StringFieldUpdateOperationsInput | string
+  genre?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
+  characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
+  locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
+  relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
+  timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
+  backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+}
+
+export type NovelUncheckedUpdateWithoutWritingActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  coverImage?: Prisma.StringFieldUpdateOperationsInput | string
+  genre?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
@@ -743,6 +864,7 @@ export type NovelCreateWithoutCharactersInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutCharactersInput = {
@@ -762,6 +884,7 @@ export type NovelUncheckedCreateWithoutCharactersInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutCharactersInput = {
@@ -797,6 +920,7 @@ export type NovelUpdateWithoutCharactersInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutCharactersInput = {
@@ -816,6 +940,7 @@ export type NovelUncheckedUpdateWithoutCharactersInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateWithoutLocationsInput = {
@@ -835,6 +960,7 @@ export type NovelCreateWithoutLocationsInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutLocationsInput = {
@@ -854,6 +980,7 @@ export type NovelUncheckedCreateWithoutLocationsInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutLocationsInput = {
@@ -889,6 +1016,7 @@ export type NovelUpdateWithoutLocationsInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutLocationsInput = {
@@ -908,6 +1036,7 @@ export type NovelUncheckedUpdateWithoutLocationsInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateWithoutRelationshipsInput = {
@@ -927,6 +1056,7 @@ export type NovelCreateWithoutRelationshipsInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutRelationshipsInput = {
@@ -946,6 +1076,7 @@ export type NovelUncheckedCreateWithoutRelationshipsInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutRelationshipsInput = {
@@ -981,6 +1112,7 @@ export type NovelUpdateWithoutRelationshipsInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutRelationshipsInput = {
@@ -1000,6 +1132,7 @@ export type NovelUncheckedUpdateWithoutRelationshipsInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateWithoutTimelineEventsInput = {
@@ -1019,6 +1152,7 @@ export type NovelCreateWithoutTimelineEventsInput = {
   relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutTimelineEventsInput = {
@@ -1038,6 +1172,7 @@ export type NovelUncheckedCreateWithoutTimelineEventsInput = {
   relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutTimelineEventsInput = {
@@ -1073,6 +1208,7 @@ export type NovelUpdateWithoutTimelineEventsInput = {
   relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutTimelineEventsInput = {
@@ -1092,6 +1228,7 @@ export type NovelUncheckedUpdateWithoutTimelineEventsInput = {
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateWithoutNotesInput = {
@@ -1111,6 +1248,7 @@ export type NovelCreateWithoutNotesInput = {
   relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutNotesInput = {
@@ -1130,6 +1268,7 @@ export type NovelUncheckedCreateWithoutNotesInput = {
   relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutNotesInput = {
@@ -1165,6 +1304,7 @@ export type NovelUpdateWithoutNotesInput = {
   relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutNotesInput = {
@@ -1184,6 +1324,7 @@ export type NovelUncheckedUpdateWithoutNotesInput = {
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateWithoutBackupsInput = {
@@ -1203,6 +1344,7 @@ export type NovelCreateWithoutBackupsInput = {
   relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutBackupsInput = {
@@ -1222,6 +1364,7 @@ export type NovelUncheckedCreateWithoutBackupsInput = {
   relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutBackupsInput = {
@@ -1257,6 +1400,7 @@ export type NovelUpdateWithoutBackupsInput = {
   relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutBackupsInput = {
@@ -1276,6 +1420,7 @@ export type NovelUncheckedUpdateWithoutBackupsInput = {
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 
@@ -1291,6 +1436,7 @@ export type NovelCountOutputType = {
   timelineEvents: number
   notes: number
   backups: number
+  writingActivities: number
 }
 
 export type NovelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1301,6 +1447,7 @@ export type NovelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   timelineEvents?: boolean | NovelCountOutputTypeCountTimelineEventsArgs
   notes?: boolean | NovelCountOutputTypeCountNotesArgs
   backups?: boolean | NovelCountOutputTypeCountBackupsArgs
+  writingActivities?: boolean | NovelCountOutputTypeCountWritingActivitiesArgs
 }
 
 /**
@@ -1362,6 +1509,13 @@ export type NovelCountOutputTypeCountBackupsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.BackupWhereInput
 }
 
+/**
+ * NovelCountOutputType without action
+ */
+export type NovelCountOutputTypeCountWritingActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WritingActivityWhereInput
+}
+
 
 export type NovelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1381,6 +1535,7 @@ export type NovelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   timelineEvents?: boolean | Prisma.Novel$timelineEventsArgs<ExtArgs>
   notes?: boolean | Prisma.Novel$notesArgs<ExtArgs>
   backups?: boolean | Prisma.Novel$backupsArgs<ExtArgs>
+  writingActivities?: boolean | Prisma.Novel$writingActivitiesArgs<ExtArgs>
   _count?: boolean | Prisma.NovelCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["novel"]>
 
@@ -1432,6 +1587,7 @@ export type NovelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   timelineEvents?: boolean | Prisma.Novel$timelineEventsArgs<ExtArgs>
   notes?: boolean | Prisma.Novel$notesArgs<ExtArgs>
   backups?: boolean | Prisma.Novel$backupsArgs<ExtArgs>
+  writingActivities?: boolean | Prisma.Novel$writingActivitiesArgs<ExtArgs>
   _count?: boolean | Prisma.NovelCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type NovelIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1447,6 +1603,7 @@ export type $NovelPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     timelineEvents: Prisma.$TimelineEventPayload<ExtArgs>[]
     notes: Prisma.$NotePayload<ExtArgs>[]
     backups: Prisma.$BackupPayload<ExtArgs>[]
+    writingActivities: Prisma.$WritingActivityPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1860,6 +2017,7 @@ export interface Prisma__NovelClient<T, Null = never, ExtArgs extends runtime.Ty
   timelineEvents<T extends Prisma.Novel$timelineEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$timelineEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TimelineEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notes<T extends Prisma.Novel$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   backups<T extends Prisma.Novel$backupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$backupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BackupPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  writingActivities<T extends Prisma.Novel$writingActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$writingActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WritingActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2455,6 +2613,30 @@ export type Novel$backupsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.BackupScalarFieldEnum | Prisma.BackupScalarFieldEnum[]
+}
+
+/**
+ * Novel.writingActivities
+ */
+export type Novel$writingActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WritingActivity
+   */
+  select?: Prisma.WritingActivitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WritingActivity
+   */
+  omit?: Prisma.WritingActivityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WritingActivityInclude<ExtArgs> | null
+  where?: Prisma.WritingActivityWhereInput
+  orderBy?: Prisma.WritingActivityOrderByWithRelationInput | Prisma.WritingActivityOrderByWithRelationInput[]
+  cursor?: Prisma.WritingActivityWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WritingActivityScalarFieldEnum | Prisma.WritingActivityScalarFieldEnum[]
 }
 
 /**

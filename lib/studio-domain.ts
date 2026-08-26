@@ -99,6 +99,14 @@ export interface Scene {
   archived: boolean;
 }
 
+export interface WritingActivity {
+  id: string;
+  novelId: string;
+  sceneId: string;
+  wordDelta: number;
+  createdAt: string;
+}
+
 export interface Character {
   id: string;
   novelId: string;
