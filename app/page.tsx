@@ -111,6 +111,7 @@ import {
   uiCopy,
   useLiveLocalization
 } from "@/lib/studio-i18n";
+import { notionAutosyncIntervalMilliseconds } from "@/lib/studio-settings";
 import { cn } from "@/lib/utils";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
@@ -277,6 +278,7 @@ export default function PrivateNovelStudioPage() {
   const [notionPublishUrl, setNotionPublishUrl] = React.useState("");
   const [notionAutosyncStatus, setNotionAutosyncStatus] =
     React.useState<NotionAutosyncStatus>("idle");
+  const [notionAutosyncRetryAt, setNotionAutosyncRetryAt] = React.useState(0);
   const [notionConflict, setNotionConflict] = React.useState<NotionConflictPreview | null>(null);
   const [resolvingNotionConflict, setResolvingNotionConflict] = React.useState(false);
   const [toast, setToast] = React.useState("");
@@ -319,6 +321,7 @@ export default function PrivateNovelStudioPage() {
   const saveInFlightRef = React.useRef<Promise<boolean> | null>(null);
   const autosyncInFlightRef = React.useRef(false);
   const autosyncRetryAtRef = React.useRef(0);
+  const autosyncFailureCountRef = React.useRef(0);
   const autosyncStatusTimerRef = React.useRef<number | null>(null);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
@@ -711,6 +714,9 @@ export default function PrivateNovelStudioPage() {
 
       setNotionPublishState("success");
       setNotionAutosyncStatus("synced");
+      autosyncRetryAtRef.current = 0;
+      autosyncFailureCountRef.current = 0;
+      setNotionAutosyncRetryAt(0);
       setNotionPublishMessage(result.message ?? "Notion sync completed.");
       setNotionPublishUrl(result.novelPage?.url ?? "");
       await refreshStudioData(false);
@@ -749,12 +755,15 @@ export default function PrivateNovelStudioPage() {
         if (result.code === "REMOTE_CHANGES_DETECTED") {
           setNotionAutosyncStatus("remote-changes");
           autosyncRetryAtRef.current = Number.POSITIVE_INFINITY;
+          setNotionAutosyncRetryAt(Number.POSITIVE_INFINITY);
           return;
         }
         throw new Error(result.message ?? "Could not sync this novel to Notion.");
       }
 
       autosyncRetryAtRef.current = 0;
+      autosyncFailureCountRef.current = 0;
+      setNotionAutosyncRetryAt(0);
       setNotionAutosyncStatus("synced");
       await refreshStudioData(false);
       if (autosyncStatusTimerRef.current) window.clearTimeout(autosyncStatusTimerRef.current);
@@ -762,11 +771,14 @@ export default function PrivateNovelStudioPage() {
         setNotionAutosyncStatus("idle");
       }, 3_000);
     } catch {
-      const intervalMs = Math.max(
-        60_000,
-        Number(studioSettings.notionAutosyncIntervalMinutes) * 60_000 || 300_000
+      const intervalMs = notionAutosyncIntervalMilliseconds(studioSettings.notionAutosyncIntervalMinutes) ?? 300_000;
+      autosyncFailureCountRef.current = Math.min(autosyncFailureCountRef.current + 1, 5);
+      const retryDelay = Math.min(
+        intervalMs * 2 ** autosyncFailureCountRef.current,
+        30 * 60_000
       );
-      autosyncRetryAtRef.current = Date.now() + Math.min(intervalMs * 2, 30 * 60_000);
+      autosyncRetryAtRef.current = Date.now() + retryDelay;
+      setNotionAutosyncRetryAt(autosyncRetryAtRef.current);
       setNotionAutosyncStatus("error");
     } finally {
       autosyncInFlightRef.current = false;
@@ -785,10 +797,8 @@ export default function PrivateNovelStudioPage() {
       return;
     }
 
-    const intervalMs = Math.max(
-      60_000,
-      Number(studioSettings.notionAutosyncIntervalMinutes) * 60_000 || 300_000
-    );
+    const intervalMs = notionAutosyncIntervalMilliseconds(studioSettings.notionAutosyncIntervalMinutes);
+    if (intervalMs === null) return;
     let timer: number | null = null;
     let cancelled = false;
 
@@ -798,18 +808,10 @@ export default function PrivateNovelStudioPage() {
         if (!cancelled) schedule(intervalMs);
       }, delay);
     };
-    const onVisibilityChange = () => {
-      if (document.visibilityState !== "visible" || cancelled) return;
-      if (timer) window.clearTimeout(timer);
-      schedule(0);
-    };
-
     schedule(intervalMs);
-    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [
     currentNovel.id,
@@ -865,6 +867,8 @@ export default function PrivateNovelStudioPage() {
       setNotionPublishState("success");
       setNotionAutosyncStatus("idle");
       autosyncRetryAtRef.current = 0;
+      autosyncFailureCountRef.current = 0;
+      setNotionAutosyncRetryAt(0);
       setNotionPublishMessage(result.message ?? "Notion updates were applied locally.");
       await refreshStudioData(false);
       showToast(
@@ -1436,6 +1440,8 @@ export default function PrivateNovelStudioPage() {
                   onSidebarStateChange={updateSidebarState}
                   onSettingChange={updateStudioSetting}
                   onNotionConnectionVerified={applyVerifiedNotionConnection}
+                  notionAutosyncStatus={notionAutosyncStatus}
+                  notionAutosyncRetryAt={notionAutosyncRetryAt}
                 />
               ) : null}
             </div>

@@ -20,6 +20,7 @@ import {
 } from "@/lib/studio-i18n";
 import { type PersistedStudioSettings } from "@/lib/studio-data";
 import { type SidebarState } from "@/lib/studio-domain";
+import { notionAutosyncIntervals } from "@/lib/studio-settings";
 
 type ThemeMode = "light" | "dark" | "system";
 type NotionConnectionState = "idle" | "testing" | "success" | "error";
@@ -34,7 +35,9 @@ export function SettingsScreen({
   onLanguageChange,
   onSidebarStateChange,
   onSettingChange,
-  onNotionConnectionVerified
+  onNotionConnectionVerified,
+  notionAutosyncStatus,
+  notionAutosyncRetryAt
 }: {
   theme: ThemeMode;
   language: Language;
@@ -46,6 +49,8 @@ export function SettingsScreen({
   onSidebarStateChange: (value: SidebarState) => void;
   onSettingChange: (key: keyof PersistedStudioSettings, value: string | boolean) => void;
   onNotionConnectionVerified: (pageId: string, pageTitle: string) => void;
+  notionAutosyncStatus: "idle" | "syncing" | "synced" | "error" | "remote-changes";
+  notionAutosyncRetryAt: number;
 }) {
   const copy = uiCopy[language];
   const [notionRootPage, setNotionRootPage] = React.useState(settings.notionRootPageId);
@@ -54,6 +59,24 @@ export function SettingsScreen({
     React.useState<NotionConnectionState>("idle");
   const [notionMessage, setNotionMessage] = React.useState("");
   const [notionPageTitle, setNotionPageTitle] = React.useState(settings.notionRootPageTitle);
+  const autosyncStatusMessage =
+    !settings.notionAutosyncEnabled
+      ? translate("Automatic sync is off")
+      : !settings.notionRootPageId
+        ? translate("Connect a Notion root page to enable automatic sync.")
+        : notionAutosyncStatus === "syncing"
+          ? translate("Automatic Notion sync is running in the background.")
+          : notionAutosyncStatus === "remote-changes"
+            ? translate("Automatic sync paused because remote changes need review.")
+            : notionAutosyncStatus === "error"
+              ? `${translate("Automatic sync will retry")}${
+                  Number.isFinite(notionAutosyncRetryAt)
+                    ? ` ${new Date(notionAutosyncRetryAt).toLocaleTimeString()}`
+                    : ""
+                }.`
+              : notionAutosyncStatus === "synced"
+                ? translate("Automatic sync completed.")
+                : translate("Automatic sync is waiting for local changes.");
 
   React.useEffect(() => {
     setNotionRootPage(settings.notionRootPageId);
@@ -300,13 +323,17 @@ export function SettingsScreen({
                   <Switch
                     checked={settings.notionAutosyncEnabled}
                     onCheckedChange={(value) => onSettingChange("notionAutosyncEnabled", value)}
+                    disabled={!settings.notionRootPageId}
                   />
                 </div>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground" role="status">
+                  {autosyncStatusMessage}
+                </p>
                 <div className="mt-4">
                   <SettingsSelect
                     label={translate("Notion sync interval")}
                     value={settings.notionAutosyncIntervalMinutes}
-                    values={["1", "2", "5", "10", "15", "30"]}
+                    values={[...notionAutosyncIntervals]}
                     onChange={(value) => onSettingChange("notionAutosyncIntervalMinutes", value)}
                     translate={(value) => `${value} ${translate("minutes")}`}
                   />
