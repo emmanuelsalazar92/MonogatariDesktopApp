@@ -394,7 +394,8 @@ export const ModelName = {
   TimelineEvent: 'TimelineEvent',
   Note: 'Note',
   Backup: 'Backup',
-  AppSetting: 'AppSetting'
+  AppSetting: 'AppSetting',
+  NotionMapping: 'NotionMapping'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -410,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "volume" | "chapter" | "scene" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting"
+    modelProps: "novel" | "volume" | "chapter" | "scene" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "notionMapping"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1228,6 +1229,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    NotionMapping: {
+      payload: Prisma.$NotionMappingPayload<ExtArgs>
+      fields: Prisma.NotionMappingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NotionMappingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NotionMappingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>
+        }
+        findFirst: {
+          args: Prisma.NotionMappingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NotionMappingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>
+        }
+        findMany: {
+          args: Prisma.NotionMappingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>[]
+        }
+        create: {
+          args: Prisma.NotionMappingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>
+        }
+        createMany: {
+          args: Prisma.NotionMappingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NotionMappingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>[]
+        }
+        delete: {
+          args: Prisma.NotionMappingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>
+        }
+        update: {
+          args: Prisma.NotionMappingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>
+        }
+        deleteMany: {
+          args: Prisma.NotionMappingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NotionMappingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NotionMappingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>[]
+        }
+        upsert: {
+          args: Prisma.NotionMappingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotionMappingPayload>
+        }
+        aggregate: {
+          args: Prisma.NotionMappingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotionMapping>
+        }
+        groupBy: {
+          args: Prisma.NotionMappingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotionMappingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NotionMappingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotionMappingCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1434,6 +1509,18 @@ export const AppSettingScalarFieldEnum = {
 export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
 
 
+export const NotionMappingScalarFieldEnum = {
+  localId: 'localId',
+  entityType: 'entityType',
+  novelId: 'novelId',
+  notionPageId: 'notionPageId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotionMappingScalarFieldEnum = (typeof NotionMappingScalarFieldEnum)[keyof typeof NotionMappingScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1611,6 +1698,7 @@ export type GlobalOmitConfig = {
   note?: Prisma.NoteOmit
   backup?: Prisma.BackupOmit
   appSetting?: Prisma.AppSettingOmit
+  notionMapping?: Prisma.NotionMappingOmit
 }
 
 /* Types for Logging */

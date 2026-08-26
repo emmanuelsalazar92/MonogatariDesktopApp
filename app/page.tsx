@@ -138,6 +138,7 @@ type SceneSaveInput = {
 
 type SaveStatus = "Saved" | "Saving..." | "Unsaved changes" | "Save error";
 type PendingSaveHandler = () => Promise<boolean>;
+type NotionPublishState = "idle" | "publishing" | "success" | "error";
 
 type CreateNovelInput = {
   title: string;
@@ -266,6 +267,9 @@ export default function PrivateNovelStudioPage() {
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
   >(null);
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved");
+  const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
+  const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
+  const [notionPublishUrl, setNotionPublishUrl] = React.useState("");
   const [toast, setToast] = React.useState("");
   const [libraryQuery, setLibraryQuery] = React.useState("");
   const [libraryStatus, setLibraryStatus] = React.useState("All statuses");
@@ -678,6 +682,45 @@ export default function PrivateNovelStudioPage() {
     [refreshStudioData, showToast]
   );
 
+  const publishCurrentNovelToNotion = React.useCallback(async () => {
+    if (!currentNovel.id) return;
+
+    setNotionPublishState("publishing");
+    setNotionPublishMessage("");
+    setNotionPublishUrl("");
+
+    try {
+      const response = await fetch("/api/integrations/notion/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ novelId: currentNovel.id })
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        novelPage?: { url?: string };
+        createdPages?: number;
+        updatedPages?: number;
+      };
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.message ?? "Could not publish this novel to Notion.");
+      }
+
+      setNotionPublishState("success");
+      setNotionPublishMessage("Notion publication completed.");
+      setNotionPublishUrl(result.novelPage?.url ?? "");
+      showToast(
+        `Notion: ${result.createdPages ?? 0} created, ${result.updatedPages ?? 0} updated`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not publish this novel to Notion.";
+      setNotionPublishState("error");
+      setNotionPublishMessage(message);
+      showToast(message);
+    }
+  }, [currentNovel.id, showToast]);
+
   const createNovelFromDialog = React.useCallback(
     async (input: CreateNovelInput) => {
       const response = await fetch("/api/novels", {
@@ -1080,6 +1123,11 @@ export default function PrivateNovelStudioPage() {
                   data={scopedStudioData}
                   translate={translate}
                   onSelectPage={selectPage}
+                  onPublishToNotion={() => void publishCurrentNovelToNotion()}
+                  notionPublishState={notionPublishState}
+                  notionPublishMessage={notionPublishMessage}
+                  notionPublishUrl={notionPublishUrl}
+                  notionRootConfigured={Boolean(studioSettings.notionRootPageId)}
                 />
               ) : null}
               {activePage === "structure" ? (
