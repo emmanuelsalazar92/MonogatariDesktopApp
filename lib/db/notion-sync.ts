@@ -43,22 +43,32 @@ export async function getNotionContentBaselines(novelId: string) {
 
 export async function markNotionSynced(
   novelId: string,
-  baselines?: NotionContentBaselines
+  baselines: NotionContentBaselines | undefined,
+  syncedRevision: number
 ) {
-  return prisma.notionSyncState.upsert({
+  await prisma.notionSyncState.upsert({
     where: { novelId },
     update: {
-      isDirty: false,
       lastNotionSync: new Date(),
+      lastSyncedRevision: syncedRevision,
       ...(baselines ? { lastKnownContent: JSON.stringify(baselines) } : {})
     },
     create: {
       novelId,
       isDirty: false,
+      revision: syncedRevision,
+      lastSyncedRevision: syncedRevision,
       lastNotionSync: new Date(),
       lastKnownContent: JSON.stringify(baselines ?? {})
     }
   });
+
+  await prisma.notionSyncState.updateMany({
+    where: { novelId, revision: syncedRevision },
+    data: { isDirty: false }
+  });
+
+  return getNotionSyncState(novelId);
 }
 
 export async function recordNotionPull(novelId: string, baselines: NotionContentBaselines) {

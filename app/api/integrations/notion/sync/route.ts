@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { NotionApiError, NotionPublishError, syncNovelToNotion } from "@/lib/notion-sync";
+import { NotionApiError, NotionPublishError, NotionSyncError, syncNovelToNotion } from "@/lib/notion-sync";
 
 type SyncBody = { novelId?: unknown; force?: unknown };
 
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       lastNotionSync: result.lastNotionSync?.toISOString() ?? null
     });
   } catch (error) {
-    if (error instanceof NotionPublishError || error instanceof NotionApiError) {
+    if (error instanceof NotionPublishError || error instanceof NotionApiError || error instanceof NotionSyncError) {
       return NextResponse.json(
         { ok: false, code: error.code, message: error.message },
         { status: error.status }

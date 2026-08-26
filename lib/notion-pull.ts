@@ -157,6 +157,22 @@ async function getPageBlocks(pageId: string) {
   return blocks;
 }
 
+export async function getNotionRemoteChanges(novelId: string) {
+  const baselines = await getNotionContentBaselines(novelId);
+  const mappings = (await getNotionMappings(novelId)).filter((mapping) => mapping.entityType === "chapter");
+
+  for (const mapping of mappings) {
+    const chapterId = mapping.localId.replace(/^chapter:/, "");
+    const baseline = baselines[chapterId];
+    if (!baseline) return { changed: true, chapterId };
+
+    const remote = remoteSnapshot(await getPageBlocks(mapping.notionPageId));
+    if (remote !== baseline.remote) return { changed: true, chapterId };
+  }
+
+  return { changed: false as const };
+}
+
 export async function pullNovelFromNotion(
   novelId: string,
   chapterId?: string,

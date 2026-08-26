@@ -30,8 +30,8 @@ function countWords(value: string) {
 async function markNotionDirty(tx: Prisma.TransactionClient, novelId: string) {
   await tx.notionSyncState.upsert({
     where: { novelId },
-    update: { isDirty: true },
-    create: { novelId, isDirty: true }
+    update: { isDirty: true, revision: { increment: 1 } },
+    create: { novelId, isDirty: true, revision: 1 }
   });
 }
 
@@ -233,6 +233,7 @@ export async function getStudioSnapshot() {
     notionSyncStates: notionSyncStates.map((state) => ({
       novelId: state.novelId,
       isDirty: state.isDirty,
+      revision: state.revision,
       lastNotionSync: state.lastNotionSync?.toISOString() ?? null
     }))
   };

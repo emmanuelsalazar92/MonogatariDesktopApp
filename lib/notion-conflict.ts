@@ -26,7 +26,7 @@ export async function resolveNotionConflict(input: {
   });
 
   if (input.resolution === "keep-local") {
-    const result = await syncNovelToNotion(input.novelId, true);
+    const result = await syncNovelToNotion(input.novelId, true, { protectRemoteChanges: false });
     return {
       appliedChapters: 0,
       message: `Local version kept and synchronized to Notion (${result.createdPages ?? 0} created, ${result.updatedPages ?? 0} updated).`

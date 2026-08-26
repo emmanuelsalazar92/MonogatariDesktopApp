@@ -264,6 +264,8 @@ export type NotionMappingScalarFieldEnum = (typeof NotionMappingScalarFieldEnum)
 export const NotionSyncStateScalarFieldEnum = {
   novelId: 'novelId',
   isDirty: 'isDirty',
+  revision: 'revision',
+  lastSyncedRevision: 'lastSyncedRevision',
   lastNotionSync: 'lastNotionSync',
   lastKnownContent: 'lastKnownContent',
   updatedAt: 'updatedAt'

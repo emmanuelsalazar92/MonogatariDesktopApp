@@ -265,6 +265,30 @@ export function SettingsScreen({
                   {translate(notionMessage)}
                 </div>
               ) : null}
+
+              <div className="rounded-lg border border-border/60 bg-surface/74 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label>{translate("Automatic Notion sync")}</Label>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {translate("Periodically checks pending local changes without interrupting your writing.")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.notionAutosyncEnabled}
+                    onCheckedChange={(value) => onSettingChange("notionAutosyncEnabled", value)}
+                  />
+                </div>
+                <div className="mt-4">
+                  <SettingsSelect
+                    label={translate("Notion sync interval")}
+                    value={settings.notionAutosyncIntervalMinutes}
+                    values={["1", "2", "5", "10", "15", "30"]}
+                    onChange={(value) => onSettingChange("notionAutosyncIntervalMinutes", value)}
+                    translate={(value) => `${value} ${translate("minutes")}`}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
