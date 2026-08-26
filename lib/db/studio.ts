@@ -542,22 +542,19 @@ export async function updateScene(
     locationId?: string;
   }
 ) {
-  const existing = await prisma.scene.findUniqueOrThrow({
-    where: { id: sceneId },
-    include: {
-      chapter: {
-        include: {
-          volume: true
+  const updatedScene = await prisma.$transaction(async (tx) => {
+    const existing = await tx.scene.findUniqueOrThrow({
+      where: { id: sceneId },
+      include: {
+        chapter: {
+          include: {
+            volume: true
+          }
         }
       }
-    }
-  });
-
-  const nextWordCount =
-    typeof input.content === "string" ? countWords(input.content) : existing.wordCount;
-  const wordDelta = nextWordCount - existing.wordCount;
-
-  const updatedScene = await prisma.$transaction(async (tx) => {
+    });
+    const nextWordCount =
+      typeof input.content === "string" ? countWords(input.content) : existing.wordCount;
     const scene = await tx.scene.update({
       where: { id: sceneId },
       data: {
@@ -574,18 +571,29 @@ export async function updateScene(
       }
     });
 
-    if (wordDelta !== 0) {
-      await tx.chapter.update({
-        where: { id: existing.chapterId },
-        data: { wordCount: { increment: wordDelta } }
-      });
-    }
+    const chapterWords = await tx.scene.aggregate({
+      where: { chapterId: existing.chapterId },
+      _sum: { wordCount: true }
+    });
+    await tx.chapter.update({
+      where: { id: existing.chapterId },
+      data: { wordCount: chapterWords._sum.wordCount ?? 0 }
+    });
+
+    const novelChapters = await tx.chapter.findMany({
+      where: { volume: { novelId: existing.chapter.volume.novelId } },
+      select: { id: true }
+    });
+    const novelWords = await tx.scene.aggregate({
+      where: { chapterId: { in: novelChapters.map((chapter) => chapter.id) } },
+      _sum: { wordCount: true }
+    });
 
     await tx.novel.update({
       where: { id: existing.chapter.volume.novelId },
       data: {
         updatedAt: new Date(),
-        ...(wordDelta !== 0 ? { wordCount: { increment: wordDelta } } : {})
+        wordCount: novelWords._sum.wordCount ?? 0
       }
     });
 
