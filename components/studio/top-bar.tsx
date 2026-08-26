@@ -4,7 +4,6 @@ import {
   BookOpen,
   ChevronsRight,
   Columns3,
-  Languages,
   Menu,
   PanelLeftOpen,
   ShieldCheck
@@ -21,42 +20,27 @@ import { Separator } from "@/components/ui/separator";
 import { ToolbarIconButton } from "@/components/studio/shared";
 import { type Novel, type SidebarState } from "@/lib/studio-domain";
 
-type ThemeMode = "light" | "dark" | "system";
-type Language = "en" | "es";
-
 type TopBarCopy = {
   openNavigation: string;
   toggleSidebar: string;
   localStatus: string;
-  language: string;
-  english: string;
-  spanish: string;
-  light: string;
-  dark: string;
-  system: string;
 };
 
 export function TopBar({
   pageLabel,
   subtitle,
   sidebarState,
-  theme,
-  language,
   novels,
   activeNovelId,
   dataStatusLabel,
   copy,
   onOpenMobileNav,
   onCycleSidebar,
-  onActiveNovelChange,
-  onThemeChange,
-  onLanguageChange
+  onActiveNovelChange
 }: {
   pageLabel: string;
   subtitle: string;
   sidebarState: SidebarState;
-  theme: ThemeMode;
-  language: Language;
   novels: Novel[];
   activeNovelId: string;
   dataStatusLabel: string;
@@ -64,8 +48,6 @@ export function TopBar({
   onOpenMobileNav: () => void;
   onCycleSidebar: () => void;
   onActiveNovelChange: (novelId: string) => void;
-  onThemeChange: (theme: ThemeMode) => void;
-  onLanguageChange: (language: Language) => void;
 }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/82 backdrop-blur-xl">
@@ -118,27 +100,6 @@ export function TopBar({
           </Select>
         ) : null}
 
-        <Select value={language} onValueChange={(value) => onLanguageChange(value as Language)}>
-          <SelectTrigger className="h-10 w-[98px] sm:w-[110px]" aria-label={copy.language}>
-            <Languages className="size-4 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">{copy.english}</SelectItem>
-            <SelectItem value="es">{copy.spanish}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={theme} onValueChange={(value) => onThemeChange(value as ThemeMode)}>
-          <SelectTrigger className="h-10 w-[104px] sm:w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="light">{copy.light}</SelectItem>
-            <SelectItem value="dark">{copy.dark}</SelectItem>
-            <SelectItem value="system">{copy.system}</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
     </header>
   );
