@@ -1195,7 +1195,13 @@ export default function PrivateNovelStudioPage() {
     }
     setActivePage(page);
     setMobileDrawerOpen(false);
-    setFocusMode("none");
+    setFocusMode(
+      page === "editor" && studioSettings.defaultFocusMode === "Writing"
+        ? "writing"
+        : page === "reader" && studioSettings.defaultFocusMode === "Reading"
+          ? "reading"
+          : "none"
+    );
   };
 
   const exportPreviewName = `${currentNovel.title
@@ -1211,6 +1217,7 @@ export default function PrivateNovelStudioPage() {
     return (
       <StudioDataContext.Provider value={scopedStudioData}>
         <WritingFocusMode
+          editorFontSize={Number.parseInt(studioSettings.editorFontSize, 10) || 18}
           saveStatus={saveStatus}
           onSaveScene={saveScene}
           setSaveStatus={setSaveStatus}
@@ -1276,6 +1283,7 @@ export default function PrivateNovelStudioPage() {
                 <DashboardScreen
                   data={scopedStudioData}
                   translate={translate}
+                  dailyWordGoal={studioSettings.dailyWordGoal}
                   onSelectPage={selectPage}
                   onOpenNovel={setActiveNovel}
                 />
@@ -1321,6 +1329,7 @@ export default function PrivateNovelStudioPage() {
               ) : null}
               {activePage === "editor" ? (
                 <EditorScreen
+                  editorFontSize={Number.parseInt(studioSettings.editorFontSize, 10) || 18}
                   saveStatus={saveStatus}
                   onSaveScene={saveScene}
                   onRequestSave={() => void flushPendingChanges()}
@@ -1472,6 +1481,7 @@ export default function PrivateNovelStudioPage() {
 }
 
 function EditorScreen({
+  editorFontSize,
   saveStatus,
   inspectorOpen,
   onSaveScene,
@@ -1483,6 +1493,7 @@ function EditorScreen({
   setInspectorOpen,
   setSaveStatus
 }: {
+  editorFontSize: number;
   saveStatus: SaveStatus;
   inspectorOpen: boolean;
   onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
@@ -1707,6 +1718,7 @@ function EditorScreen({
                         markDirty();
                       }}
                       className="min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
+                      style={{ fontSize: `${editorFontSize}px` }}
                     />
                   </div>
                 </TabsContent>
@@ -1803,6 +1815,7 @@ function ShortcutPanel() {
 }
 
 function WritingFocusMode({
+  editorFontSize,
   saveStatus,
   onSaveScene,
   setSaveStatus,
@@ -1810,6 +1823,7 @@ function WritingFocusMode({
   onDirtyChange,
   onExit
 }: {
+  editorFontSize: number;
   saveStatus: SaveStatus;
   onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
   setSaveStatus: (status: SaveStatus) => void;
@@ -1908,7 +1922,8 @@ function WritingFocusMode({
               onDirtyChange(true);
               setSaveStatus("Unsaved changes");
             }}
-            className="min-h-[calc(100vh-12rem)] border-0 bg-transparent p-0 font-typewriter text-lg leading-9 text-editor-foreground shadow-none focus-visible:ring-0"
+            className="min-h-[calc(100vh-12rem)] border-0 bg-transparent p-0 font-typewriter leading-9 text-editor-foreground shadow-none focus-visible:ring-0"
+            style={{ fontSize: `${editorFontSize}px` }}
           />
         </div>
       </section>
