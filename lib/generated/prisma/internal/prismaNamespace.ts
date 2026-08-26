@@ -388,6 +388,7 @@ export const ModelName = {
   Volume: 'Volume',
   Chapter: 'Chapter',
   Scene: 'Scene',
+  WritingActivity: 'WritingActivity',
   Character: 'Character',
   Location: 'Location',
   Relationship: 'Relationship',
@@ -412,7 +413,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "volume" | "chapter" | "scene" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "volume" | "chapter" | "scene" | "writingActivity" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -709,6 +710,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SceneCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SceneCountAggregateOutputType> | number
+        }
+      }
+    }
+    WritingActivity: {
+      payload: Prisma.$WritingActivityPayload<ExtArgs>
+      fields: Prisma.WritingActivityFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.WritingActivityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.WritingActivityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>
+        }
+        findFirst: {
+          args: Prisma.WritingActivityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.WritingActivityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>
+        }
+        findMany: {
+          args: Prisma.WritingActivityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>[]
+        }
+        create: {
+          args: Prisma.WritingActivityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>
+        }
+        createMany: {
+          args: Prisma.WritingActivityCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.WritingActivityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>[]
+        }
+        delete: {
+          args: Prisma.WritingActivityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>
+        }
+        update: {
+          args: Prisma.WritingActivityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>
+        }
+        deleteMany: {
+          args: Prisma.WritingActivityDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.WritingActivityUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.WritingActivityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>[]
+        }
+        upsert: {
+          args: Prisma.WritingActivityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$WritingActivityPayload>
+        }
+        aggregate: {
+          args: Prisma.WritingActivityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateWritingActivity>
+        }
+        groupBy: {
+          args: Prisma.WritingActivityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WritingActivityGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.WritingActivityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.WritingActivityCountAggregateOutputType> | number
         }
       }
     }
@@ -1473,6 +1548,17 @@ export const SceneScalarFieldEnum = {
 export type SceneScalarFieldEnum = (typeof SceneScalarFieldEnum)[keyof typeof SceneScalarFieldEnum]
 
 
+export const WritingActivityScalarFieldEnum = {
+  id: 'id',
+  novelId: 'novelId',
+  sceneId: 'sceneId',
+  wordDelta: 'wordDelta',
+  createdAt: 'createdAt'
+} as const
+
+export type WritingActivityScalarFieldEnum = (typeof WritingActivityScalarFieldEnum)[keyof typeof WritingActivityScalarFieldEnum]
+
+
 export const CharacterScalarFieldEnum = {
   id: 'id',
   novelId: 'novelId',
@@ -1779,6 +1865,7 @@ export type GlobalOmitConfig = {
   volume?: Prisma.VolumeOmit
   chapter?: Prisma.ChapterOmit
   scene?: Prisma.SceneOmit
+  writingActivity?: Prisma.WritingActivityOmit
   character?: Prisma.CharacterOmit
   location?: Prisma.LocationOmit
   relationship?: Prisma.RelationshipOmit

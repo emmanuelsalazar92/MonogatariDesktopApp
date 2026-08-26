@@ -6,7 +6,8 @@ import type {
   Relationship,
   Scene,
   TimelineEvent,
-  Volume
+  Volume,
+  WritingActivity
 } from "@/lib/studio-domain";
 
 export type StudioBackup = {
@@ -30,6 +31,7 @@ export type StudioData = {
   timelineEvents: TimelineEvent[];
   notes: import("@/lib/studio-domain").Note[];
   backups: StudioBackup[];
+  writingActivities: WritingActivity[];
   settings: Record<string, string>;
   notionSyncStates: Array<{
     novelId: string;
@@ -54,6 +56,7 @@ export type PersistedStudioSettings = {
   notionRootPageId: string;
   notionAutosyncEnabled: boolean;
   notionAutosyncIntervalMinutes: string;
+  dailyWordGoal: string;
 };
 
 export const emptyStudioData: StudioData = {
@@ -67,6 +70,7 @@ export const emptyStudioData: StudioData = {
   timelineEvents: [],
   notes: [],
   backups: [],
+  writingActivities: [],
   settings: {},
   notionSyncStates: []
 };
@@ -121,7 +125,8 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   typewriterFont: true,
   notionRootPageId: "",
   notionAutosyncEnabled: false,
-  notionAutosyncIntervalMinutes: "5"
+  notionAutosyncIntervalMinutes: "5",
+  dailyWordGoal: "1500"
 };
 
 export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
@@ -142,6 +147,9 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
       : emptyStudioData.timelineEvents,
     notes: Array.isArray(payload.notes) ? payload.notes : emptyStudioData.notes,
     backups: Array.isArray(payload.backups) ? payload.backups : emptyStudioData.backups,
+    writingActivities: Array.isArray(payload.writingActivities)
+      ? payload.writingActivities
+      : emptyStudioData.writingActivities,
     settings:
       payload.settings && typeof payload.settings === "object"
         ? payload.settings
@@ -183,7 +191,8 @@ export function getScopedStudioData(data: StudioData): StudioData {
     ),
     timelineEvents: data.timelineEvents.filter((event) => event.novelId === activeNovelId),
     notes: data.notes.filter((note) => note.novelId === activeNovelId),
-    backups: data.backups
+    backups: data.backups,
+    writingActivities: data.writingActivities.filter((activity) => activity.novelId === activeNovelId)
   };
 }
 

@@ -28,10 +28,10 @@ import {
   type StudioData
 } from "@/lib/studio-data";
 import { type PageId } from "@/lib/studio-domain";
+import { estimateReadingMinutes, getDailyWritingMetrics } from "@/lib/writing-metrics";
 import {
   CoverBlock,
   FieldLine,
-  MapIcon,
   MetricCard,
   ProgressBar,
   StatusBadge
@@ -58,15 +58,23 @@ export function DashboardScreen({
   const currentNovel = getCurrentNovel(data);
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
+  const dailyMetrics = getDailyWritingMetrics(
+    data.writingActivities,
+    Number(data.settings.dailyWordGoal)
+  );
   const stats = [
     {
       label: translate("Total words"),
-      value: formatNumber(data.novels.reduce((total, novel) => total + novel.wordCount, 0)),
+      value: formatNumber(currentNovel.wordCount),
       icon: FileText
     },
     { label: translate("Chapters"), value: String(data.chapters.length), icon: BookOpen },
     { label: translate("Scenes"), value: String(data.scenes.length), icon: Boxes },
-    { label: translate("Places"), value: String(data.locations.length), icon: MapIcon }
+    {
+      label: translate("Words today"),
+      value: formatNumber(dailyMetrics.wordsToday),
+      icon: PenLine
+    }
   ];
 
   return (
@@ -141,7 +149,10 @@ export function DashboardScreen({
                   label={translate("Word count")}
                   value={formatNumber(activeChapter.wordCount)}
                 />
-                <FieldLine label={translate("Reading time")} value="34 min" />
+                <FieldLine
+                  label={translate("Reading time")}
+                  value={`${estimateReadingMinutes(activeChapter.wordCount)} min`}
+                />
                 <FieldLine
                   label={translate("Current place")}
                   value={placeName(activeScene.locationId, data)}
@@ -169,31 +180,27 @@ export function DashboardScreen({
           <CardHeader className="pb-4">
             <CardTitle>{translate("Daily writing progress")}</CardTitle>
             <CardDescription>
-              {translate("Goal")}: 1,500 {translate("words")}
+              {formatNumber(dailyMetrics.wordsToday)} / {formatNumber(dailyMetrics.dailyGoal)} {translate("words")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-[2.6rem] font-semibold leading-none">1,126</p>
+                <p className="text-[2.6rem] font-semibold leading-none">
+                  {formatNumber(dailyMetrics.wordsToday)}
+                </p>
                 <p className="text-sm text-muted-foreground">{translate("words today")}</p>
               </div>
-              <Badge variant="accent">75%</Badge>
+              <Badge variant="accent">{dailyMetrics.progressPercent}%</Badge>
             </div>
-            <ProgressBar value={75} />
-            <div className="grid gap-2 text-sm">
-              <div className="flex items-center justify-between rounded-md border border-border/55 bg-surface/70 px-3 py-2.5">
-                <span className="text-muted-foreground">Scenes touched</span>
-                <span className="font-medium text-foreground">2</span>
-              </div>
-              <div className="flex items-center justify-between rounded-md border border-border/55 bg-surface/70 px-3 py-2.5">
-                <span className="text-muted-foreground">Writing time</span>
-                <span className="font-medium text-foreground">18 min</span>
-              </div>
-              <div className="flex items-center justify-between rounded-md border border-border/55 bg-surface/70 px-3 py-2.5">
-                <span className="text-muted-foreground">Notes added</span>
-                <span className="font-medium text-foreground">3</span>
-              </div>
+            <ProgressBar value={dailyMetrics.progressPercent} />
+            <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <span className="text-muted-foreground">
+                {translate("Scenes touched")} <span className="font-medium text-foreground">{dailyMetrics.scenesTouched}</span>
+              </span>
+              <span className="text-muted-foreground">
+                {translate("Estimated writing time")} <span className="font-medium text-foreground">{dailyMetrics.estimatedWritingMinutes} min</span>
+              </span>
             </div>
           </CardContent>
         </Card>

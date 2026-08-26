@@ -55,6 +55,7 @@ export const ModelName = {
   Volume: 'Volume',
   Chapter: 'Chapter',
   Scene: 'Scene',
+  WritingActivity: 'WritingActivity',
   Character: 'Character',
   Location: 'Location',
   Relationship: 'Relationship',
@@ -136,6 +137,17 @@ export const SceneScalarFieldEnum = {
 } as const
 
 export type SceneScalarFieldEnum = (typeof SceneScalarFieldEnum)[keyof typeof SceneScalarFieldEnum]
+
+
+export const WritingActivityScalarFieldEnum = {
+  id: 'id',
+  novelId: 'novelId',
+  sceneId: 'sceneId',
+  wordDelta: 'wordDelta',
+  createdAt: 'createdAt'
+} as const
+
+export type WritingActivityScalarFieldEnum = (typeof WritingActivityScalarFieldEnum)[keyof typeof WritingActivityScalarFieldEnum]
 
 
 export const CharacterScalarFieldEnum = {
