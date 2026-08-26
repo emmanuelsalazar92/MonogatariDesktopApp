@@ -47,7 +47,8 @@ export function NovelOverviewScreen({
   notionPublishState,
   notionPublishMessage,
   notionPublishUrl,
-  notionRootConfigured
+  notionRootConfigured,
+  notionSyncState
 }: {
   data: StudioData;
   translate: (value: string) => string;
@@ -57,8 +58,17 @@ export function NovelOverviewScreen({
   notionPublishMessage: string;
   notionPublishUrl: string;
   notionRootConfigured: boolean;
+  notionSyncState: StudioData["notionSyncStates"][number] | undefined;
 }) {
   const currentNovel = getCurrentNovel(data);
+  const statusLabel =
+    notionPublishState === "publishing"
+      ? "Syncing Notion"
+      : notionPublishState === "error"
+        ? "Sync error"
+        : notionPublishState === "success" || notionSyncState?.lastNotionSync
+          ? "Synced"
+          : "Local saved";
   const stats = [
     {
       label: translate("Total words"),
@@ -101,8 +111,8 @@ export function NovelOverviewScreen({
             >
               <Upload className="size-4" />
               {notionPublishState === "publishing"
-                ? translate("Publishing to Notion...")
-                : translate("Publish to Notion")}
+                ? translate("Syncing Notion...")
+                : translate("Sync with Notion")}
             </Button>
           </>
         }
@@ -136,6 +146,12 @@ export function NovelOverviewScreen({
           ) : null}
         </div>
       ) : null}
+
+      <p className="rounded-lg border border-border/60 bg-surface/74 px-4 py-3 text-sm text-muted-foreground" role="status">
+        <span className="font-medium text-foreground">{translate("Notion status")}:</span>{" "}
+        {translate(statusLabel)}
+        {notionSyncState?.lastNotionSync ? ` · ${translate("Last synced")}: ${new Date(notionSyncState.lastNotionSync).toLocaleString()}` : ""}
+      </p>
 
       <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
         <div className="grid gap-4">

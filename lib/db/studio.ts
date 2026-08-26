@@ -1,4 +1,5 @@
 ﻿import { prisma } from "@/lib/db/prisma";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import type {
   Character,
   ChapterStatus,
@@ -24,6 +25,14 @@ function dateOnly(value: Date) {
 function countWords(value: string) {
   const words = value.trim().match(/\S+/g);
   return words?.length ?? 0;
+}
+
+async function markNotionDirty(tx: Prisma.TransactionClient, novelId: string) {
+  await tx.notionSyncState.upsert({
+    where: { novelId },
+    update: { isDirty: true },
+    create: { novelId, isDirty: true }
+  });
 }
 
 function serializeScene(scene: {
@@ -185,7 +194,8 @@ export async function getStudioSnapshot() {
     timelineEvents,
     notes,
     backups,
-    settings
+    settings,
+    notionSyncStates
   ] = await Promise.all([
     prisma.novel.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.volume.findMany({ orderBy: [{ novelId: "asc" }, { sortOrder: "asc" }] }),
@@ -197,7 +207,8 @@ export async function getStudioSnapshot() {
     prisma.timelineEvent.findMany({ orderBy: { id: "asc" } }),
     prisma.note.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.backup.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.appSetting.findMany({ orderBy: { key: "asc" } })
+    prisma.appSetting.findMany({ orderBy: { key: "asc" } }),
+    prisma.notionSyncState.findMany({ orderBy: { novelId: "asc" } })
   ]);
 
   return {
@@ -218,7 +229,12 @@ export async function getStudioSnapshot() {
       date: dateOnly(backup.createdAt),
       name: backup.filename
     })),
-    settings: Object.fromEntries(settings.map((setting) => [setting.key, setting.value]))
+    settings: Object.fromEntries(settings.map((setting) => [setting.key, setting.value])),
+    notionSyncStates: notionSyncStates.map((state) => ({
+      novelId: state.novelId,
+      isDirty: state.isDirty,
+      lastNotionSync: state.lastNotionSync?.toISOString() ?? null
+    }))
   };
 }
 
@@ -283,6 +299,8 @@ export async function createNovel(input: {
       }
     });
 
+    await markNotionDirty(tx, id);
+
     return createdNovel;
   });
 
@@ -323,6 +341,7 @@ export async function createCharacter(input: {
       where: { id: input.novelId },
       data: { updatedAt: new Date() }
     });
+    await markNotionDirty(tx, input.novelId);
 
     return createdCharacter;
   });
@@ -596,6 +615,7 @@ export async function updateScene(
         wordCount: novelWords._sum.wordCount ?? 0
       }
     });
+    await markNotionDirty(tx, existing.chapter.volume.novelId);
 
     return scene;
   });

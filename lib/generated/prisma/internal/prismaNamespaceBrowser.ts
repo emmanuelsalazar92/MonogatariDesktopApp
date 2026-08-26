@@ -62,7 +62,8 @@ export const ModelName = {
   Note: 'Note',
   Backup: 'Backup',
   AppSetting: 'AppSetting',
-  NotionMapping: 'NotionMapping'
+  NotionMapping: 'NotionMapping',
+  NotionSyncState: 'NotionSyncState'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -258,6 +259,16 @@ export const NotionMappingScalarFieldEnum = {
 } as const
 
 export type NotionMappingScalarFieldEnum = (typeof NotionMappingScalarFieldEnum)[keyof typeof NotionMappingScalarFieldEnum]
+
+
+export const NotionSyncStateScalarFieldEnum = {
+  novelId: 'novelId',
+  isDirty: 'isDirty',
+  lastNotionSync: 'lastNotionSync',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NotionSyncStateScalarFieldEnum = (typeof NotionSyncStateScalarFieldEnum)[keyof typeof NotionSyncStateScalarFieldEnum]
 
 
 export const SortOrder = {

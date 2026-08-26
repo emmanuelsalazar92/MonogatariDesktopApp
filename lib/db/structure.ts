@@ -68,6 +68,12 @@ async function recalculateWordCounts(tx: Prisma.TransactionClient, novelId: stri
       updatedAt: new Date()
     }
   });
+
+  await tx.notionSyncState.upsert({
+    where: { novelId },
+    update: { isDirty: true },
+    create: { novelId, isDirty: true }
+  });
 }
 
 async function clearSelectionSettings(tx: Prisma.TransactionClient, ids: string[]) {

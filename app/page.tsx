@@ -302,6 +302,9 @@ export default function PrivateNovelStudioPage() {
   );
   const scopedStudioData = React.useMemo(() => getScopedStudioData(studioData), [studioData]);
   const currentNovel = getCurrentNovel(studioData);
+  const currentNotionSyncState = studioData.notionSyncStates.find(
+    (state) => state.novelId === currentNovel.id
+  );
   const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
   const editorDirtyRef = React.useRef(false);
   const saveInFlightRef = React.useRef<Promise<boolean> | null>(null);
@@ -682,7 +685,7 @@ export default function PrivateNovelStudioPage() {
     [refreshStudioData, showToast]
   );
 
-  const publishCurrentNovelToNotion = React.useCallback(async () => {
+  const publishCurrentNovelToNotion = React.useCallback(async (force = true) => {
     if (!currentNovel.id) return;
 
     setNotionPublishState("publishing");
@@ -690,10 +693,10 @@ export default function PrivateNovelStudioPage() {
     setNotionPublishUrl("");
 
     try {
-      const response = await fetch("/api/integrations/notion/publish", {
+      const response = await fetch("/api/integrations/notion/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ novelId: currentNovel.id })
+        body: JSON.stringify({ novelId: currentNovel.id, force })
       });
       const result = (await response.json()) as {
         ok?: boolean;
@@ -701,25 +704,25 @@ export default function PrivateNovelStudioPage() {
         novelPage?: { url?: string };
         createdPages?: number;
         updatedPages?: number;
+        skipped?: boolean;
       };
 
       if (!response.ok || !result.ok) {
-        throw new Error(result.message ?? "Could not publish this novel to Notion.");
+        throw new Error(result.message ?? "Could not sync this novel to Notion.");
       }
 
       setNotionPublishState("success");
-      setNotionPublishMessage("Notion publication completed.");
+      setNotionPublishMessage(result.message ?? "Notion sync completed.");
       setNotionPublishUrl(result.novelPage?.url ?? "");
-      showToast(
-        `Notion: ${result.createdPages ?? 0} created, ${result.updatedPages ?? 0} updated`
-      );
+      await refreshStudioData(false);
+      showToast(result.skipped ? "Notion is already up to date" : "Notion sync completed");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not publish this novel to Notion.";
+      const message = error instanceof Error ? error.message : "Could not sync this novel to Notion.";
       setNotionPublishState("error");
       setNotionPublishMessage(message);
       showToast(message);
     }
-  }, [currentNovel.id, showToast]);
+  }, [currentNovel.id, refreshStudioData, showToast]);
 
   const createNovelFromDialog = React.useCallback(
     async (input: CreateNovelInput) => {
@@ -1128,6 +1131,7 @@ export default function PrivateNovelStudioPage() {
                   notionPublishMessage={notionPublishMessage}
                   notionPublishUrl={notionPublishUrl}
                   notionRootConfigured={Boolean(studioSettings.notionRootPageId)}
+                  notionSyncState={currentNotionSyncState}
                 />
               ) : null}
               {activePage === "structure" ? (

@@ -12,10 +12,21 @@ export class NotionApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
-    message: string
+    message: string,
+    public readonly retryAfterMs: number | null = null
   ) {
     super(message);
   }
+}
+
+function retryAfterMilliseconds(value: string | null) {
+  if (!value) return null;
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.ceil(seconds * 1_000);
+
+  const retryAt = Date.parse(value);
+  return Number.isNaN(retryAt) ? null : Math.max(0, retryAt - Date.now());
 }
 
 function formatPageId(compactId: string) {
@@ -93,7 +104,12 @@ export async function requestNotion<T>(
 
     if (!response.ok) {
       const details = connectionError(response.status);
-      throw new NotionApiError(response.status, details.code, details.message);
+      throw new NotionApiError(
+        response.status,
+        details.code,
+        details.message,
+        response.status === 429 ? retryAfterMilliseconds(response.headers.get("retry-after")) : null
+      );
     }
 
     return (await response.json()) as T;
