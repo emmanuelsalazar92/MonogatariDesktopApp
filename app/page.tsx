@@ -111,11 +111,15 @@ import {
   uiCopy,
   useLiveLocalization
 } from "@/lib/studio-i18n";
-import { notionAutosyncIntervalMilliseconds } from "@/lib/studio-settings";
+import {
+  notionAutosyncIntervalMilliseconds,
+  parseExportDefaults
+} from "@/lib/studio-settings";
 import { cn } from "@/lib/utils";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
   exportFormats,
+  exportOptions,
   exportScopes,
   placeTypes,
   relationshipCategories,
@@ -227,19 +231,6 @@ const readerScopes = [
   "Read selected scene"
 ];
 
-const exportOptions = [
-  "Include cover",
-  "Include table of contents",
-  "Include scene titles",
-  "Include notes",
-  "Include spoilers",
-  "Include character list",
-  "Include places",
-  "Include relationships",
-  "Include timeline",
-  "Include metadata"
-];
-
 const characterRoles = ["All roles", "Protagonist", "Deuteragonist", "Support", "Mentor / Suspect"];
 const characterStatuses = ["All statuses", "Active", "Secondary", "Missing", "Dead", "Spoiler", "Archived"];
 
@@ -323,6 +314,7 @@ export default function PrivateNovelStudioPage() {
   const autosyncRetryAtRef = React.useRef(0);
   const autosyncFailureCountRef = React.useRef(0);
   const autosyncStatusTimerRef = React.useRef<number | null>(null);
+  const exportDefaultsAppliedRef = React.useRef(false);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
     [language]
@@ -395,6 +387,19 @@ export default function PrivateNovelStudioPage() {
   React.useEffect(() => {
     void refreshStudioData();
   }, [refreshStudioData]);
+
+  React.useEffect(() => {
+    if (activePage !== "export") {
+      exportDefaultsAppliedRef.current = false;
+      return;
+    }
+    if (dataStatus !== "ready" || exportDefaultsAppliedRef.current) return;
+
+    const defaults = parseExportDefaults(studioSettings.exportDefaults);
+    setExportFormat(defaults.format);
+    setEnabledExportOptions(new Set(defaults.options));
+    exportDefaultsAppliedRef.current = true;
+  }, [activePage, dataStatus, studioSettings.exportDefaults]);
 
   React.useEffect(() => {
     const root = document.documentElement;
@@ -1426,7 +1431,11 @@ export default function PrivateNovelStudioPage() {
                 />
               ) : null}
               {activePage === "backups" ? (
-                <BackupsScreen onCreateBackup={createBackup} creatingBackup={creatingBackup} />
+                <BackupsScreen
+                  onCreateBackup={createBackup}
+                  creatingBackup={creatingBackup}
+                  retentionPolicy={studioSettings.backupRetention}
+                />
               ) : null}
               {activePage === "settings" ? (
                 <SettingsScreen
@@ -3001,10 +3010,12 @@ function ExportScreen({
 
 function BackupsScreen({
   onCreateBackup,
-  creatingBackup
+  creatingBackup,
+  retentionPolicy
 }: {
   onCreateBackup: () => void;
   creatingBackup: boolean;
+  retentionPolicy: string;
 }) {
   const data = useStudioData();
 
@@ -3030,7 +3041,7 @@ function BackupsScreen({
           </CardHeader>
           <CardContent className="space-y-3">
             <FieldLine label="Backup location" value="D:\\Writing\\PrivateNovelStudio\\backups" />
-            <FieldLine label="Retention" value="Keep 30 daily backups" />
+            <FieldLine label="Retention" value={retentionPolicy} />
             <div className="flex items-center justify-between rounded-md border bg-background/35 p-3">
               <span className="text-sm">Automatic backup settings</span>
               <Switch defaultChecked />

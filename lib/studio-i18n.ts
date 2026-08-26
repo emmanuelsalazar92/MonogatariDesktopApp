@@ -65,7 +65,7 @@ export const uiCopy = {
       "Switches the interface copy between English and Spanish. The preference is stored locally on this browser.",
     settingsTitle: "Studio preferences",
     settingsDescription:
-      "Adjust theme, typography, autosave, focus defaults, server naming, export defaults, and sidebar behavior.",
+      "Adjust theme, typography, autosave, focus defaults, export defaults, backup retention, and sidebar behavior.",
     settingsEyebrow: "Settings",
     theme: "Theme",
     light: "Light",
@@ -75,10 +75,6 @@ export const uiCopy = {
     expanded: "expanded",
     compact: "compact",
     hidden: "hidden",
-    localServer: "Local server",
-    localServerDescription: "Display-only prototype settings",
-    localServerDisplayName: "Local server display name",
-    exportDefaults: "Export defaults",
     typewriterFont: "Typewriter font",
     localFirstNotice: "Local-first notice",
     localFirstCopy:
@@ -103,7 +99,7 @@ export const uiCopy = {
       "Cambia los textos principales entre ingles y espanol. La preferencia se guarda localmente en este navegador.",
     settingsTitle: "Preferencias del estudio",
     settingsDescription:
-      "Ajusta tema, tipografia, autoguardado, enfoque, nombre del servidor, exportacion y barra lateral.",
+      "Ajusta tema, tipografia, autoguardado, enfoque, valores de exportacion, retencion de respaldos y barra lateral.",
     settingsEyebrow: "Configuracion",
     theme: "Tema",
     light: "Claro",
@@ -113,10 +109,6 @@ export const uiCopy = {
     expanded: "expandida",
     compact: "compacta",
     hidden: "oculta",
-    localServer: "Servidor local",
-    localServerDescription: "Configuracion visual del prototipo",
-    localServerDisplayName: "Nombre visible del servidor local",
-    exportDefaults: "Valores predeterminados de exportacion",
     typewriterFont: "Fuente de maquina de escribir",
     localFirstNotice: "Aviso local-first",
     localFirstCopy:
@@ -137,7 +129,7 @@ const englishToSpanishEntries = [
   ["Group private notes by novel, volume, chapter, scene, character, and place.", "Agrupa notas privadas por novela, volumen, capÃ­tulo, escena, personaje y lugar."],
   ["Prepare manuscripts, bibles, relationship maps, and ZIP backups from local mock data.", "Prepara manuscritos, biblias, mapas de relaciones y respaldos ZIP desde datos locales de ejemplo."],
   ["Create manual ZIP backups, review retention, and restore previous local snapshots.", "Crea respaldos ZIP manuales, revisa la retenciÃ³n y restaura capturas locales previas."],
-  ["Adjust theme, typography, autosave, focus defaults, server naming, export defaults, and sidebar behavior.", "Ajusta tema, tipografÃ­a, autoguardado, enfoque, nombre del servidor, exportaciÃ³n y barra lateral."],
+  ["Used to initialize Export Center. You can change each export without changing these defaults.", "Se usa para iniciar el Centro de exportacion. Puedes cambiar cada exportacion sin modificar estos valores."],
   ["This app runs locally. No AI. No public community. No internet publishing.", "Esta app funciona localmente. Sin IA. Sin comunidad pÃºblica. Sin publicaciÃ³n en internet."],
   ["Switches the interface copy between English and Spanish. The preference is stored locally on this browser.", "Cambia los textos de la interfaz entre inglÃ©s y espaÃ±ol. La preferencia se guarda localmente en este navegador."],
   ["Display-only prototype settings", "ConfiguraciÃ³n visual del prototipo"],

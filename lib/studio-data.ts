@@ -54,7 +54,6 @@ export type PersistedStudioSettings = {
   defaultFocusMode: string;
   defaultReadingMode: string;
   backupRetention: string;
-  localServerDisplayName: string;
   exportDefaults: string;
   typewriterFont: boolean;
   notionRootPageId: string;
@@ -129,8 +128,7 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   defaultFocusMode: "Writing",
   defaultReadingMode: "Sepia",
   backupRetention: "30 daily backups",
-  localServerDisplayName: "novel.local",
-  exportDefaults: "EPUB, include cover and metadata",
+  exportDefaults: "{\"format\":\"EPUB\",\"options\":[\"Include cover\",\"Include metadata\"]}",
   typewriterFont: true,
   notionRootPageId: "",
   notionRootPageTitle: "",
