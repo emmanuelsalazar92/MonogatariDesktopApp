@@ -214,6 +214,13 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+model StudioConfiguration {
+  id        String   @id
+  version   Int      @default(1)
+  values    String   @default("{}")
+  updatedAt DateTime @updatedAt
+}
+
 model NotionMapping {
   localId      String   @id
   entityType   String

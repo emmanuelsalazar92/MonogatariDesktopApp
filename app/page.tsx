@@ -371,28 +371,24 @@ export default function PrivateNovelStudioPage() {
       return;
     }
 
-    const nextSettings = {
-      ...defaultPersistedStudioSettings,
-      ...Object.fromEntries(
-        Object.entries(studioData.settings).map(([key, value]) => [
-          key,
-          key === "typewriterFont" ? value === "true" : value
-        ])
-      )
-    } as PersistedStudioSettings;
+    const nextSettings = studioData.studioSettings;
 
     setStudioSettings(nextSettings);
 
-    if (studioData.settings.theme === "light" || studioData.settings.theme === "dark" || studioData.settings.theme === "system") {
-      setTheme(studioData.settings.theme);
+    if (nextSettings.language === "en" || nextSettings.language === "es") {
+      setLanguage(nextSettings.language);
+    }
+
+    if (nextSettings.theme === "light" || nextSettings.theme === "dark" || nextSettings.theme === "system") {
+      setTheme(nextSettings.theme);
     }
 
     if (
-      studioData.settings.sidebarState === "expanded" ||
-      studioData.settings.sidebarState === "compact" ||
-      studioData.settings.sidebarState === "hidden"
+      nextSettings.sidebarState === "expanded" ||
+      nextSettings.sidebarState === "compact" ||
+      nextSettings.sidebarState === "hidden"
     ) {
-      setSidebarState(studioData.settings.sidebarState);
+      setSidebarState(nextSettings.sidebarState);
     }
 
     const nextReaderFontSize = Number.parseInt(nextSettings.readerFontSize, 10);
@@ -403,7 +399,7 @@ export default function PrivateNovelStudioPage() {
     if (nextSettings.defaultReadingMode) {
       setReaderTheme(nextSettings.defaultReadingMode);
     }
-  }, [dataStatus, studioData.settings]);
+  }, [dataStatus, studioData.studioSettings]);
 
   React.useEffect(() => {
     void refreshStudioData();
@@ -566,11 +562,15 @@ export default function PrivateNovelStudioPage() {
       }
       setMobileDrawerOpen(false);
       setFocusMode("none");
-      void persistSettings({ activeNovelId: novelId }).catch(() =>
+      void fetch("/api/selection", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activeNovelId: novelId })
+      }).catch(() =>
         showToast("Could not save active novel")
       );
     },
-    [flushPendingChanges, persistSettings, showToast]
+    [flushPendingChanges, showToast]
   );
 
   const setActiveStructureItem = React.useCallback(
@@ -614,7 +614,7 @@ export default function PrivateNovelStudioPage() {
         settings: { ...current.settings, ...nextSettings }
       }));
 
-      void fetch("/api/settings", {
+      void fetch("/api/selection", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nextSettings)
