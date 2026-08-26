@@ -92,6 +92,7 @@ export const volumes: Volume[] = [
     novelId: "novel-eco-azul",
     title: "Volume 1: El eco detrÃ¡s de la puerta",
     sortOrder: 1,
+    archived: false,
     summary:
       "Akira entra a la Academia Seiryu y conoce a Reina, la Ãºnica estudiante que parece escuchar la voz de la torre."
   },
@@ -100,6 +101,7 @@ export const volumes: Volume[] = [
     novelId: "novel-eco-azul",
     title: "Volume 2: Las campanas de medianoche",
     sortOrder: 2,
+    archived: false,
     summary:
       "La investigaciÃ³n se acerca al origen del sÃ­mbolo prohibido y a la familia Tsukishiro."
   },
@@ -108,6 +110,7 @@ export const volumes: Volume[] = [
     novelId: "novel-eco-azul",
     title: "Extras",
     sortOrder: 3,
+    archived: false,
     summary: "Interludios, perfiles y escenas alternativas."
   }
 ];
@@ -120,7 +123,8 @@ export const chapters: Chapter[] = [
     summary: "Una voz llama desde la Torre Sellada.",
     status: "Ready",
     sortOrder: 1,
-    wordCount: 3200
+    wordCount: 3200,
+    archived: false
   },
   {
     id: "ch-1",
@@ -129,7 +133,8 @@ export const chapters: Chapter[] = [
     summary: "Akira llega a Seiryu y rompe su primera regla.",
     status: "Writing",
     sortOrder: 2,
-    wordCount: 7400
+    wordCount: 7400,
+    archived: false
   },
   {
     id: "ch-2",
@@ -138,7 +143,8 @@ export const chapters: Chapter[] = [
     summary: "Mika reconoce un patrÃ³n oculto en el mapa del campus.",
     status: "Draft",
     sortOrder: 3,
-    wordCount: 6900
+    wordCount: 6900,
+    archived: false
   },
   {
     id: "ch-interlude",
@@ -147,7 +153,8 @@ export const chapters: Chapter[] = [
     summary: "Reina escribe una carta que no piensa enviar.",
     status: "Idea",
     sortOrder: 4,
-    wordCount: 1250
+    wordCount: 1250,
+    archived: false
   },
   {
     id: "ch-epilogue",
@@ -156,7 +163,8 @@ export const chapters: Chapter[] = [
     summary: "El sÃ­mbolo aparece en la ventana del dormitorio.",
     status: "Draft",
     sortOrder: 5,
-    wordCount: 2100
+    wordCount: 2100,
+    archived: false
   },
   {
     id: "ch-v2-1",
@@ -165,7 +173,8 @@ export const chapters: Chapter[] = [
     summary: "Kuroda muestra una verdad incompleta.",
     status: "Idea",
     sortOrder: 1,
-    wordCount: 800
+    wordCount: 800,
+    archived: false
   }
 ];
 
@@ -181,7 +190,8 @@ export const scenes: Scene[] = [
     locationId: "place-torre",
     sortOrder: 1,
     wordCount: 510,
-    objective: "Presentar la curiosidad de Akira y la advertencia de Reina."
+    objective: "Presentar la curiosidad de Akira y la advertencia de Reina.",
+    archived: false
   },
   {
     id: "scene-2",
@@ -194,7 +204,8 @@ export const scenes: Scene[] = [
     locationId: "place-torre",
     sortOrder: 2,
     wordCount: 620,
-    objective: "Vincular a Mika con el misterio central."
+    objective: "Vincular a Mika con el misterio central.",
+    archived: false
   },
   {
     id: "scene-3",
@@ -207,7 +218,8 @@ export const scenes: Scene[] = [
     locationId: "place-biblioteca",
     sortOrder: 1,
     wordCount: 430,
-    objective: "Dar una herramienta concreta al grupo."
+    objective: "Dar una herramienta concreta al grupo.",
+    archived: false
   }
 ];
 

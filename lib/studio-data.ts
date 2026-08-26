@@ -81,7 +81,8 @@ export const emptyChapter: Chapter = {
   summary: "",
   status: "Idea",
   sortOrder: 0,
-  wordCount: 0
+  wordCount: 0,
+  archived: false
 };
 
 export const emptyScene: Scene = {
@@ -94,7 +95,8 @@ export const emptyScene: Scene = {
   locationId: "",
   sortOrder: 0,
   wordCount: 0,
-  objective: ""
+  objective: "",
+  archived: false
 };
 
 export const defaultPersistedStudioSettings: PersistedStudioSettings = {
@@ -179,18 +181,28 @@ export function getActiveChapter(data: StudioData) {
   const currentVolumeIds = new Set(
     data.volumes.filter((volume) => volume.novelId === currentNovel.id).map((volume) => volume.id)
   );
-  const currentChapters = data.chapters.filter((chapter) =>
-    currentVolumeIds.has(chapter.volumeId)
-  );
+  const currentChapters = data.chapters
+    .filter((chapter) => currentVolumeIds.has(chapter.volumeId) && !chapter.archived)
+    .sort((left, right) => left.sortOrder - right.sortOrder);
 
-  return currentChapters[1] ?? currentChapters[0] ?? data.chapters[0] ?? emptyChapter;
+  return (
+    currentChapters.find((chapter) => chapter.id === data.settings.activeChapterId) ??
+    currentChapters[0] ??
+    emptyChapter
+  );
 }
 
 export function getActiveScene(data: StudioData) {
   const activeChapter = getActiveChapter(data);
-  const chapterScenes = data.scenes.filter((scene) => scene.chapterId === activeChapter.id);
+  const chapterScenes = data.scenes
+    .filter((scene) => scene.chapterId === activeChapter.id && !scene.archived)
+    .sort((left, right) => left.sortOrder - right.sortOrder);
 
-  return chapterScenes[0] ?? data.scenes[0] ?? emptyScene;
+  return (
+    chapterScenes.find((scene) => scene.id === data.settings.activeSceneId) ??
+    chapterScenes[0] ??
+    emptyScene
+  );
 }
 
 export function formatNumber(value: number) {

@@ -40,6 +40,7 @@ export type VolumeMinAggregateOutputType = {
   title: string | null
   sortOrder: number | null
   summary: string | null
+  archived: boolean | null
 }
 
 export type VolumeMaxAggregateOutputType = {
@@ -48,6 +49,7 @@ export type VolumeMaxAggregateOutputType = {
   title: string | null
   sortOrder: number | null
   summary: string | null
+  archived: boolean | null
 }
 
 export type VolumeCountAggregateOutputType = {
@@ -56,6 +58,7 @@ export type VolumeCountAggregateOutputType = {
   title: number
   sortOrder: number
   summary: number
+  archived: number
   _all: number
 }
 
@@ -74,6 +77,7 @@ export type VolumeMinAggregateInputType = {
   title?: true
   sortOrder?: true
   summary?: true
+  archived?: true
 }
 
 export type VolumeMaxAggregateInputType = {
@@ -82,6 +86,7 @@ export type VolumeMaxAggregateInputType = {
   title?: true
   sortOrder?: true
   summary?: true
+  archived?: true
 }
 
 export type VolumeCountAggregateInputType = {
@@ -90,6 +95,7 @@ export type VolumeCountAggregateInputType = {
   title?: true
   sortOrder?: true
   summary?: true
+  archived?: true
   _all?: true
 }
 
@@ -185,6 +191,7 @@ export type VolumeGroupByOutputType = {
   title: string
   sortOrder: number
   summary: string
+  archived: boolean
   _count: VolumeCountAggregateOutputType | null
   _avg: VolumeAvgAggregateOutputType | null
   _sum: VolumeSumAggregateOutputType | null
@@ -216,6 +223,7 @@ export type VolumeWhereInput = {
   title?: Prisma.StringFilter<"Volume"> | string
   sortOrder?: Prisma.IntFilter<"Volume"> | number
   summary?: Prisma.StringFilter<"Volume"> | string
+  archived?: Prisma.BoolFilter<"Volume"> | boolean
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   chapters?: Prisma.ChapterListRelationFilter
 }
@@ -226,6 +234,7 @@ export type VolumeOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
   novel?: Prisma.NovelOrderByWithRelationInput
   chapters?: Prisma.ChapterOrderByRelationAggregateInput
 }
@@ -239,6 +248,7 @@ export type VolumeWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"Volume"> | string
   sortOrder?: Prisma.IntFilter<"Volume"> | number
   summary?: Prisma.StringFilter<"Volume"> | string
+  archived?: Prisma.BoolFilter<"Volume"> | boolean
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   chapters?: Prisma.ChapterListRelationFilter
 }, "id">
@@ -249,6 +259,7 @@ export type VolumeOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
   _count?: Prisma.VolumeCountOrderByAggregateInput
   _avg?: Prisma.VolumeAvgOrderByAggregateInput
   _max?: Prisma.VolumeMaxOrderByAggregateInput
@@ -265,6 +276,7 @@ export type VolumeScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"Volume"> | string
   sortOrder?: Prisma.IntWithAggregatesFilter<"Volume"> | number
   summary?: Prisma.StringWithAggregatesFilter<"Volume"> | string
+  archived?: Prisma.BoolWithAggregatesFilter<"Volume"> | boolean
 }
 
 export type VolumeCreateInput = {
@@ -272,6 +284,7 @@ export type VolumeCreateInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
   novel: Prisma.NovelCreateNestedOneWithoutVolumesInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutVolumeInput
 }
@@ -282,6 +295,7 @@ export type VolumeUncheckedCreateInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutVolumeInput
 }
 
@@ -290,6 +304,7 @@ export type VolumeUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   novel?: Prisma.NovelUpdateOneRequiredWithoutVolumesNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutVolumeNestedInput
 }
@@ -300,6 +315,7 @@ export type VolumeUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutVolumeNestedInput
 }
 
@@ -309,6 +325,7 @@ export type VolumeCreateManyInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
 }
 
 export type VolumeUpdateManyMutationInput = {
@@ -316,6 +333,7 @@ export type VolumeUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type VolumeUncheckedUpdateManyInput = {
@@ -324,6 +342,7 @@ export type VolumeUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type VolumeListRelationFilter = {
@@ -342,6 +361,7 @@ export type VolumeCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
 }
 
 export type VolumeAvgOrderByAggregateInput = {
@@ -354,6 +374,7 @@ export type VolumeMaxOrderByAggregateInput = {
   title?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
 }
 
 export type VolumeMinOrderByAggregateInput = {
@@ -362,6 +383,7 @@ export type VolumeMinOrderByAggregateInput = {
   title?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   summary?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
 }
 
 export type VolumeSumOrderByAggregateInput = {
@@ -415,6 +437,10 @@ export type VolumeUncheckedUpdateManyWithoutNovelNestedInput = {
   deleteMany?: Prisma.VolumeScalarWhereInput | Prisma.VolumeScalarWhereInput[]
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type VolumeCreateNestedOneWithoutChaptersInput = {
   create?: Prisma.XOR<Prisma.VolumeCreateWithoutChaptersInput, Prisma.VolumeUncheckedCreateWithoutChaptersInput>
   connectOrCreate?: Prisma.VolumeCreateOrConnectWithoutChaptersInput
@@ -434,6 +460,7 @@ export type VolumeCreateWithoutNovelInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
   chapters?: Prisma.ChapterCreateNestedManyWithoutVolumeInput
 }
 
@@ -442,6 +469,7 @@ export type VolumeUncheckedCreateWithoutNovelInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutVolumeInput
 }
 
@@ -479,6 +507,7 @@ export type VolumeScalarWhereInput = {
   title?: Prisma.StringFilter<"Volume"> | string
   sortOrder?: Prisma.IntFilter<"Volume"> | number
   summary?: Prisma.StringFilter<"Volume"> | string
+  archived?: Prisma.BoolFilter<"Volume"> | boolean
 }
 
 export type VolumeCreateWithoutChaptersInput = {
@@ -486,6 +515,7 @@ export type VolumeCreateWithoutChaptersInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
   novel: Prisma.NovelCreateNestedOneWithoutVolumesInput
 }
 
@@ -495,6 +525,7 @@ export type VolumeUncheckedCreateWithoutChaptersInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
 }
 
 export type VolumeCreateOrConnectWithoutChaptersInput = {
@@ -518,6 +549,7 @@ export type VolumeUpdateWithoutChaptersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   novel?: Prisma.NovelUpdateOneRequiredWithoutVolumesNestedInput
 }
 
@@ -527,6 +559,7 @@ export type VolumeUncheckedUpdateWithoutChaptersInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type VolumeCreateManyNovelInput = {
@@ -534,6 +567,7 @@ export type VolumeCreateManyNovelInput = {
   title: string
   sortOrder?: number
   summary?: string
+  archived?: boolean
 }
 
 export type VolumeUpdateWithoutNovelInput = {
@@ -541,6 +575,7 @@ export type VolumeUpdateWithoutNovelInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapters?: Prisma.ChapterUpdateManyWithoutVolumeNestedInput
 }
 
@@ -549,6 +584,7 @@ export type VolumeUncheckedUpdateWithoutNovelInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutVolumeNestedInput
 }
 
@@ -557,6 +593,7 @@ export type VolumeUncheckedUpdateManyWithoutNovelInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -596,6 +633,7 @@ export type VolumeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   title?: boolean
   sortOrder?: boolean
   summary?: boolean
+  archived?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapters?: boolean | Prisma.Volume$chaptersArgs<ExtArgs>
   _count?: boolean | Prisma.VolumeCountOutputTypeDefaultArgs<ExtArgs>
@@ -607,6 +645,7 @@ export type VolumeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   title?: boolean
   sortOrder?: boolean
   summary?: boolean
+  archived?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["volume"]>
 
@@ -616,6 +655,7 @@ export type VolumeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   title?: boolean
   sortOrder?: boolean
   summary?: boolean
+  archived?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["volume"]>
 
@@ -625,9 +665,10 @@ export type VolumeSelectScalar = {
   title?: boolean
   sortOrder?: boolean
   summary?: boolean
+  archived?: boolean
 }
 
-export type VolumeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "title" | "sortOrder" | "summary", ExtArgs["result"]["volume"]>
+export type VolumeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "title" | "sortOrder" | "summary" | "archived", ExtArgs["result"]["volume"]>
 export type VolumeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapters?: boolean | Prisma.Volume$chaptersArgs<ExtArgs>
@@ -652,6 +693,7 @@ export type $VolumePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     title: string
     sortOrder: number
     summary: string
+    archived: boolean
   }, ExtArgs["result"]["volume"]>
   composites: {}
 }
@@ -1082,6 +1124,7 @@ export interface VolumeFieldRefs {
   readonly title: Prisma.FieldRef<"Volume", 'String'>
   readonly sortOrder: Prisma.FieldRef<"Volume", 'Int'>
   readonly summary: Prisma.FieldRef<"Volume", 'String'>
+  readonly archived: Prisma.FieldRef<"Volume", 'Boolean'>
 }
     
 

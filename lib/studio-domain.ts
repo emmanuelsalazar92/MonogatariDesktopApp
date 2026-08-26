@@ -71,6 +71,7 @@ export interface Volume {
   title: string;
   sortOrder: number;
   summary: string;
+  archived: boolean;
 }
 
 export interface Chapter {
@@ -81,6 +82,7 @@ export interface Chapter {
   status: ChapterStatus;
   sortOrder: number;
   wordCount: number;
+  archived: boolean;
 }
 
 export interface Scene {
@@ -94,6 +96,7 @@ export interface Scene {
   sortOrder: number;
   wordCount: number;
   objective: string;
+  archived: boolean;
 }
 
 export interface Character {
