@@ -213,6 +213,8 @@ model NotionMapping {
 model NotionSyncState {
   novelId        String   @id
   isDirty        Boolean  @default(true)
+  revision       Int      @default(0)
+  lastSyncedRevision Int  @default(0)
   lastNotionSync DateTime?
   lastKnownContent String @default("{}")
   updatedAt      DateTime @updatedAt

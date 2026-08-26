@@ -71,8 +71,8 @@ async function recalculateWordCounts(tx: Prisma.TransactionClient, novelId: stri
 
   await tx.notionSyncState.upsert({
     where: { novelId },
-    update: { isDirty: true },
-    create: { novelId, isDirty: true }
+    update: { isDirty: true, revision: { increment: 1 } },
+    create: { novelId, isDirty: true, revision: 1 }
   });
 }
 

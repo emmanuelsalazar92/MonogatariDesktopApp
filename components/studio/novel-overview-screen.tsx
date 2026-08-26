@@ -38,6 +38,7 @@ import { formatNumber, getCurrentNovel, type StudioData } from "@/lib/studio-dat
 import { type PageId } from "@/lib/studio-domain";
 
 type NotionPublishState = "idle" | "publishing" | "success" | "error";
+type NotionAutosyncStatus = "idle" | "syncing" | "synced" | "error" | "remote-changes";
 
 export function NovelOverviewScreen({
   data,
@@ -49,7 +50,8 @@ export function NovelOverviewScreen({
   notionPublishMessage,
   notionPublishUrl,
   notionRootConfigured,
-  notionSyncState
+  notionSyncState,
+  notionAutosyncStatus
 }: {
   data: StudioData;
   translate: (value: string) => string;
@@ -61,14 +63,17 @@ export function NovelOverviewScreen({
   notionPublishUrl: string;
   notionRootConfigured: boolean;
   notionSyncState: StudioData["notionSyncStates"][number] | undefined;
+  notionAutosyncStatus: NotionAutosyncStatus;
 }) {
   const currentNovel = getCurrentNovel(data);
   const statusLabel =
-    notionPublishState === "publishing"
+    notionAutosyncStatus === "remote-changes"
+      ? "Remote changes detected"
+      : notionAutosyncStatus === "syncing" || notionPublishState === "publishing"
       ? "Syncing Notion"
-      : notionPublishState === "error"
+      : notionAutosyncStatus === "error" || notionPublishState === "error"
         ? "Sync error"
-        : notionPublishState === "success" || notionSyncState?.lastNotionSync
+        : notionAutosyncStatus === "synced" || notionPublishState === "success"
           ? "Synced"
           : "Local saved";
   const stats = [

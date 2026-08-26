@@ -34,6 +34,7 @@ export type StudioData = {
   notionSyncStates: Array<{
     novelId: string;
     isDirty: boolean;
+    revision: number;
     lastNotionSync: string | null;
   }>;
 };
@@ -51,6 +52,8 @@ export type PersistedStudioSettings = {
   exportDefaults: string;
   typewriterFont: boolean;
   notionRootPageId: string;
+  notionAutosyncEnabled: boolean;
+  notionAutosyncIntervalMinutes: string;
 };
 
 export const emptyStudioData: StudioData = {
@@ -116,7 +119,9 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   localServerDisplayName: "novel.local",
   exportDefaults: "EPUB, include cover and metadata",
   typewriterFont: true,
-  notionRootPageId: ""
+  notionRootPageId: "",
+  notionAutosyncEnabled: false,
+  notionAutosyncIntervalMinutes: "5"
 };
 
 export function normalizeStudioData(payload: Partial<StudioData>): StudioData {

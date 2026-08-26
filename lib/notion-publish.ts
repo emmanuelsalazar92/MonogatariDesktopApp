@@ -195,7 +195,10 @@ async function appendBlocks(pageId: string, blocks: NotionBlock[]) {
   }
 }
 
-export async function publishNovelToNotion(novelId: string) {
+export async function publishNovelToNotion(
+  novelId: string,
+  sourceOverride?: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>
+) {
   const rootSetting = await getNotionRootPageId();
   const parentRootPageId = rootSetting ? normalizeNotionPageId(rootSetting) : null;
   if (!parentRootPageId) {
@@ -206,7 +209,7 @@ export async function publishNovelToNotion(novelId: string) {
     );
   }
 
-  const source = await getNotionPublishSource(novelId);
+  const source = sourceOverride ?? (await getNotionPublishSource(novelId));
   if (!source) {
     throw new NotionPublishError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
   }
