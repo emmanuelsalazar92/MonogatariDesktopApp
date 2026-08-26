@@ -1600,6 +1600,7 @@ export const NotionSyncStateScalarFieldEnum = {
   novelId: 'novelId',
   isDirty: 'isDirty',
   lastNotionSync: 'lastNotionSync',
+  lastKnownContent: 'lastKnownContent',
   updatedAt: 'updatedAt'
 } as const
 

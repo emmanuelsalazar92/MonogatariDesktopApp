@@ -11,6 +11,12 @@ import { normalizeNotionPageId, NotionApiError, requestNotion } from "@/lib/noti
 type NotionPage = { id: string; url: string };
 type NotionBlock = Record<string, unknown>;
 
+export type NotionChapterSyncSnapshot = {
+  chapterId: string;
+  local: string;
+  remote: string;
+};
+
 const MAX_TEXT_LENGTH = 1_900;
 const MAX_BLOCKS_PER_REQUEST = 100;
 
@@ -112,6 +118,54 @@ function chapterBlocks(
   return blocks;
 }
 
+function blockText(block: NotionBlock) {
+  const type = typeof block.type === "string" ? block.type : "unsupported";
+  const content = block[type] as { rich_text?: Array<{ plain_text?: string; text?: { content?: string } }> } | undefined;
+  return (content?.rich_text ?? [])
+    .map((item) => item.plain_text ?? item.text?.content ?? "")
+    .join("");
+}
+
+function remoteSnapshot(blocks: NotionBlock[]) {
+  return JSON.stringify(
+    blocks.map((block) => ({
+      type: typeof block.type === "string" ? block.type : "unsupported",
+      text: blockText(block)
+    }))
+  );
+}
+
+function localSnapshot(
+  source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>,
+  chapterId: string
+) {
+  const chapter = source.chapters.find((item) => item.id === chapterId);
+  return JSON.stringify({
+    title: chapter?.title ?? "",
+    summary: chapter?.summary ?? "",
+    scenes: source.scenes
+      .filter((scene) => scene.chapterId === chapterId)
+      .map((scene) => ({ title: scene.title, content: scene.content, summary: scene.summary }))
+  });
+}
+
+export function getNotionChapterSyncSnapshots(
+  source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>
+) {
+  return source.chapters.map((chapter) => {
+    const volumeIndex = source.volumes.findIndex((volume) => volume.id === chapter.volumeId);
+    const chapterIndex = source.chapters
+      .filter((item) => item.volumeId === chapter.volumeId)
+      .findIndex((item) => item.id === chapter.id);
+    const title = `${String(volumeIndex + 1).padStart(2, "0")}.${String(chapterIndex + 1).padStart(2, "0")} — ${chapter.title}`;
+    return {
+      chapterId: chapter.id,
+      local: localSnapshot(source, chapter.id),
+      remote: remoteSnapshot(chapterBlocks(source, chapter.id, title))
+    } satisfies NotionChapterSyncSnapshot;
+  });
+}
+
 async function createPage(parentPageId: string, title: string) {
   return requestNotion<NotionPage>("/v1/pages", {
     method: "POST",
@@ -165,6 +219,7 @@ export async function publishNovelToNotion(novelId: string) {
   );
   let createdPages = 0;
   let updatedPages = 0;
+  const chapterSnapshots = getNotionChapterSyncSnapshots(source);
 
   const publishPage = async (input: {
     localId: string;
@@ -250,6 +305,7 @@ export async function publishNovelToNotion(novelId: string) {
       novelPage,
       createdPages,
       updatedPages,
+      chapterSnapshots,
       sections: { charactersPage, planningPage, chaptersPage }
     };
   } catch (error) {

@@ -44,6 +44,7 @@ export function NovelOverviewScreen({
   translate,
   onSelectPage,
   onPublishToNotion,
+  onPullFromNotion,
   notionPublishState,
   notionPublishMessage,
   notionPublishUrl,
@@ -54,6 +55,7 @@ export function NovelOverviewScreen({
   translate: (value: string) => string;
   onSelectPage: (page: PageId) => void;
   onPublishToNotion: () => void;
+  onPullFromNotion: () => void;
   notionPublishState: NotionPublishState;
   notionPublishMessage: string;
   notionPublishUrl: string;
@@ -113,6 +115,16 @@ export function NovelOverviewScreen({
               {notionPublishState === "publishing"
                 ? translate("Syncing Notion...")
                 : translate("Sync with Notion")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onPullFromNotion}
+              disabled={!notionRootConfigured || notionPublishState === "publishing"}
+            >
+              <Download className="size-4" />
+              {notionPublishState === "publishing"
+                ? translate("Updating from Notion...")
+                : translate("Update from Notion")}
             </Button>
           </>
         }

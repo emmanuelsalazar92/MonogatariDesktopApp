@@ -28,6 +28,7 @@ export type NotionSyncStateMinAggregateOutputType = {
   novelId: string | null
   isDirty: boolean | null
   lastNotionSync: Date | null
+  lastKnownContent: string | null
   updatedAt: Date | null
 }
 
@@ -35,6 +36,7 @@ export type NotionSyncStateMaxAggregateOutputType = {
   novelId: string | null
   isDirty: boolean | null
   lastNotionSync: Date | null
+  lastKnownContent: string | null
   updatedAt: Date | null
 }
 
@@ -42,6 +44,7 @@ export type NotionSyncStateCountAggregateOutputType = {
   novelId: number
   isDirty: number
   lastNotionSync: number
+  lastKnownContent: number
   updatedAt: number
   _all: number
 }
@@ -51,6 +54,7 @@ export type NotionSyncStateMinAggregateInputType = {
   novelId?: true
   isDirty?: true
   lastNotionSync?: true
+  lastKnownContent?: true
   updatedAt?: true
 }
 
@@ -58,6 +62,7 @@ export type NotionSyncStateMaxAggregateInputType = {
   novelId?: true
   isDirty?: true
   lastNotionSync?: true
+  lastKnownContent?: true
   updatedAt?: true
 }
 
@@ -65,6 +70,7 @@ export type NotionSyncStateCountAggregateInputType = {
   novelId?: true
   isDirty?: true
   lastNotionSync?: true
+  lastKnownContent?: true
   updatedAt?: true
   _all?: true
 }
@@ -145,6 +151,7 @@ export type NotionSyncStateGroupByOutputType = {
   novelId: string
   isDirty: boolean
   lastNotionSync: Date | null
+  lastKnownContent: string
   updatedAt: Date
   _count: NotionSyncStateCountAggregateOutputType | null
   _min: NotionSyncStateMinAggregateOutputType | null
@@ -173,6 +180,7 @@ export type NotionSyncStateWhereInput = {
   novelId?: Prisma.StringFilter<"NotionSyncState"> | string
   isDirty?: Prisma.BoolFilter<"NotionSyncState"> | boolean
   lastNotionSync?: Prisma.DateTimeNullableFilter<"NotionSyncState"> | Date | string | null
+  lastKnownContent?: Prisma.StringFilter<"NotionSyncState"> | string
   updatedAt?: Prisma.DateTimeFilter<"NotionSyncState"> | Date | string
 }
 
@@ -180,6 +188,7 @@ export type NotionSyncStateOrderByWithRelationInput = {
   novelId?: Prisma.SortOrder
   isDirty?: Prisma.SortOrder
   lastNotionSync?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastKnownContent?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -190,6 +199,7 @@ export type NotionSyncStateWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.NotionSyncStateWhereInput | Prisma.NotionSyncStateWhereInput[]
   isDirty?: Prisma.BoolFilter<"NotionSyncState"> | boolean
   lastNotionSync?: Prisma.DateTimeNullableFilter<"NotionSyncState"> | Date | string | null
+  lastKnownContent?: Prisma.StringFilter<"NotionSyncState"> | string
   updatedAt?: Prisma.DateTimeFilter<"NotionSyncState"> | Date | string
 }, "novelId">
 
@@ -197,6 +207,7 @@ export type NotionSyncStateOrderByWithAggregationInput = {
   novelId?: Prisma.SortOrder
   isDirty?: Prisma.SortOrder
   lastNotionSync?: Prisma.SortOrderInput | Prisma.SortOrder
+  lastKnownContent?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.NotionSyncStateCountOrderByAggregateInput
   _max?: Prisma.NotionSyncStateMaxOrderByAggregateInput
@@ -210,6 +221,7 @@ export type NotionSyncStateScalarWhereWithAggregatesInput = {
   novelId?: Prisma.StringWithAggregatesFilter<"NotionSyncState"> | string
   isDirty?: Prisma.BoolWithAggregatesFilter<"NotionSyncState"> | boolean
   lastNotionSync?: Prisma.DateTimeNullableWithAggregatesFilter<"NotionSyncState"> | Date | string | null
+  lastKnownContent?: Prisma.StringWithAggregatesFilter<"NotionSyncState"> | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"NotionSyncState"> | Date | string
 }
 
@@ -217,6 +229,7 @@ export type NotionSyncStateCreateInput = {
   novelId: string
   isDirty?: boolean
   lastNotionSync?: Date | string | null
+  lastKnownContent?: string
   updatedAt?: Date | string
 }
 
@@ -224,6 +237,7 @@ export type NotionSyncStateUncheckedCreateInput = {
   novelId: string
   isDirty?: boolean
   lastNotionSync?: Date | string | null
+  lastKnownContent?: string
   updatedAt?: Date | string
 }
 
@@ -231,6 +245,7 @@ export type NotionSyncStateUpdateInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   isDirty?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastNotionSync?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastKnownContent?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -238,6 +253,7 @@ export type NotionSyncStateUncheckedUpdateInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   isDirty?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastNotionSync?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastKnownContent?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -245,6 +261,7 @@ export type NotionSyncStateCreateManyInput = {
   novelId: string
   isDirty?: boolean
   lastNotionSync?: Date | string | null
+  lastKnownContent?: string
   updatedAt?: Date | string
 }
 
@@ -252,6 +269,7 @@ export type NotionSyncStateUpdateManyMutationInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   isDirty?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastNotionSync?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastKnownContent?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -259,6 +277,7 @@ export type NotionSyncStateUncheckedUpdateManyInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   isDirty?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastNotionSync?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lastKnownContent?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -266,6 +285,7 @@ export type NotionSyncStateCountOrderByAggregateInput = {
   novelId?: Prisma.SortOrder
   isDirty?: Prisma.SortOrder
   lastNotionSync?: Prisma.SortOrder
+  lastKnownContent?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -273,6 +293,7 @@ export type NotionSyncStateMaxOrderByAggregateInput = {
   novelId?: Prisma.SortOrder
   isDirty?: Prisma.SortOrder
   lastNotionSync?: Prisma.SortOrder
+  lastKnownContent?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -280,6 +301,7 @@ export type NotionSyncStateMinOrderByAggregateInput = {
   novelId?: Prisma.SortOrder
   isDirty?: Prisma.SortOrder
   lastNotionSync?: Prisma.SortOrder
+  lastKnownContent?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
@@ -293,6 +315,7 @@ export type NotionSyncStateSelect<ExtArgs extends runtime.Types.Extensions.Inter
   novelId?: boolean
   isDirty?: boolean
   lastNotionSync?: boolean
+  lastKnownContent?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["notionSyncState"]>
 
@@ -300,6 +323,7 @@ export type NotionSyncStateSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   novelId?: boolean
   isDirty?: boolean
   lastNotionSync?: boolean
+  lastKnownContent?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["notionSyncState"]>
 
@@ -307,6 +331,7 @@ export type NotionSyncStateSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   novelId?: boolean
   isDirty?: boolean
   lastNotionSync?: boolean
+  lastKnownContent?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["notionSyncState"]>
 
@@ -314,10 +339,11 @@ export type NotionSyncStateSelectScalar = {
   novelId?: boolean
   isDirty?: boolean
   lastNotionSync?: boolean
+  lastKnownContent?: boolean
   updatedAt?: boolean
 }
 
-export type NotionSyncStateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"novelId" | "isDirty" | "lastNotionSync" | "updatedAt", ExtArgs["result"]["notionSyncState"]>
+export type NotionSyncStateOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"novelId" | "isDirty" | "lastNotionSync" | "lastKnownContent" | "updatedAt", ExtArgs["result"]["notionSyncState"]>
 
 export type $NotionSyncStatePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "NotionSyncState"
@@ -326,6 +352,7 @@ export type $NotionSyncStatePayload<ExtArgs extends runtime.Types.Extensions.Int
     novelId: string
     isDirty: boolean
     lastNotionSync: Date | null
+    lastKnownContent: string
     updatedAt: Date
   }, ExtArgs["result"]["notionSyncState"]>
   composites: {}
@@ -753,6 +780,7 @@ export interface NotionSyncStateFieldRefs {
   readonly novelId: Prisma.FieldRef<"NotionSyncState", 'String'>
   readonly isDirty: Prisma.FieldRef<"NotionSyncState", 'Boolean'>
   readonly lastNotionSync: Prisma.FieldRef<"NotionSyncState", 'DateTime'>
+  readonly lastKnownContent: Prisma.FieldRef<"NotionSyncState", 'String'>
   readonly updatedAt: Prisma.FieldRef<"NotionSyncState", 'DateTime'>
 }
     
