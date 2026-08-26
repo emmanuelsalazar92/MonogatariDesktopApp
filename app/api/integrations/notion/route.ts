@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isNotionConfigured, testNotionConnection } from "@/lib/notion";
+import { saveValidatedNotionConnection } from "@/lib/db/studio";
 
 export async function GET() {
   return NextResponse.json({ configured: isNotionConfigured() });
@@ -25,6 +26,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await testNotionConnection(body.rootPage);
-  return NextResponse.json(result, { status: result.ok ? 200 : result.status });
+  try {
+    const result = await testNotionConnection(body.rootPage);
+    if (result.ok) {
+      await saveValidatedNotionConnection(result.pageId, result.pageTitle);
+    }
+    return NextResponse.json(result, { status: result.ok ? 200 : result.status });
+  } catch {
+    return NextResponse.json(
+      { ok: false, code: "SETTINGS_UNAVAILABLE", message: "Monogatari could not save the Notion connection settings." },
+      { status: 503 }
+    );
+  }
 }

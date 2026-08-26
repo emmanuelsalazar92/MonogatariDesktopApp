@@ -6,7 +6,12 @@ import {
   getNotionRootPageId,
   upsertNotionMapping
 } from "@/lib/db/notion-publish";
-import { normalizeNotionPageId, NotionApiError, requestNotion } from "@/lib/notion";
+import {
+  assertNotionPageWithinRoot,
+  normalizeNotionPageId,
+  NotionApiError,
+  requestNotion
+} from "@/lib/notion";
 
 type NotionPage = { id: string; url: string };
 type NotionBlock = Record<string, unknown>;
@@ -28,6 +33,21 @@ export class NotionPublishError extends Error {
   ) {
     super(message);
   }
+}
+
+export async function getAuthorizedNotionRootPageId() {
+  const rootSetting = await getNotionRootPageId();
+  const rootPageId = rootSetting ? normalizeNotionPageId(rootSetting) : null;
+  if (!rootPageId) {
+    throw new NotionPublishError(
+      400,
+      "ROOT_PAGE_REQUIRED",
+      "Configure and validate a Notion root page before publishing a novel."
+    );
+  }
+
+  await assertNotionPageWithinRoot(rootPageId, rootPageId);
+  return rootPageId;
 }
 
 function chunks(value: string) {
@@ -199,15 +219,7 @@ export async function publishNovelToNotion(
   novelId: string,
   sourceOverride?: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>
 ) {
-  const rootSetting = await getNotionRootPageId();
-  const parentRootPageId = rootSetting ? normalizeNotionPageId(rootSetting) : null;
-  if (!parentRootPageId) {
-    throw new NotionPublishError(
-      400,
-      "ROOT_PAGE_REQUIRED",
-      "Configure and validate a Notion root page before publishing a novel."
-    );
-  }
+  const parentRootPageId = await getAuthorizedNotionRootPageId();
 
   const source = sourceOverride ?? (await getNotionPublishSource(novelId));
   if (!source) {
@@ -237,6 +249,7 @@ export async function publishNovelToNotion(
 
     if (mapped) {
       try {
+        await assertNotionPageWithinRoot(mapped.notionPageId, parentRootPageId);
         page = await updatePage(mapped.notionPageId, input.title, Boolean(input.blocks));
         updatedPages += 1;
       } catch (error) {

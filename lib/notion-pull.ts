@@ -7,8 +7,12 @@ import {
   type NotionContentBaselines
 } from "@/lib/db/notion-sync";
 import { getNotionMappings, getNotionPublishSource } from "@/lib/db/notion-publish";
-import { NotionApiError, requestNotion } from "@/lib/notion";
-import { getNotionChapterSyncSnapshots, NotionPublishError } from "@/lib/notion-publish";
+import { assertNotionPageWithinRoot, NotionApiError, requestNotion } from "@/lib/notion";
+import {
+  getAuthorizedNotionRootPageId,
+  getNotionChapterSyncSnapshots,
+  NotionPublishError
+} from "@/lib/notion-publish";
 
 type NotionRemoteBlock = {
   type?: string;
@@ -142,7 +146,8 @@ function chapterTitleFromRemoteBlocks(blocks: NotionRemoteBlock[]) {
   return blockText(remoteTitle).replace(/^\d{2}\.\d{2}\s+—\s+/, "").trim() || undefined;
 }
 
-async function getPageBlocks(pageId: string) {
+async function getPageBlocks(pageId: string, rootPageId: string) {
+  await assertNotionPageWithinRoot(pageId, rootPageId);
   const blocks: NotionRemoteBlock[] = [];
   let cursor: string | null = null;
 
@@ -158,6 +163,7 @@ async function getPageBlocks(pageId: string) {
 }
 
 export async function getNotionRemoteChanges(novelId: string) {
+  const rootPageId = await getAuthorizedNotionRootPageId();
   const baselines = await getNotionContentBaselines(novelId);
   const mappings = (await getNotionMappings(novelId)).filter((mapping) => mapping.entityType === "chapter");
 
@@ -166,7 +172,7 @@ export async function getNotionRemoteChanges(novelId: string) {
     const baseline = baselines[chapterId];
     if (!baseline) return { changed: true, chapterId };
 
-    const remote = remoteSnapshot(await getPageBlocks(mapping.notionPageId));
+    const remote = remoteSnapshot(await getPageBlocks(mapping.notionPageId, rootPageId));
     if (remote !== baseline.remote) return { changed: true, chapterId };
   }
 
@@ -181,6 +187,7 @@ export async function pullNovelFromNotion(
     beforeApply?: () => Promise<void>;
   } = {}
 ) {
+  const rootPageId = await getAuthorizedNotionRootPageId();
   const source = await getNotionPublishSource(novelId);
   if (!source) {
     throw new NotionPullError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
@@ -221,7 +228,7 @@ export async function pullNovelFromNotion(
       continue;
     }
 
-    const remoteBlocks = await getPageBlocks(mapping.notionPageId);
+    const remoteBlocks = await getPageBlocks(mapping.notionPageId, rootPageId);
     const remote = remoteSnapshot(remoteBlocks);
     const localScenes = source.scenes
       .filter((scene) => scene.chapterId === current?.chapterId)

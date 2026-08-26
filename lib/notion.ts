@@ -5,8 +5,14 @@ const NOTION_TIMEOUT_MS = 10_000;
 const NOTION_API_URL = "https://api.notion.com";
 
 export type NotionConnectionResult =
-  | { ok: true; pageId: string; message: string }
+  | { ok: true; pageId: string; pageTitle: string; message: string }
   | { ok: false; status: number; code: string; message: string };
+
+type NotionPage = {
+  id: string;
+  parent?: { type?: string; page_id?: string };
+  properties?: Record<string, { type?: string; title?: Array<{ plain_text?: string }> }>;
+};
 
 export class NotionApiError extends Error {
   constructor(
@@ -58,7 +64,7 @@ export function isNotionConfigured() {
 
 function connectionError(status: number) {
   if (status === 401) {
-    return { code: "INVALID_TOKEN", message: "Notion rejected the server token. Check NOTION_API_TOKEN." };
+    return { code: "INVALID_TOKEN", message: "Notion authentication failed on the server. Ask an administrator to verify the integration." };
   }
   if (status === 403) {
     return { code: "FORBIDDEN", message: "The Notion integration does not have permission to access this page." };
@@ -69,7 +75,18 @@ function connectionError(status: number) {
   if (status === 429) {
     return { code: "RATE_LIMITED", message: "Notion is temporarily rate limiting requests. Try again shortly." };
   }
-  return { code: "NOTION_ERROR", message: `Notion returned an unexpected ${status} response.` };
+  return { code: "NOTION_ERROR", message: "Notion could not complete the request. Try again." };
+}
+
+function pageTitle(page: NotionPage) {
+  const titleProperty = Object.values(page.properties ?? {}).find(
+    (property) => property.type === "title" || Array.isArray(property.title)
+  );
+  const title = titleProperty?.title
+    ?.map((item) => item.plain_text ?? "")
+    .join("")
+    .trim();
+  return (title || "Authorized Notion page").slice(0, 500);
 }
 
 export async function requestNotion<T>(
@@ -81,7 +98,7 @@ export async function requestNotion<T>(
     throw new NotionApiError(
       503,
       "NOT_CONFIGURED",
-      "Notion is not configured. Set NOTION_API_TOKEN on the server and restart Monogatari."
+      "The Notion integration is not configured on this server."
     );
   }
 
@@ -136,8 +153,14 @@ export async function testNotionConnection(rootPage: string): Promise<NotionConn
   }
 
   try {
-    await requestNotion(`/v1/pages/${pageId}`);
-    return { ok: true, pageId, message: "Connection successful. Monogatari can access this Notion page." };
+    const page = await requestNotion<NotionPage>(`/v1/pages/${pageId}`);
+    const title = pageTitle(page);
+    return {
+      ok: true,
+      pageId,
+      pageTitle: title,
+      message: `Connected to ${title}. Monogatari can access this Notion page.`
+    };
   } catch (error) {
     if (error instanceof NotionApiError) {
       return { ok: false, status: error.status, code: error.code, message: error.message };
@@ -149,4 +172,31 @@ export async function testNotionConnection(rootPage: string): Promise<NotionConn
       message: "Notion is unavailable or this device is offline. Monogatari will continue using SQLite."
     };
   }
+}
+
+export async function assertNotionPageWithinRoot(pageId: string, rootPageId: string) {
+  const normalizedRootPageId = normalizeNotionPageId(rootPageId);
+  const normalizedPageId = normalizeNotionPageId(pageId);
+  if (!normalizedRootPageId || !normalizedPageId) {
+    throw new NotionApiError(400, "INVALID_PAGE", "The configured Notion page is invalid.");
+  }
+  let currentPageId: string = normalizedPageId;
+
+  const visited = new Set<string>();
+  for (let depth = 0; depth < 32; depth += 1) {
+    if (visited.has(currentPageId)) break;
+    visited.add(currentPageId);
+
+    const page = await requestNotion<NotionPage>(`/v1/pages/${currentPageId}`);
+    if (currentPageId === normalizedRootPageId) return;
+    const parentId = page.parent?.type === "page_id" ? normalizeNotionPageId(page.parent.page_id ?? "") : null;
+    if (!parentId) break;
+    currentPageId = parentId;
+  }
+
+  throw new NotionApiError(
+    403,
+    "ROOT_BOUNDARY_VIOLATION",
+    "The requested Notion page is outside the authorized root page."
+  );
 }
