@@ -67,6 +67,11 @@ import { CharactersScreen } from "@/components/studio/characters-screen";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
 import { MobileNavDialog } from "@/components/studio/mobile-nav-dialog";
+import {
+  NotionConflictDialog,
+  type NotionConflictChoice,
+  type NotionConflictPreview
+} from "@/components/studio/notion-conflict-dialog";
 import { NovelOverviewScreen } from "@/components/studio/novel-overview-screen";
 import { SettingsScreen } from "@/components/studio/settings-screen";
 import { StructureScreen } from "@/components/studio/structure-screen";
@@ -270,6 +275,8 @@ export default function PrivateNovelStudioPage() {
   const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
   const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
   const [notionPublishUrl, setNotionPublishUrl] = React.useState("");
+  const [notionConflict, setNotionConflict] = React.useState<NotionConflictPreview | null>(null);
+  const [resolvingNotionConflict, setResolvingNotionConflict] = React.useState(false);
   const [toast, setToast] = React.useState("");
   const [libraryQuery, setLibraryQuery] = React.useState("");
   const [libraryStatus, setLibraryStatus] = React.useState("All statuses");
@@ -741,10 +748,21 @@ export default function PrivateNovelStudioPage() {
         ok?: boolean;
         message?: string;
         appliedChapters?: number;
-        conflicts?: Array<{ message?: string }>;
+        conflicts?: Array<Partial<NotionConflictPreview> & { message?: string }>;
       };
 
       if (!response.ok || !result.ok) {
+        const conflict = result.conflicts?.find(
+          (item) => typeof item.chapterId === "string" && typeof item.localContent === "string" && typeof item.remoteContent === "string"
+        );
+        if (conflict) {
+          setNotionConflict({
+            chapterId: conflict.chapterId!,
+            chapterTitle: conflict.chapterTitle ?? "Notion chapter",
+            localContent: conflict.localContent!,
+            remoteContent: conflict.remoteContent!
+          });
+        }
         const conflictDetails = result.conflicts?.map((conflict) => conflict.message).join(" ");
         throw new Error(conflictDetails || result.message || "Could not update this novel from Notion.");
       }
@@ -762,6 +780,43 @@ export default function PrivateNovelStudioPage() {
       showToast(message);
     }
   }, [currentNovel.id, refreshStudioData, showToast]);
+
+  const resolveCurrentNotionConflict = React.useCallback(
+    async (resolution: NotionConflictChoice) => {
+      if (!notionConflict || !currentNovel.id || resolvingNotionConflict) return;
+
+      setResolvingNotionConflict(true);
+      try {
+        const response = await fetch("/api/integrations/notion/conflicts/resolve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            novelId: currentNovel.id,
+            chapterId: notionConflict.chapterId,
+            resolution
+          })
+        });
+        const result = (await response.json()) as { ok?: boolean; message?: string };
+        if (!response.ok || !result.ok) {
+          throw new Error(result.message ?? "Could not resolve this Notion conflict.");
+        }
+
+        setNotionConflict(null);
+        setNotionPublishState("success");
+        setNotionPublishMessage(result.message ?? "Notion conflict resolved.");
+        await refreshStudioData(false);
+        showToast(result.message ?? "Notion conflict resolved.");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not resolve this Notion conflict.";
+        setNotionPublishState("error");
+        setNotionPublishMessage(message);
+        showToast(message);
+      } finally {
+        setResolvingNotionConflict(false);
+      }
+    },
+    [currentNovel.id, notionConflict, refreshStudioData, resolvingNotionConflict, showToast]
+  );
 
   const createNovelFromDialog = React.useCallback(
     async (input: CreateNovelInput) => {
@@ -1315,6 +1370,13 @@ export default function PrivateNovelStudioPage() {
         onCreateEvent={createTimelineEventFromDialog}
         onCreateNote={createNoteFromDialog}
         onClose={() => setDialog(null)}
+      />
+
+      <NotionConflictDialog
+        conflict={notionConflict}
+        translate={translate}
+        resolving={resolvingNotionConflict}
+        onResolve={(choice) => void resolveCurrentNotionConflict(choice)}
       />
 
         {toast ? (

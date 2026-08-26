@@ -30,12 +30,15 @@ type PullTarget = {
 
 export type NotionPullConflict = {
   chapterId: string;
+  chapterTitle: string;
   code:
     | "BASELINE_REQUIRED"
     | "CONTENT_CONFLICT"
     | "UNSUPPORTED_REMOTE_STRUCTURE"
     | "STRUCTURE_CONFLICT";
   message: string;
+  localContent?: string;
+  remoteContent?: string;
 };
 
 export class NotionPullError extends Error {
@@ -66,6 +69,44 @@ function remoteSnapshot(blocks: NotionRemoteBlock[]) {
       text: blockText(block)
     }))
   );
+}
+
+function formatLocalContent(snapshot: string) {
+  try {
+    const value = JSON.parse(snapshot) as {
+      title?: string;
+      summary?: string;
+      scenes?: Array<{ title?: string; content?: string; summary?: string }>;
+    };
+    return [
+      value.title && `# ${value.title}`,
+      value.summary,
+      ...(value.scenes ?? []).flatMap((scene) => [
+        scene.title && `## ${scene.title}`,
+        scene.summary,
+        scene.content
+      ])
+    ]
+      .filter((item): item is string => Boolean(item))
+      .join("\n\n");
+  } catch {
+    return snapshot;
+  }
+}
+
+function formatRemoteContent(snapshot: string) {
+  try {
+    return (JSON.parse(snapshot) as Array<{ type?: string; text?: string }>)
+      .map((block) => {
+        if (block.type === "heading_1") return `# ${block.text ?? ""}`;
+        if (block.type === "heading_2") return `## ${block.text ?? ""}`;
+        return block.text ?? "";
+      })
+      .filter(Boolean)
+      .join("\n\n");
+  } catch {
+    return snapshot;
+  }
 }
 
 function scenesFromRemoteBlocks(
@@ -116,7 +157,14 @@ async function getPageBlocks(pageId: string) {
   return blocks;
 }
 
-export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
+export async function pullNovelFromNotion(
+  novelId: string,
+  chapterId?: string,
+  options: {
+    resolution?: "accept-remote" | "keep-local" | "cancel";
+    beforeApply?: () => Promise<void>;
+  } = {}
+) {
   const source = await getNotionPublishSource(novelId);
   if (!source) {
     throw new NotionPullError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
@@ -141,6 +189,8 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
 
   const conflicts: NotionPullConflict[] = [];
   const targets: PullTarget[] = [];
+  const acknowledgedTargets: PullTarget[] = [];
+  let resolvedConflict = false;
 
   for (const mapping of selectedMappings) {
     const current = chapterSnapshots.get(mapping.localId.replace(/^chapter:/, ""));
@@ -148,6 +198,7 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
     if (!current || !baseline) {
       conflicts.push({
         chapterId: current?.chapterId ?? mapping.localId,
+        chapterTitle: source.chapters.find((chapter) => chapter.id === current?.chapterId)?.title ?? "Unknown chapter",
         code: "BASELINE_REQUIRED",
         message: "A safe pull needs one completed Notion sync as its comparison baseline."
       });
@@ -164,17 +215,10 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
     const remoteChanged = remote !== baseline.remote;
     const localChanged = current.local !== baseline.local;
 
-    if (remoteChanged && localChanged) {
-      conflicts.push({
-        chapterId: current.chapterId,
-        code: "CONTENT_CONFLICT",
-        message: "Both the local chapter and its Notion page changed since the last sync."
-      });
-      continue;
-    }
     if (remoteChanged && scenes.length === 0) {
       conflicts.push({
         chapterId: current.chapterId,
+        chapterTitle: source.chapters.find((chapter) => chapter.id === current.chapterId)?.title ?? "Unknown chapter",
         code: "UNSUPPORTED_REMOTE_STRUCTURE",
         message: "The Notion page no longer has scene headings that Monogatari can safely apply."
       });
@@ -186,8 +230,32 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
     ) {
       conflicts.push({
         chapterId: current.chapterId,
+        chapterTitle: source.chapters.find((chapter) => chapter.id === current.chapterId)?.title ?? "Unknown chapter",
         code: "STRUCTURE_CONFLICT",
         message: "The Notion page changed its scene structure and needs manual review."
+      });
+      continue;
+    }
+
+    if (remoteChanged && localChanged) {
+      const target = { chapterId: current.chapterId, title, remote, scenes };
+      if (options.resolution === "accept-remote") {
+        targets.push(target);
+        resolvedConflict = true;
+        continue;
+      }
+      if (options.resolution === "keep-local" || options.resolution === "cancel") {
+        acknowledgedTargets.push(target);
+        resolvedConflict = true;
+        continue;
+      }
+      conflicts.push({
+        chapterId: current.chapterId,
+        chapterTitle: source.chapters.find((chapter) => chapter.id === current.chapterId)?.title ?? "Unknown chapter",
+        code: "CONTENT_CONFLICT",
+        message: "Both the local chapter and its Notion page changed since the last sync.",
+        localContent: formatLocalContent(current.local),
+        remoteContent: formatRemoteContent(remote)
       });
       continue;
     }
@@ -200,18 +268,29 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
     throw new NotionPullError(409, "PULL_CONFLICT", "Notion changes were not applied because a conflict needs review.", conflicts);
   }
 
-  if (targets.length === 0) {
+  if (options.resolution && !resolvedConflict) {
+    throw new NotionPullError(
+      409,
+      "CONFLICT_NO_LONGER_CURRENT",
+      "The Notion conflict changed before it could be resolved. Refresh and compare again."
+    );
+  }
+
+  if (targets.length === 0 && acknowledgedTargets.length === 0) {
     return { appliedChapters: 0, message: "No newer Notion changes were found." };
   }
 
-  await applyNotionChapterUpdates(
-    novelId,
-    targets.map((target) => ({
-      chapterId: target.chapterId,
-      title: target.title,
-      scenes: target.scenes
-    }))
-  );
+  if (targets.length > 0) await options.beforeApply?.();
+  if (targets.length > 0) {
+    await applyNotionChapterUpdates(
+      novelId,
+      targets.map((target) => ({
+        chapterId: target.chapterId,
+        title: target.title,
+        scenes: target.scenes
+      }))
+    );
+  }
 
   const nextSource = await getNotionPublishSource(novelId);
   if (!nextSource) throw new NotionPullError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
@@ -219,7 +298,7 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
     getNotionChapterSyncSnapshots(nextSource).map((snapshot) => [snapshot.chapterId, snapshot])
   );
   const nextBaselines: NotionContentBaselines = { ...baselines };
-  for (const target of targets) {
+  for (const target of [...targets, ...acknowledgedTargets]) {
     const next = nextSnapshots.get(target.chapterId);
     if (next) nextBaselines[target.chapterId] = { local: next.local, remote: target.remote };
   }
@@ -227,7 +306,10 @@ export async function pullNovelFromNotion(novelId: string, chapterId?: string) {
 
   return {
     appliedChapters: targets.length,
-    message: `Applied Notion changes to ${targets.length} chapter(s) in SQLite.`
+    message:
+      targets.length > 0
+        ? `Applied Notion changes to ${targets.length} chapter(s) in SQLite.`
+        : "The conflict was acknowledged without replacing local content."
   };
 }
 
