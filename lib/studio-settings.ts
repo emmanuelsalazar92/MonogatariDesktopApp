@@ -5,6 +5,7 @@ import {
 
 export const STUDIO_CONFIGURATION_ID = "studio";
 export const STUDIO_CONFIGURATION_VERSION = 1;
+export const notionAutosyncIntervals = ["1", "2", "5", "10", "15", "30"] as const;
 
 const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = {
   theme: ["light", "dark", "system"],
@@ -22,7 +23,7 @@ const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = 
   notionRootPageId: [],
   notionRootPageTitle: [],
   notionAutosyncEnabled: ["true", "false"],
-  notionAutosyncIntervalMinutes: ["1", "2", "5", "10", "15", "30"],
+  notionAutosyncIntervalMinutes: notionAutosyncIntervals,
   dailyWordGoal: ["500", "1000", "1500", "2000", "3000"]
 };
 
@@ -66,4 +67,11 @@ export function applyStudioSettings(
 
 export function hasOnlyKnownStudioSettings(changes: Record<string, unknown>) {
   return Object.keys(changes).length > 0 && Object.keys(changes).every((key) => key in allowedValues);
+}
+
+export function notionAutosyncIntervalMilliseconds(value: string) {
+  if (!notionAutosyncIntervals.includes(value as (typeof notionAutosyncIntervals)[number])) {
+    return null;
+  }
+  return Number(value) * 60_000;
 }
