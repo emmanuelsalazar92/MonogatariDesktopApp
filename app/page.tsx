@@ -1074,16 +1074,6 @@ export default function PrivateNovelStudioPage() {
   }, [refreshStudioData, showToast]);
 
   React.useEffect(() => {
-    const delay = autosaveDelay(studioSettings.autosaveInterval);
-    if (delay === null) return;
-
-    const interval = window.setInterval(() => {
-      void flushPendingChanges();
-    }, delay);
-    return () => window.clearInterval(interval);
-  }, [flushPendingChanges, studioSettings.autosaveInterval]);
-
-  React.useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!editorDirtyRef.current) return;
       event.preventDefault();
@@ -1218,8 +1208,10 @@ export default function PrivateNovelStudioPage() {
       <StudioDataContext.Provider value={scopedStudioData}>
         <WritingFocusMode
           editorFontSize={Number.parseInt(studioSettings.editorFontSize, 10) || 18}
+          autosaveDelayMs={autosaveDelay(studioSettings.autosaveInterval)}
           saveStatus={saveStatus}
           onSaveScene={saveScene}
+          onRequestSave={() => void flushPendingChanges()}
           setSaveStatus={setSaveStatus}
           onRegisterPendingSave={registerPendingSave}
           onDirtyChange={setEditorDirty}
@@ -1330,6 +1322,7 @@ export default function PrivateNovelStudioPage() {
               {activePage === "editor" ? (
                 <EditorScreen
                   editorFontSize={Number.parseInt(studioSettings.editorFontSize, 10) || 18}
+                  autosaveDelayMs={autosaveDelay(studioSettings.autosaveInterval)}
                   saveStatus={saveStatus}
                   onSaveScene={saveScene}
                   onRequestSave={() => void flushPendingChanges()}
@@ -1482,6 +1475,7 @@ export default function PrivateNovelStudioPage() {
 
 function EditorScreen({
   editorFontSize,
+  autosaveDelayMs,
   saveStatus,
   inspectorOpen,
   onSaveScene,
@@ -1494,6 +1488,7 @@ function EditorScreen({
   setSaveStatus
 }: {
   editorFontSize: number;
+  autosaveDelayMs: number | null;
   saveStatus: SaveStatus;
   inspectorOpen: boolean;
   onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
@@ -1514,6 +1509,7 @@ function EditorScreen({
   const [title, setTitle] = React.useState(activeScene.title);
   const [status, setStatus] = React.useState<ChapterStatus>(activeScene.status);
   const [content, setContent] = React.useState(activeScene.content);
+  const [draftVersion, setDraftVersion] = React.useState(0);
   const revisionRef = React.useRef(0);
   const loadedSceneIdRef = React.useRef<string | null>(null);
   const activeSceneRef = React.useRef(activeScene);
@@ -1527,6 +1523,7 @@ function EditorScreen({
 
   const markDirty = React.useCallback(() => {
     revisionRef.current += 1;
+    setDraftVersion((version) => version + 1);
     onDirtyChange(true);
     setSaveStatus("Unsaved changes");
   }, [onDirtyChange, setSaveStatus]);
@@ -1550,6 +1547,8 @@ function EditorScreen({
     });
     if (!succeeded) return false;
 
+    activeSceneRef.current = { ...scene, ...draft };
+
     if (revisionRef.current === revisionAtStart) {
       onDirtyChange(false);
     } else {
@@ -1570,6 +1569,7 @@ function EditorScreen({
       content: activeScene.content
     };
     revisionRef.current = 0;
+    setDraftVersion(0);
     onDirtyChange(false);
     setSaveStatus("Saved");
   }, [activeScene, onDirtyChange, setSaveStatus]);
@@ -1580,6 +1580,13 @@ function EditorScreen({
       setSaveStatus("Saved");
     }
   }, [dirty, onDirtyChange, saveStatus, setSaveStatus]);
+
+  React.useEffect(() => {
+    if (!dirty || autosaveDelayMs === null) return;
+
+    const timeout = window.setTimeout(onRequestSave, autosaveDelayMs);
+    return () => window.clearTimeout(timeout);
+  }, [autosaveDelayMs, dirty, draftVersion, onRequestSave]);
 
   React.useEffect(() => {
     onRegisterPendingSave(saveCurrentScene);
@@ -1662,7 +1669,7 @@ function EditorScreen({
                   disabled={!dirty || saveStatus === "Saving..."}
                 >
                   <Save className="size-4" />
-                  Save
+                  {saveStatus === "Save error" ? "Retry save" : "Save"}
                 </Button>
                 <Button variant="outline">
                   <Download className="size-4" />
@@ -1816,16 +1823,20 @@ function ShortcutPanel() {
 
 function WritingFocusMode({
   editorFontSize,
+  autosaveDelayMs,
   saveStatus,
   onSaveScene,
+  onRequestSave,
   setSaveStatus,
   onRegisterPendingSave,
   onDirtyChange,
   onExit
 }: {
   editorFontSize: number;
+  autosaveDelayMs: number | null;
   saveStatus: SaveStatus;
   onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
+  onRequestSave: () => void;
   setSaveStatus: (status: SaveStatus) => void;
   onRegisterPendingSave: (handler: PendingSaveHandler | null) => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -1834,6 +1845,7 @@ function WritingFocusMode({
   const data = useStudioData();
   const activeScene = getActiveScene(data);
   const [content, setContent] = React.useState(activeScene.content);
+  const [draftVersion, setDraftVersion] = React.useState(0);
   const revisionRef = React.useRef(0);
   const loadedSceneIdRef = React.useRef<string | null>(null);
   const activeSceneRef = React.useRef(activeScene);
@@ -1856,6 +1868,7 @@ function WritingFocusMode({
       locationId: scene.locationId
     });
     if (!succeeded) return false;
+    activeSceneRef.current = { ...scene, content: latestContent };
     if (revisionRef.current === revisionAtStart) {
       onDirtyChange(false);
     } else {
@@ -1870,6 +1883,7 @@ function WritingFocusMode({
     setContent(activeScene.content);
     contentRef.current = activeScene.content;
     revisionRef.current = 0;
+    setDraftVersion(0);
     onDirtyChange(false);
     setSaveStatus("Saved");
   }, [activeScene, onDirtyChange, setSaveStatus]);
@@ -1880,6 +1894,13 @@ function WritingFocusMode({
       setSaveStatus("Saved");
     }
   }, [dirty, onDirtyChange, saveStatus, setSaveStatus]);
+
+  React.useEffect(() => {
+    if (!dirty || autosaveDelayMs === null) return;
+
+    const timeout = window.setTimeout(onRequestSave, autosaveDelayMs);
+    return () => window.clearTimeout(timeout);
+  }, [autosaveDelayMs, dirty, draftVersion, onRequestSave]);
 
   React.useEffect(() => {
     onRegisterPendingSave(saveCurrentScene);
@@ -1898,8 +1919,8 @@ function WritingFocusMode({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => void saveCurrentScene()}
-            aria-label="Save"
+            onClick={onRequestSave}
+            aria-label={saveStatus === "Save error" ? "Retry save" : "Save"}
             disabled={!dirty || saveStatus === "Saving..."}
           >
             <Save className="size-4" />
@@ -1919,6 +1940,7 @@ function WritingFocusMode({
               contentRef.current = nextContent;
               setContent(nextContent);
               revisionRef.current += 1;
+              setDraftVersion((version) => version + 1);
               onDirtyChange(true);
               setSaveStatus("Unsaved changes");
             }}
