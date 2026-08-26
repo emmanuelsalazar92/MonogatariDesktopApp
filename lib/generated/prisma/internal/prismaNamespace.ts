@@ -1285,7 +1285,8 @@ export const VolumeScalarFieldEnum = {
   novelId: 'novelId',
   title: 'title',
   sortOrder: 'sortOrder',
-  summary: 'summary'
+  summary: 'summary',
+  archived: 'archived'
 } as const
 
 export type VolumeScalarFieldEnum = (typeof VolumeScalarFieldEnum)[keyof typeof VolumeScalarFieldEnum]
@@ -1298,7 +1299,8 @@ export const ChapterScalarFieldEnum = {
   summary: 'summary',
   status: 'status',
   sortOrder: 'sortOrder',
-  wordCount: 'wordCount'
+  wordCount: 'wordCount',
+  archived: 'archived'
 } as const
 
 export type ChapterScalarFieldEnum = (typeof ChapterScalarFieldEnum)[keyof typeof ChapterScalarFieldEnum]
@@ -1314,7 +1316,8 @@ export const SceneScalarFieldEnum = {
   locationId: 'locationId',
   sortOrder: 'sortOrder',
   wordCount: 'wordCount',
-  objective: 'objective'
+  objective: 'objective',
+  archived: 'archived'
 } as const
 
 export type SceneScalarFieldEnum = (typeof SceneScalarFieldEnum)[keyof typeof SceneScalarFieldEnum]

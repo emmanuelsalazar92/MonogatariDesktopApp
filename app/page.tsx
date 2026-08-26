@@ -108,6 +108,7 @@ import {
   useLiveLocalization
 } from "@/lib/studio-i18n";
 import { cn } from "@/lib/utils";
+import type { StructureSelection } from "@/lib/db/structure";
 import {
   exportFormats,
   exportScopes,
@@ -493,6 +494,54 @@ export default function PrivateNovelStudioPage() {
       );
     },
     [persistSettings, showToast]
+  );
+
+  const setActiveStructureItem = React.useCallback(
+    (selection: StructureSelection) => {
+      let activeChapterId: string | undefined;
+      let activeSceneId: string | undefined;
+
+      if (selection.type === "scene") {
+        const scene = scopedStudioData.scenes.find((item) => item.id === selection.id);
+        activeSceneId = scene?.id;
+        activeChapterId = scene?.chapterId;
+      } else if (selection.type === "chapter") {
+        activeChapterId = selection.id;
+        activeSceneId = scopedStudioData.scenes
+          .filter((scene) => scene.chapterId === selection.id && !scene.archived)
+          .sort((left, right) => left.sortOrder - right.sortOrder)[0]?.id;
+      } else {
+        activeChapterId = scopedStudioData.chapters
+          .filter((chapter) => chapter.volumeId === selection.id && !chapter.archived)
+          .sort((left, right) => left.sortOrder - right.sortOrder)[0]?.id;
+        activeSceneId = activeChapterId
+          ? scopedStudioData.scenes
+              .filter((scene) => scene.chapterId === activeChapterId && !scene.archived)
+              .sort((left, right) => left.sortOrder - right.sortOrder)[0]?.id
+          : undefined;
+      }
+
+      const nextSettings = {
+        activeStructureType: selection.type,
+        activeStructureId: selection.id,
+        ...(activeChapterId ? { activeChapterId } : {}),
+        ...(activeSceneId ? { activeSceneId } : {})
+      };
+
+      setStudioData((current) => ({
+        ...current,
+        settings: { ...current.settings, ...nextSettings }
+      }));
+
+      void fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextSettings)
+      }).then((response) => {
+        if (!response.ok) showToast("Could not save the current structure selection");
+      }).catch(() => showToast("Could not save the current structure selection"));
+    },
+    [scopedStudioData.chapters, scopedStudioData.scenes, showToast]
   );
 
   React.useEffect(() => {
@@ -909,7 +958,9 @@ export default function PrivateNovelStudioPage() {
                 <StructureScreen
                   data={scopedStudioData}
                   translate={translate}
-                  onOpenDialog={() => setDialog("novel")}
+                  onRefresh={() => refreshStudioData(false)}
+                  onSelectItem={setActiveStructureItem}
+                  onNotify={showToast}
                 />
               ) : null}
               {activePage === "editor" ? (

@@ -44,6 +44,7 @@ export type ChapterMinAggregateOutputType = {
   status: string | null
   sortOrder: number | null
   wordCount: number | null
+  archived: boolean | null
 }
 
 export type ChapterMaxAggregateOutputType = {
@@ -54,6 +55,7 @@ export type ChapterMaxAggregateOutputType = {
   status: string | null
   sortOrder: number | null
   wordCount: number | null
+  archived: boolean | null
 }
 
 export type ChapterCountAggregateOutputType = {
@@ -64,6 +66,7 @@ export type ChapterCountAggregateOutputType = {
   status: number
   sortOrder: number
   wordCount: number
+  archived: number
   _all: number
 }
 
@@ -86,6 +89,7 @@ export type ChapterMinAggregateInputType = {
   status?: true
   sortOrder?: true
   wordCount?: true
+  archived?: true
 }
 
 export type ChapterMaxAggregateInputType = {
@@ -96,6 +100,7 @@ export type ChapterMaxAggregateInputType = {
   status?: true
   sortOrder?: true
   wordCount?: true
+  archived?: true
 }
 
 export type ChapterCountAggregateInputType = {
@@ -106,6 +111,7 @@ export type ChapterCountAggregateInputType = {
   status?: true
   sortOrder?: true
   wordCount?: true
+  archived?: true
   _all?: true
 }
 
@@ -203,6 +209,7 @@ export type ChapterGroupByOutputType = {
   status: string
   sortOrder: number
   wordCount: number
+  archived: boolean
   _count: ChapterCountAggregateOutputType | null
   _avg: ChapterAvgAggregateOutputType | null
   _sum: ChapterSumAggregateOutputType | null
@@ -236,6 +243,7 @@ export type ChapterWhereInput = {
   status?: Prisma.StringFilter<"Chapter"> | string
   sortOrder?: Prisma.IntFilter<"Chapter"> | number
   wordCount?: Prisma.IntFilter<"Chapter"> | number
+  archived?: Prisma.BoolFilter<"Chapter"> | boolean
   volume?: Prisma.XOR<Prisma.VolumeScalarRelationFilter, Prisma.VolumeWhereInput>
   scenes?: Prisma.SceneListRelationFilter
   timelineEvents?: Prisma.TimelineEventListRelationFilter
@@ -249,6 +257,7 @@ export type ChapterOrderByWithRelationInput = {
   status?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
   volume?: Prisma.VolumeOrderByWithRelationInput
   scenes?: Prisma.SceneOrderByRelationAggregateInput
   timelineEvents?: Prisma.TimelineEventOrderByRelationAggregateInput
@@ -265,6 +274,7 @@ export type ChapterWhereUniqueInput = Prisma.AtLeast<{
   status?: Prisma.StringFilter<"Chapter"> | string
   sortOrder?: Prisma.IntFilter<"Chapter"> | number
   wordCount?: Prisma.IntFilter<"Chapter"> | number
+  archived?: Prisma.BoolFilter<"Chapter"> | boolean
   volume?: Prisma.XOR<Prisma.VolumeScalarRelationFilter, Prisma.VolumeWhereInput>
   scenes?: Prisma.SceneListRelationFilter
   timelineEvents?: Prisma.TimelineEventListRelationFilter
@@ -278,6 +288,7 @@ export type ChapterOrderByWithAggregationInput = {
   status?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
   _count?: Prisma.ChapterCountOrderByAggregateInput
   _avg?: Prisma.ChapterAvgOrderByAggregateInput
   _max?: Prisma.ChapterMaxOrderByAggregateInput
@@ -296,6 +307,7 @@ export type ChapterScalarWhereWithAggregatesInput = {
   status?: Prisma.StringWithAggregatesFilter<"Chapter"> | string
   sortOrder?: Prisma.IntWithAggregatesFilter<"Chapter"> | number
   wordCount?: Prisma.IntWithAggregatesFilter<"Chapter"> | number
+  archived?: Prisma.BoolWithAggregatesFilter<"Chapter"> | boolean
 }
 
 export type ChapterCreateInput = {
@@ -305,6 +317,7 @@ export type ChapterCreateInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
   scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
@@ -318,6 +331,7 @@ export type ChapterUncheckedCreateInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
 }
@@ -329,6 +343,7 @@ export type ChapterUpdateInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
   scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
@@ -342,6 +357,7 @@ export type ChapterUncheckedUpdateInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
@@ -354,6 +370,7 @@ export type ChapterCreateManyInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
 }
 
 export type ChapterUpdateManyMutationInput = {
@@ -363,6 +380,7 @@ export type ChapterUpdateManyMutationInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ChapterUncheckedUpdateManyInput = {
@@ -373,6 +391,7 @@ export type ChapterUncheckedUpdateManyInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type ChapterListRelationFilter = {
@@ -393,6 +412,7 @@ export type ChapterCountOrderByAggregateInput = {
   status?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
 }
 
 export type ChapterAvgOrderByAggregateInput = {
@@ -408,6 +428,7 @@ export type ChapterMaxOrderByAggregateInput = {
   status?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
 }
 
 export type ChapterMinOrderByAggregateInput = {
@@ -418,6 +439,7 @@ export type ChapterMinOrderByAggregateInput = {
   status?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  archived?: Prisma.SortOrder
 }
 
 export type ChapterSumOrderByAggregateInput = {
@@ -514,6 +536,7 @@ export type ChapterCreateWithoutVolumeInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
 }
@@ -525,6 +548,7 @@ export type ChapterUncheckedCreateWithoutVolumeInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
 }
@@ -565,6 +589,7 @@ export type ChapterScalarWhereInput = {
   status?: Prisma.StringFilter<"Chapter"> | string
   sortOrder?: Prisma.IntFilter<"Chapter"> | number
   wordCount?: Prisma.IntFilter<"Chapter"> | number
+  archived?: Prisma.BoolFilter<"Chapter"> | boolean
 }
 
 export type ChapterCreateWithoutScenesInput = {
@@ -574,6 +599,7 @@ export type ChapterCreateWithoutScenesInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
 }
@@ -586,6 +612,7 @@ export type ChapterUncheckedCreateWithoutScenesInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
 }
 
@@ -612,6 +639,7 @@ export type ChapterUpdateWithoutScenesInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
 }
@@ -624,6 +652,7 @@ export type ChapterUncheckedUpdateWithoutScenesInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
 
@@ -634,6 +663,7 @@ export type ChapterCreateWithoutTimelineEventsInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
   scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
 }
@@ -646,6 +676,7 @@ export type ChapterUncheckedCreateWithoutTimelineEventsInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
   scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
 }
 
@@ -672,6 +703,7 @@ export type ChapterUpdateWithoutTimelineEventsInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
   scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
 }
@@ -684,6 +716,7 @@ export type ChapterUncheckedUpdateWithoutTimelineEventsInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
 }
 
@@ -694,6 +727,7 @@ export type ChapterCreateManyVolumeInput = {
   status?: string
   sortOrder?: number
   wordCount?: number
+  archived?: boolean
 }
 
 export type ChapterUpdateWithoutVolumeInput = {
@@ -703,6 +737,7 @@ export type ChapterUpdateWithoutVolumeInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
 }
@@ -714,6 +749,7 @@ export type ChapterUncheckedUpdateWithoutVolumeInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
@@ -725,6 +761,7 @@ export type ChapterUncheckedUpdateManyWithoutVolumeInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -775,6 +812,7 @@ export type ChapterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   status?: boolean
   sortOrder?: boolean
   wordCount?: boolean
+  archived?: boolean
   volume?: boolean | Prisma.VolumeDefaultArgs<ExtArgs>
   scenes?: boolean | Prisma.Chapter$scenesArgs<ExtArgs>
   timelineEvents?: boolean | Prisma.Chapter$timelineEventsArgs<ExtArgs>
@@ -789,6 +827,7 @@ export type ChapterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   status?: boolean
   sortOrder?: boolean
   wordCount?: boolean
+  archived?: boolean
   volume?: boolean | Prisma.VolumeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["chapter"]>
 
@@ -800,6 +839,7 @@ export type ChapterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   status?: boolean
   sortOrder?: boolean
   wordCount?: boolean
+  archived?: boolean
   volume?: boolean | Prisma.VolumeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["chapter"]>
 
@@ -811,9 +851,10 @@ export type ChapterSelectScalar = {
   status?: boolean
   sortOrder?: boolean
   wordCount?: boolean
+  archived?: boolean
 }
 
-export type ChapterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "volumeId" | "title" | "summary" | "status" | "sortOrder" | "wordCount", ExtArgs["result"]["chapter"]>
+export type ChapterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "volumeId" | "title" | "summary" | "status" | "sortOrder" | "wordCount" | "archived", ExtArgs["result"]["chapter"]>
 export type ChapterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   volume?: boolean | Prisma.VolumeDefaultArgs<ExtArgs>
   scenes?: boolean | Prisma.Chapter$scenesArgs<ExtArgs>
@@ -842,6 +883,7 @@ export type $ChapterPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     status: string
     sortOrder: number
     wordCount: number
+    archived: boolean
   }, ExtArgs["result"]["chapter"]>
   composites: {}
 }
@@ -1275,6 +1317,7 @@ export interface ChapterFieldRefs {
   readonly status: Prisma.FieldRef<"Chapter", 'String'>
   readonly sortOrder: Prisma.FieldRef<"Chapter", 'Int'>
   readonly wordCount: Prisma.FieldRef<"Chapter", 'Int'>
+  readonly archived: Prisma.FieldRef<"Chapter", 'Boolean'>
 }
     
 

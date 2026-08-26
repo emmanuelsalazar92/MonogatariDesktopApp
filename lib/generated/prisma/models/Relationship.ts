@@ -601,10 +601,6 @@ export type RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput = {
   deleteMany?: Prisma.RelationshipScalarWhereInput | Prisma.RelationshipScalarWhereInput[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type RelationshipCreateWithoutNovelInput = {
   id: string
   relationshipType: string
