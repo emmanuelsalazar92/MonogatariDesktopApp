@@ -237,6 +237,19 @@ export const exportFormats = [
   "ZIP backup"
 ];
 
+export const exportOptions = [
+  "Include cover",
+  "Include table of contents",
+  "Include scene titles",
+  "Include notes",
+  "Include spoilers",
+  "Include character list",
+  "Include places",
+  "Include relationships",
+  "Include timeline",
+  "Include metadata"
+];
+
 export const relationshipCategories = {
   Family: [
     "Father of",

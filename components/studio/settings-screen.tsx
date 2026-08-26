@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FieldLine, SectionHeader } from "@/components/studio/shared";
+import { SectionHeader } from "@/components/studio/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,13 @@ import {
   uiCopy
 } from "@/lib/studio-i18n";
 import { type PersistedStudioSettings } from "@/lib/studio-data";
-import { type SidebarState } from "@/lib/studio-domain";
-import { notionAutosyncIntervals } from "@/lib/studio-settings";
+import { exportFormats, exportOptions, type SidebarState } from "@/lib/studio-domain";
+import {
+  backupRetentionPolicies,
+  notionAutosyncIntervals,
+  parseExportDefaults,
+  serializeExportDefaults
+} from "@/lib/studio-settings";
 
 type ThemeMode = "light" | "dark" | "system";
 type NotionConnectionState = "idle" | "testing" | "success" | "error";
@@ -59,6 +64,10 @@ export function SettingsScreen({
     React.useState<NotionConnectionState>("idle");
   const [notionMessage, setNotionMessage] = React.useState("");
   const [notionPageTitle, setNotionPageTitle] = React.useState(settings.notionRootPageTitle);
+  const configuredExportDefaults = React.useMemo(
+    () => parseExportDefaults(settings.exportDefaults),
+    [settings.exportDefaults]
+  );
   const autosyncStatusMessage =
     !settings.notionAutosyncEnabled
       ? translate("Automatic sync is off")
@@ -136,6 +145,19 @@ export function SettingsScreen({
         error instanceof Error ? error.message : "Could not connect to Notion."
       );
     }
+  };
+
+  const updateExportDefaults = (next: {
+    format?: string;
+    options?: string[];
+  }) => {
+    onSettingChange(
+      "exportDefaults",
+      serializeExportDefaults({
+        format: next.format ?? configuredExportDefaults.format,
+        options: next.options ?? configuredExportDefaults.options
+      })
+    );
   };
 
   return (
@@ -234,7 +256,7 @@ export function SettingsScreen({
             <SettingsSelect
               label={translate("Backup retention")}
               value={settings.backupRetention}
-              values={["7 daily backups", "30 daily backups", "90 daily backups"]}
+              values={[...backupRetentionPolicies]}
               onChange={(value) => onSettingChange("backupRetention", value)}
               translate={translate}
             />
@@ -344,21 +366,38 @@ export function SettingsScreen({
 
           <Card className="surface-panel">
             <CardHeader>
-              <CardTitle>{copy.localServer}</CardTitle>
-              <CardDescription>{copy.localServerDescription}</CardDescription>
+              <CardTitle>{translate("Export defaults")}</CardTitle>
+              <CardDescription>
+                {translate("Used to initialize Export Center. You can change each export without changing these defaults.")}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <Label>{copy.localServerDisplayName}</Label>
-                <Input
-                  className="mt-2"
-                  value={settings.localServerDisplayName}
-                  onChange={(event) =>
-                    onSettingChange("localServerDisplayName", event.target.value)
-                  }
-                />
+            <CardContent className="space-y-4">
+              <SettingsSelect
+                label={translate("Export format")}
+                value={configuredExportDefaults.format}
+                values={exportFormats}
+                onChange={(format) => updateExportDefaults({ format })}
+              />
+              <div className="grid gap-3">
+                {exportOptions.map((option) => (
+                  <div
+                    key={option}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-surface/74 px-4 py-3"
+                  >
+                    <span className="text-sm">{translate(option)}</span>
+                    <Switch
+                      checked={configuredExportDefaults.options.includes(option)}
+                      onCheckedChange={(enabled) =>
+                        updateExportDefaults({
+                          options: enabled
+                            ? [...configuredExportDefaults.options, option]
+                            : configuredExportDefaults.options.filter((item) => item !== option)
+                        })
+                      }
+                    />
+                  </div>
+                ))}
               </div>
-              <FieldLine label={copy.exportDefaults} value={settings.exportDefaults} />
               <div className="flex items-center justify-between rounded-lg border border-border/60 bg-surface/74 px-4 py-3">
                 <span className="text-sm">{copy.typewriterFont}</span>
                 <Switch
