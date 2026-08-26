@@ -122,6 +122,7 @@ import {
   type Novel,
   type PageId,
   type Relationship,
+  type Scene,
   type SidebarState,
   type TimelineEvent,
 } from "@/lib/studio-domain";
@@ -134,6 +135,9 @@ type SceneSaveInput = {
   objective: string;
   locationId: string;
 };
+
+type SaveStatus = "Saved" | "Saving..." | "Unsaved changes" | "Save error";
+type PendingSaveHandler = () => Promise<boolean>;
 
 type CreateNovelInput = {
   title: string;
@@ -244,6 +248,12 @@ function dataSourceLabel(status: DataStatus, language: Language) {
   return language === "es" ? "SQLite no disponible" : "SQLite unavailable";
 }
 
+function autosaveDelay(value: string) {
+  if (value === "Manual only") return null;
+  const seconds = Number.parseInt(value, 10);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null;
+}
+
 export default function PrivateNovelStudioPage() {
   const [activePage, setActivePage] = React.useState<PageId>("dashboard");
   const [sidebarState, setSidebarState] = React.useState<SidebarState>("expanded");
@@ -255,9 +265,7 @@ export default function PrivateNovelStudioPage() {
   const [dialog, setDialog] = React.useState<
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
   >(null);
-  const [saveStatus, setSaveStatus] = React.useState<"Saved" | "Saving..." | "Unsaved changes">(
-    "Saved"
-  );
+  const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved");
   const [toast, setToast] = React.useState("");
   const [libraryQuery, setLibraryQuery] = React.useState("");
   const [libraryStatus, setLibraryStatus] = React.useState("All statuses");
@@ -284,13 +292,15 @@ export default function PrivateNovelStudioPage() {
     defaultPersistedStudioSettings
   );
   const [dataStatus, setDataStatus] = React.useState<DataStatus>("loading");
-  const [saveRequestId, setSaveRequestId] = React.useState(0);
   const [creatingBackup, setCreatingBackup] = React.useState(false);
   const [enabledExportOptions, setEnabledExportOptions] = React.useState(
     new Set(["Include cover", "Include table of contents", "Include metadata"])
   );
   const scopedStudioData = React.useMemo(() => getScopedStudioData(studioData), [studioData]);
   const currentNovel = getCurrentNovel(studioData);
+  const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
+  const editorDirtyRef = React.useRef(false);
+  const saveInFlightRef = React.useRef<Promise<boolean> | null>(null);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
     [language]
@@ -412,9 +422,52 @@ export default function PrivateNovelStudioPage() {
     });
   }, []);
 
-  const triggerSave = React.useCallback(() => {
-    setSaveRequestId((requestId) => requestId + 1);
+  const registerPendingSave = React.useCallback((handler: PendingSaveHandler | null) => {
+    pendingSaveHandlerRef.current = handler;
   }, []);
+
+  const setEditorDirty = React.useCallback((dirty: boolean) => {
+    editorDirtyRef.current = dirty;
+  }, []);
+
+  const flushPendingChanges = React.useCallback(async function flushPendingChanges() {
+    if (!editorDirtyRef.current || !pendingSaveHandlerRef.current) {
+      return true;
+    }
+
+    if (saveInFlightRef.current) {
+      const inFlightSucceeded = await saveInFlightRef.current;
+      if (!inFlightSucceeded) return false;
+      return flushPendingChanges();
+    }
+
+    const saveUntilClean = async () => {
+      while (editorDirtyRef.current && pendingSaveHandlerRef.current) {
+        const succeeded = await pendingSaveHandlerRef.current();
+        if (!succeeded) return false;
+      }
+      return true;
+    };
+
+    const request = saveUntilClean();
+    saveInFlightRef.current = request;
+    try {
+      return await request;
+    } finally {
+      if (saveInFlightRef.current === request) saveInFlightRef.current = null;
+    }
+  }, []);
+
+  const changeFocusMode = React.useCallback(
+    async (nextMode: FocusMode) => {
+      if (!(await flushPendingChanges())) {
+        showToast("Save failed. Navigation was cancelled to protect your draft.");
+        return;
+      }
+      setFocusMode(nextMode);
+    },
+    [flushPendingChanges, showToast]
+  );
 
   const persistSettings = React.useCallback(
     async (nextSettings: Record<string, string>) => {
@@ -479,7 +532,11 @@ export default function PrivateNovelStudioPage() {
   );
 
   const setActiveNovel = React.useCallback(
-    (novelId: string, nextPage?: PageId) => {
+    async (novelId: string, nextPage?: PageId) => {
+      if (!(await flushPendingChanges())) {
+        showToast("Save failed. The current novel was not changed.");
+        return;
+      }
       setStudioData((current) => ({
         ...current,
         settings: { ...current.settings, activeNovelId: novelId }
@@ -493,11 +550,15 @@ export default function PrivateNovelStudioPage() {
         showToast("Could not save active novel")
       );
     },
-    [persistSettings, showToast]
+    [flushPendingChanges, persistSettings, showToast]
   );
 
   const setActiveStructureItem = React.useCallback(
-    (selection: StructureSelection) => {
+    async (selection: StructureSelection) => {
+      if (!(await flushPendingChanges())) {
+        showToast("Save failed. The current scene was not changed.");
+        return;
+      }
       let activeChapterId: string | undefined;
       let activeSceneId: string | undefined;
 
@@ -541,7 +602,7 @@ export default function PrivateNovelStudioPage() {
         if (!response.ok) showToast("Could not save the current structure selection");
       }).catch(() => showToast("Could not save the current structure selection"));
     },
-    [scopedStudioData.chapters, scopedStudioData.scenes, showToast]
+    [flushPendingChanges, scopedStudioData.chapters, scopedStudioData.scenes, showToast]
   );
 
   React.useEffect(() => {
@@ -553,11 +614,12 @@ export default function PrivateNovelStudioPage() {
       return;
     }
 
-    setActiveNovel(studioData.novels[0].id);
+    void setActiveNovel(studioData.novels[0].id);
   }, [dataStatus, setActiveNovel, studioData.novels, studioData.settings.activeNovelId]);
 
   const saveScene = React.useCallback(
     async (sceneId: string, input: SceneSaveInput) => {
+      if (!sceneId) return true;
       setSaveStatus("Saving...");
 
       try {
@@ -572,12 +634,45 @@ export default function PrivateNovelStudioPage() {
           throw new Error(details?.error ?? `Scene save failed with ${response.status}`);
         }
 
+        const savedScene = (await response.json()) as Scene;
+        setStudioData((current) => {
+          const scenes = current.scenes.map((scene) =>
+            scene.id === savedScene.id ? savedScene : scene
+          );
+          const chapterWordCount = scenes
+            .filter((scene) => scene.chapterId === savedScene.chapterId)
+            .reduce((sum, scene) => sum + scene.wordCount, 0);
+          const chapters = current.chapters.map((chapter) =>
+            chapter.id === savedScene.chapterId
+              ? { ...chapter, wordCount: chapterWordCount }
+              : chapter
+          );
+          const volumeId = chapters.find((chapter) => chapter.id === savedScene.chapterId)?.volumeId;
+          const novelId = current.volumes.find((volume) => volume.id === volumeId)?.novelId;
+          const novelVolumeIds = new Set(
+            current.volumes.filter((volume) => volume.novelId === novelId).map((volume) => volume.id)
+          );
+          const novelWordCount = chapters
+            .filter((chapter) => novelVolumeIds.has(chapter.volumeId))
+            .reduce((sum, chapter) => sum + chapter.wordCount, 0);
+
+          return {
+            ...current,
+            scenes,
+            chapters,
+            novels: current.novels.map((novel) =>
+              novel.id === novelId ? { ...novel, wordCount: novelWordCount } : novel
+            )
+          };
+        });
         await refreshStudioData(false);
         setSaveStatus("Saved");
         showToast("Scene saved to SQLite");
+        return true;
       } catch {
-        setSaveStatus("Unsaved changes");
+        setSaveStatus("Save error");
         showToast("Could not save scene");
+        return false;
       }
     },
     [refreshStudioData, showToast]
@@ -602,7 +697,7 @@ export default function PrivateNovelStudioPage() {
 
       const createdNovel = (await response.json()) as Novel;
       await refreshStudioData(false);
-      setActiveNovel(createdNovel.id, "overview");
+      await setActiveNovel(createdNovel.id, "overview");
       showToast("Novel created in SQLite");
     },
     [refreshStudioData, setActiveNovel, showToast]
@@ -749,10 +844,38 @@ export default function PrivateNovelStudioPage() {
   }, [refreshStudioData, showToast]);
 
   React.useEffect(() => {
+    const delay = autosaveDelay(studioSettings.autosaveInterval);
+    if (delay === null) return;
+
+    const interval = window.setInterval(() => {
+      void flushPendingChanges();
+    }, delay);
+    return () => window.clearInterval(interval);
+  }, [flushPendingChanges, studioSettings.autosaveInterval]);
+
+  React.useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!editorDirtyRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") void flushPendingChanges();
+    };
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [flushPendingChanges]);
+
+  React.useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
-        triggerSave();
+        void flushPendingChanges();
       }
 
       if ((event.ctrlKey || event.metaKey) && event.key === "\\") {
@@ -762,11 +885,11 @@ export default function PrivateNovelStudioPage() {
 
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
         event.preventDefault();
-        setFocusMode(activePage === "reader" ? "reading" : "writing");
+        void changeFocusMode(activePage === "reader" ? "reading" : "writing");
       }
 
       if (event.key === "Escape") {
-        setFocusMode("none");
+        void changeFocusMode("none");
         setMobileDrawerOpen(false);
         setDialog(null);
       }
@@ -774,7 +897,7 @@ export default function PrivateNovelStudioPage() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePage, cycleSidebar, triggerSave]);
+  }, [activePage, changeFocusMode, cycleSidebar, flushPendingChanges]);
 
   const novels = studioData.novels;
   const { characters, locations, relationships } = scopedStudioData;
@@ -835,7 +958,11 @@ export default function PrivateNovelStudioPage() {
     [studioData.chapters, studioData.novels, studioData.volumes]
   );
 
-  const selectPage = (page: PageId) => {
+  const selectPage = async (page: PageId) => {
+    if (!(await flushPendingChanges())) {
+      showToast("Save failed. Navigation was cancelled to protect your draft.");
+      return;
+    }
     setActivePage(page);
     setMobileDrawerOpen(false);
     setFocusMode("none");
@@ -855,10 +982,11 @@ export default function PrivateNovelStudioPage() {
       <StudioDataContext.Provider value={scopedStudioData}>
         <WritingFocusMode
           saveStatus={saveStatus}
-          saveRequestId={saveRequestId}
           onSaveScene={saveScene}
           setSaveStatus={setSaveStatus}
-          onExit={() => setFocusMode("none")}
+          onRegisterPendingSave={registerPendingSave}
+          onDirtyChange={setEditorDirty}
+          onExit={() => void changeFocusMode("none")}
         />
       </StudioDataContext.Provider>
     );
@@ -870,7 +998,7 @@ export default function PrivateNovelStudioPage() {
         <ReadingFocusMode
           readerFontSize={readerFontSize}
           readerWidth={readerWidth}
-          onExit={() => setFocusMode("none")}
+          onExit={() => void changeFocusMode("none")}
         />
       </StudioDataContext.Provider>
     );
@@ -966,11 +1094,12 @@ export default function PrivateNovelStudioPage() {
               {activePage === "editor" ? (
                 <EditorScreen
                   saveStatus={saveStatus}
-                  saveRequestId={saveRequestId}
                   onSaveScene={saveScene}
-                  onRequestSave={triggerSave}
-                  onFocus={() => setFocusMode("writing")}
-                  onReader={() => selectPage("reader")}
+                  onRequestSave={() => void flushPendingChanges()}
+                  onRegisterPendingSave={registerPendingSave}
+                  onDirtyChange={setEditorDirty}
+                  onFocus={() => void changeFocusMode("writing")}
+                  onReader={() => void selectPage("reader")}
                   inspectorOpen={inspectorOpen}
                   setInspectorOpen={setInspectorOpen}
                   setSaveStatus={setSaveStatus}
@@ -984,7 +1113,7 @@ export default function PrivateNovelStudioPage() {
                   onReaderThemeChange={setReaderTheme}
                   onReaderFontSizeChange={setReaderFontSize}
                   onReaderWidthChange={setReaderWidth}
-                  onFocus={() => setFocusMode("reading")}
+                  onFocus={() => void changeFocusMode("reading")}
                   onOpenToc={() => setDialog("toc")}
                 />
               ) : null}
@@ -1110,23 +1239,25 @@ export default function PrivateNovelStudioPage() {
 function EditorScreen({
   saveStatus,
   inspectorOpen,
-  saveRequestId,
   onSaveScene,
   onRequestSave,
+  onRegisterPendingSave,
+  onDirtyChange,
   onFocus,
   onReader,
   setInspectorOpen,
   setSaveStatus
 }: {
-  saveStatus: string;
+  saveStatus: SaveStatus;
   inspectorOpen: boolean;
-  saveRequestId: number;
-  onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<void>;
+  onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
   onRequestSave: () => void;
+  onRegisterPendingSave: (handler: PendingSaveHandler | null) => void;
+  onDirtyChange: (dirty: boolean) => void;
   onFocus: () => void;
   onReader: () => void;
   setInspectorOpen: (open: boolean) => void;
-  setSaveStatus: (status: "Saved" | "Saving..." | "Unsaved changes") => void;
+  setSaveStatus: (status: SaveStatus) => void;
 }) {
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
@@ -1137,31 +1268,77 @@ function EditorScreen({
   const [title, setTitle] = React.useState(activeScene.title);
   const [status, setStatus] = React.useState<ChapterStatus>(activeScene.status);
   const [content, setContent] = React.useState(activeScene.content);
+  const revisionRef = React.useRef(0);
+  const loadedSceneIdRef = React.useRef<string | null>(null);
+  const activeSceneRef = React.useRef(activeScene);
+  const draftRef = React.useRef({ title, status, content });
+  activeSceneRef.current = activeScene;
+  const dirty =
+    title !== activeScene.title ||
+    status !== activeScene.status ||
+    content !== activeScene.content;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
 
+  const markDirty = React.useCallback(() => {
+    revisionRef.current += 1;
+    onDirtyChange(true);
+    setSaveStatus("Unsaved changes");
+  }, [onDirtyChange, setSaveStatus]);
+
   const saveCurrentScene = React.useCallback(async () => {
-    await onSaveScene(activeScene.id, {
-      title,
-      status,
-      content,
-      summary: activeScene.summary,
-      objective: activeScene.objective,
-      locationId: activeScene.locationId
+    const scene = activeSceneRef.current;
+    const draft = draftRef.current;
+    const hasChanges =
+      draft.title !== scene.title ||
+      draft.status !== scene.status ||
+      draft.content !== scene.content;
+    if (!hasChanges) return true;
+    const revisionAtStart = revisionRef.current;
+    const succeeded = await onSaveScene(scene.id, {
+      title: draft.title,
+      status: draft.status,
+      content: draft.content,
+      summary: scene.summary,
+      objective: scene.objective,
+      locationId: scene.locationId
     });
-  }, [activeScene, content, onSaveScene, status, title]);
+    if (!succeeded) return false;
+
+    if (revisionRef.current === revisionAtStart) {
+      onDirtyChange(false);
+    } else {
+      setSaveStatus("Unsaved changes");
+    }
+    return true;
+  }, [onDirtyChange, onSaveScene, setSaveStatus]);
 
   React.useEffect(() => {
+    if (loadedSceneIdRef.current === activeScene.id) return;
+    loadedSceneIdRef.current = activeScene.id;
     setTitle(activeScene.title);
     setStatus(activeScene.status);
     setContent(activeScene.content);
+    draftRef.current = {
+      title: activeScene.title,
+      status: activeScene.status,
+      content: activeScene.content
+    };
+    revisionRef.current = 0;
+    onDirtyChange(false);
     setSaveStatus("Saved");
-  }, [activeScene, setSaveStatus]);
+  }, [activeScene, onDirtyChange, setSaveStatus]);
 
   React.useEffect(() => {
-    if (saveRequestId > 0) {
-      void saveCurrentScene();
+    onDirtyChange(dirty);
+    if (!dirty && saveStatus !== "Saving..." && saveStatus !== "Saved") {
+      setSaveStatus("Saved");
     }
-  }, [saveCurrentScene, saveRequestId]);
+  }, [dirty, onDirtyChange, saveStatus, setSaveStatus]);
+
+  React.useEffect(() => {
+    onRegisterPendingSave(saveCurrentScene);
+    return () => onRegisterPendingSave(null);
+  }, [onRegisterPendingSave, saveCurrentScene]);
 
   return (
     <div className="grid gap-6">
@@ -1200,8 +1377,10 @@ function EditorScreen({
                     value={title}
                     className="mt-2"
                     onChange={(event) => {
-                      setTitle(event.target.value);
-                      setSaveStatus("Unsaved changes");
+                      const nextTitle = event.target.value;
+                      draftRef.current = { ...draftRef.current, title: nextTitle };
+                      setTitle(nextTitle);
+                      markDirty();
                     }}
                   />
                 </div>
@@ -1210,8 +1389,10 @@ function EditorScreen({
                   <Select
                     value={status}
                     onValueChange={(value) => {
-                      setStatus(value as ChapterStatus);
-                      setSaveStatus("Unsaved changes");
+                      const nextStatus = value as ChapterStatus;
+                      draftRef.current = { ...draftRef.current, status: nextStatus };
+                      setStatus(nextStatus);
+                      markDirty();
                     }}
                   >
                     <SelectTrigger className="mt-2">
@@ -1229,7 +1410,11 @@ function EditorScreen({
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={onRequestSave}>
+                <Button
+                  variant="outline"
+                  onClick={onRequestSave}
+                  disabled={!dirty || saveStatus === "Saving..."}
+                >
                   <Save className="size-4" />
                   Save
                 </Button>
@@ -1281,8 +1466,10 @@ function EditorScreen({
                       }
                       readOnly={level === "Full chapter assembled from scenes"}
                       onChange={(event) => {
-                        setContent(event.target.value);
-                        setSaveStatus("Unsaved changes");
+                        const nextContent = event.target.value;
+                        draftRef.current = { ...draftRef.current, content: nextContent };
+                        setContent(nextContent);
+                        markDirty();
                       }}
                       className="min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
                     />
@@ -1303,7 +1490,8 @@ function EditorScreen({
                   "size-2 fill-current",
                   saveStatus === "Saved" && "text-emerald-600",
                   saveStatus === "Saving..." && "text-accent",
-                  saveStatus === "Unsaved changes" && "text-destructive"
+                  saveStatus === "Unsaved changes" && "text-warning",
+                  saveStatus === "Save error" && "text-destructive"
                 )}
               />
               {saveStatus}
@@ -1381,43 +1569,73 @@ function ShortcutPanel() {
 
 function WritingFocusMode({
   saveStatus,
-  saveRequestId,
   onSaveScene,
   setSaveStatus,
+  onRegisterPendingSave,
+  onDirtyChange,
   onExit
 }: {
-  saveStatus: string;
-  saveRequestId: number;
-  onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<void>;
-  setSaveStatus: (status: "Saved" | "Saving..." | "Unsaved changes") => void;
+  saveStatus: SaveStatus;
+  onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
+  setSaveStatus: (status: SaveStatus) => void;
+  onRegisterPendingSave: (handler: PendingSaveHandler | null) => void;
+  onDirtyChange: (dirty: boolean) => void;
   onExit: () => void;
 }) {
   const data = useStudioData();
   const activeScene = getActiveScene(data);
   const [content, setContent] = React.useState(activeScene.content);
+  const revisionRef = React.useRef(0);
+  const loadedSceneIdRef = React.useRef<string | null>(null);
+  const activeSceneRef = React.useRef(activeScene);
+  const contentRef = React.useRef(content);
+  activeSceneRef.current = activeScene;
+  const dirty = content !== activeScene.content;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
 
   const saveCurrentScene = React.useCallback(async () => {
-    await onSaveScene(activeScene.id, {
-      title: activeScene.title,
-      status: activeScene.status,
-      content,
-      summary: activeScene.summary,
-      objective: activeScene.objective,
-      locationId: activeScene.locationId
+    const scene = activeSceneRef.current;
+    const latestContent = contentRef.current;
+    if (latestContent === scene.content) return true;
+    const revisionAtStart = revisionRef.current;
+    const succeeded = await onSaveScene(scene.id, {
+      title: scene.title,
+      status: scene.status,
+      content: latestContent,
+      summary: scene.summary,
+      objective: scene.objective,
+      locationId: scene.locationId
     });
-  }, [activeScene, content, onSaveScene]);
-
-  React.useEffect(() => {
-    setContent(activeScene.content);
-    setSaveStatus("Saved");
-  }, [activeScene, setSaveStatus]);
-
-  React.useEffect(() => {
-    if (saveRequestId > 0) {
-      void saveCurrentScene();
+    if (!succeeded) return false;
+    if (revisionRef.current === revisionAtStart) {
+      onDirtyChange(false);
+    } else {
+      setSaveStatus("Unsaved changes");
     }
-  }, [saveCurrentScene, saveRequestId]);
+    return true;
+  }, [onDirtyChange, onSaveScene, setSaveStatus]);
+
+  React.useEffect(() => {
+    if (loadedSceneIdRef.current === activeScene.id) return;
+    loadedSceneIdRef.current = activeScene.id;
+    setContent(activeScene.content);
+    contentRef.current = activeScene.content;
+    revisionRef.current = 0;
+    onDirtyChange(false);
+    setSaveStatus("Saved");
+  }, [activeScene, onDirtyChange, setSaveStatus]);
+
+  React.useEffect(() => {
+    onDirtyChange(dirty);
+    if (!dirty && saveStatus !== "Saving..." && saveStatus !== "Saved") {
+      setSaveStatus("Saved");
+    }
+  }, [dirty, onDirtyChange, saveStatus, setSaveStatus]);
+
+  React.useEffect(() => {
+    onRegisterPendingSave(saveCurrentScene);
+    return () => onRegisterPendingSave(null);
+  }, [onRegisterPendingSave, saveCurrentScene]);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -1428,7 +1646,13 @@ function WritingFocusMode({
           </div>
           <Badge variant="outline">{saveStatus}</Badge>
           <Badge variant="outline">{formatNumber(draftWordCount)} words</Badge>
-          <Button variant="ghost" size="icon" onClick={saveCurrentScene} aria-label="Save">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void saveCurrentScene()}
+            aria-label="Save"
+            disabled={!dirty || saveStatus === "Saving..."}
+          >
             <Save className="size-4" />
           </Button>
           <Button variant="outline" onClick={onExit}>
@@ -1442,7 +1666,11 @@ function WritingFocusMode({
           <Textarea
             value={content}
             onChange={(event) => {
-              setContent(event.target.value);
+              const nextContent = event.target.value;
+              contentRef.current = nextContent;
+              setContent(nextContent);
+              revisionRef.current += 1;
+              onDirtyChange(true);
               setSaveStatus("Unsaved changes");
             }}
             className="min-h-[calc(100vh-12rem)] border-0 bg-transparent p-0 font-typewriter text-lg leading-9 text-editor-foreground shadow-none focus-visible:ring-0"

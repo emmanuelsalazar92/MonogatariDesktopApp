@@ -205,6 +205,7 @@ const englishToSpanishEntries = [
   ["Saved", "Guardado"],
   ["Saving...", "Guardando..."],
   ["Unsaved changes", "Cambios sin guardar"],
+  ["Save error", "Error de guardado"],
   ["Scene saved locally", "Escena guardada localmente"],
   ["Search by title", "Buscar por tÃ­tulo"],
   ["Search characters", "Buscar personajes"],
