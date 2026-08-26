@@ -105,7 +105,6 @@ import {
   volumeTitle
 } from "@/lib/studio-data";
 import {
-  LANGUAGE_STORAGE_KEY,
   pageLabelsByLanguage,
   translateStudioText,
   type Language,
@@ -356,17 +355,6 @@ export default function PrivateNovelStudioPage() {
   }, []);
 
   React.useEffect(() => {
-    const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (storedLanguage === "en" || storedLanguage === "es") {
-      setLanguage(storedLanguage);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-  }, [language]);
-
-  React.useEffect(() => {
     if (dataStatus !== "ready") {
       return;
     }
@@ -406,37 +394,12 @@ export default function PrivateNovelStudioPage() {
   }, [refreshStudioData]);
 
   React.useEffect(() => {
-    const applyDefaultSidebar = () => {
-      const width = window.innerWidth;
-      if (width < 768) {
-        setSidebarState("hidden");
-      } else if (width < 1180) {
-        setSidebarState("compact");
-      } else {
-        setSidebarState("expanded");
-      }
-    };
-
-    applyDefaultSidebar();
-    window.addEventListener("resize", applyDefaultSidebar);
-    return () => window.removeEventListener("resize", applyDefaultSidebar);
-  }, []);
-
-  React.useEffect(() => {
     const root = document.documentElement;
     const shouldUseDark =
       theme === "dark" ||
       (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     root.classList.toggle("dark", shouldUseDark);
   }, [theme]);
-
-  const cycleSidebar = React.useCallback(() => {
-    setSidebarState((current) => {
-      if (current === "expanded") return "compact";
-      if (current === "compact") return "hidden";
-      return "expanded";
-    });
-  }, []);
 
   const registerPendingSave = React.useCallback((handler: PendingSaveHandler | null) => {
     pendingSaveHandlerRef.current = handler;
@@ -526,6 +489,16 @@ export default function PrivateNovelStudioPage() {
     },
     [persistSettings, showToast]
   );
+
+  const cycleSidebar = React.useCallback(() => {
+    const nextState =
+      sidebarState === "expanded"
+        ? "compact"
+        : sidebarState === "compact"
+          ? "hidden"
+          : "expanded";
+    updateSidebarState(nextState);
+  }, [sidebarState, updateSidebarState]);
 
   const updateStudioSetting = React.useCallback(
     (key: keyof PersistedStudioSettings, value: string | boolean) => {
@@ -1276,7 +1249,7 @@ export default function PrivateNovelStudioPage() {
               hideSidebar: uiCopy[language].hideSidebar
             }}
             onSelectPage={selectPage}
-            onSidebarStateChange={setSidebarState}
+            onSidebarStateChange={updateSidebarState}
           />
 
           <div className="flex min-w-0 flex-1 flex-col">
