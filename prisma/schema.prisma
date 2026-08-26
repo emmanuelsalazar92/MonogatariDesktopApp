@@ -214,5 +214,6 @@ model NotionSyncState {
   novelId        String   @id
   isDirty        Boolean  @default(true)
   lastNotionSync DateTime?
+  lastKnownContent String @default("{}")
   updatedAt      DateTime @updatedAt
 }

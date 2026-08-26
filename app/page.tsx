@@ -724,6 +724,45 @@ export default function PrivateNovelStudioPage() {
     }
   }, [currentNovel.id, refreshStudioData, showToast]);
 
+  const pullCurrentNovelFromNotion = React.useCallback(async () => {
+    if (!currentNovel.id) return;
+
+    setNotionPublishState("publishing");
+    setNotionPublishMessage("");
+    setNotionPublishUrl("");
+
+    try {
+      const response = await fetch("/api/integrations/notion/pull", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ novelId: currentNovel.id })
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        appliedChapters?: number;
+        conflicts?: Array<{ message?: string }>;
+      };
+
+      if (!response.ok || !result.ok) {
+        const conflictDetails = result.conflicts?.map((conflict) => conflict.message).join(" ");
+        throw new Error(conflictDetails || result.message || "Could not update this novel from Notion.");
+      }
+
+      setNotionPublishState("success");
+      setNotionPublishMessage(result.message ?? "Notion updates were applied locally.");
+      await refreshStudioData(false);
+      showToast(
+        result.appliedChapters ? `Updated ${result.appliedChapters} chapter(s) from Notion` : "Notion is already up to date"
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not update this novel from Notion.";
+      setNotionPublishState("error");
+      setNotionPublishMessage(message);
+      showToast(message);
+    }
+  }, [currentNovel.id, refreshStudioData, showToast]);
+
   const createNovelFromDialog = React.useCallback(
     async (input: CreateNovelInput) => {
       const response = await fetch("/api/novels", {
@@ -1127,6 +1166,7 @@ export default function PrivateNovelStudioPage() {
                   translate={translate}
                   onSelectPage={selectPage}
                   onPublishToNotion={() => void publishCurrentNovelToNotion()}
+                  onPullFromNotion={() => void pullCurrentNovelFromNotion()}
                   notionPublishState={notionPublishState}
                   notionPublishMessage={notionPublishMessage}
                   notionPublishUrl={notionPublishUrl}

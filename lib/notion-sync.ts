@@ -43,7 +43,15 @@ async function runNotionSync(novelId: string, force: boolean): Promise<NotionSyn
   }
 
   const result = await publishWithRateLimitRetry(novelId);
-  const syncedState = await markNotionSynced(novelId);
+  const syncedState = await markNotionSynced(
+    novelId,
+    Object.fromEntries(
+      result.chapterSnapshots.map((snapshot) => [
+        snapshot.chapterId,
+        { local: snapshot.local, remote: snapshot.remote }
+      ])
+    )
+  );
 
   return {
     skipped: false,
