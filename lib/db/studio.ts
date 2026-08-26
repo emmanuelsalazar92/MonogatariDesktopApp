@@ -1,5 +1,12 @@
 ﻿import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import {
+  applyStudioSettings,
+  hasOnlyKnownStudioSettings,
+  parseStudioSettings,
+  STUDIO_CONFIGURATION_ID,
+  STUDIO_CONFIGURATION_VERSION
+} from "@/lib/studio-settings";
 import type {
   Character,
   ChapterStatus,
@@ -196,6 +203,7 @@ export async function getStudioSnapshot() {
     backups,
     writingActivities,
     settings,
+    configuration,
     notionSyncStates
   ] = await Promise.all([
     prisma.novel.findMany({ orderBy: { updatedAt: "desc" } }),
@@ -210,8 +218,23 @@ export async function getStudioSnapshot() {
     prisma.backup.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.writingActivity.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.appSetting.findMany({ orderBy: { key: "asc" } }),
+    prisma.studioConfiguration.findUnique({ where: { id: STUDIO_CONFIGURATION_ID } }),
     prisma.notionSyncState.findMany({ orderBy: { novelId: "asc" } })
   ]);
+  const studioSettings = configuration && configuration.version === STUDIO_CONFIGURATION_VERSION
+    ? parseStudioSettings(configuration.values)
+    : applyStudioSettings(parseStudioSettings(null), Object.fromEntries(settings.map((item) => [item.key, item.value])));
+  if (!configuration) {
+    await prisma.studioConfiguration.upsert({
+      where: { id: STUDIO_CONFIGURATION_ID },
+      update: {},
+      create: {
+        id: STUDIO_CONFIGURATION_ID,
+        version: STUDIO_CONFIGURATION_VERSION,
+        values: JSON.stringify(studioSettings)
+      }
+    });
+  }
 
   return {
     novels: novels.map((novel) => serializeNovel(novel)),
@@ -235,6 +258,7 @@ export async function getStudioSnapshot() {
       ...activity,
       createdAt: activity.createdAt.toISOString()
     })),
+    studioSettings,
     settings: Object.fromEntries(settings.map((setting) => [setting.key, setting.value])),
     notionSyncStates: notionSyncStates.map((state) => ({
       novelId: state.novelId,
@@ -534,6 +558,56 @@ export async function createBackupRecord(input: {
     date: dateOnly(backup.createdAt),
     name: backup.filename
   };
+}
+
+export async function updateStudioSettings(input: Record<string, unknown>) {
+  if (!hasOnlyKnownStudioSettings(input)) {
+    throw new Error("settings contain unsupported keys");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const stored = await tx.studioConfiguration.findUnique({
+      where: { id: STUDIO_CONFIGURATION_ID }
+    });
+    const next = applyStudioSettings(parseStudioSettings(stored?.values), input);
+    await tx.studioConfiguration.upsert({
+      where: { id: STUDIO_CONFIGURATION_ID },
+      update: { version: STUDIO_CONFIGURATION_VERSION, values: JSON.stringify(next) },
+      create: {
+        id: STUDIO_CONFIGURATION_ID,
+        version: STUDIO_CONFIGURATION_VERSION,
+        values: JSON.stringify(next)
+      }
+    });
+    return next;
+  });
+}
+
+export async function getStudioSettings() {
+  const configuration = await prisma.studioConfiguration.findUnique({
+    where: { id: STUDIO_CONFIGURATION_ID }
+  });
+  if (configuration) {
+    return configuration.version === STUDIO_CONFIGURATION_VERSION
+      ? parseStudioSettings(configuration.values)
+      : parseStudioSettings(null);
+  }
+
+  const legacy = await prisma.appSetting.findMany({ orderBy: { key: "asc" } });
+  const settings = applyStudioSettings(
+    parseStudioSettings(null),
+    Object.fromEntries(legacy.map((item) => [item.key, item.value]))
+  );
+  await prisma.studioConfiguration.upsert({
+    where: { id: STUDIO_CONFIGURATION_ID },
+    update: {},
+    create: {
+      id: STUDIO_CONFIGURATION_ID,
+      version: STUDIO_CONFIGURATION_VERSION,
+      values: JSON.stringify(settings)
+    }
+  });
+  return settings;
 }
 
 export async function updateAppSettings(input: Record<string, string>) {

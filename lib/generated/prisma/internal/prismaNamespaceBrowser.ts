@@ -63,6 +63,7 @@ export const ModelName = {
   Note: 'Note',
   Backup: 'Backup',
   AppSetting: 'AppSetting',
+  StudioConfiguration: 'StudioConfiguration',
   NotionMapping: 'NotionMapping',
   NotionSyncState: 'NotionSyncState'
 } as const
@@ -259,6 +260,16 @@ export const AppSettingScalarFieldEnum = {
 } as const
 
 export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
+
+
+export const StudioConfigurationScalarFieldEnum = {
+  id: 'id',
+  version: 'version',
+  values: 'values',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StudioConfigurationScalarFieldEnum = (typeof StudioConfigurationScalarFieldEnum)[keyof typeof StudioConfigurationScalarFieldEnum]
 
 
 export const NotionMappingScalarFieldEnum = {

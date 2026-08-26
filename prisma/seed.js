@@ -17,6 +17,7 @@ async function main() {
   await prisma.$transaction([
     prisma.appSetting.deleteMany(),
     prisma.backup.deleteMany(),
+    prisma.studioConfiguration.deleteMany(),
     prisma.note.deleteMany(),
     prisma.timelineEvent.deleteMany(),
     prisma.relationship.deleteMany(),
@@ -390,12 +391,33 @@ async function main() {
 
   await prisma.appSetting.createMany({
     data: [
-      { key: "theme", value: "light" },
-      { key: "language", value: "en" },
-      { key: "sidebarDefaultState", value: "expanded" },
-      { key: "autosaveIntervalSeconds", value: "30" },
-      { key: "localServerDisplayName", value: "novel.local" }
+      { key: "activeNovelId", value: "novel-eco-azul" }
     ]
+  });
+
+  await prisma.studioConfiguration.create({
+    data: {
+      id: "studio",
+      version: 1,
+      values: json({
+        theme: "light",
+        language: "en",
+        sidebarState: "expanded",
+        editorFontSize: "18 px",
+        readerFontSize: "18 px",
+        autosaveInterval: "30 seconds",
+        defaultFocusMode: "Writing",
+        defaultReadingMode: "Sepia",
+        backupRetention: "30 daily backups",
+        localServerDisplayName: "novel.local",
+        exportDefaults: "EPUB, include cover and metadata",
+        typewriterFont: true,
+        notionRootPageId: "",
+        notionAutosyncEnabled: false,
+        notionAutosyncIntervalMinutes: "5",
+        dailyWordGoal: "1500"
+      })
+    }
   });
 }
 

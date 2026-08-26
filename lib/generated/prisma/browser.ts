@@ -77,6 +77,10 @@ export type Backup = Prisma.BackupModel
  */
 export type AppSetting = Prisma.AppSettingModel
 /**
+ * Model StudioConfiguration
+ */
+export type StudioConfiguration = Prisma.StudioConfigurationModel
+/**
  * Model NotionMapping
  * 
  */

@@ -32,6 +32,7 @@ export type StudioData = {
   notes: import("@/lib/studio-domain").Note[];
   backups: StudioBackup[];
   writingActivities: WritingActivity[];
+  studioSettings: PersistedStudioSettings;
   settings: Record<string, string>;
   notionSyncStates: Array<{
     novelId: string;
@@ -44,6 +45,9 @@ export type StudioData = {
 export type DataStatus = "loading" | "ready" | "fallback";
 
 export type PersistedStudioSettings = {
+  theme: "light" | "dark" | "system";
+  language: "en" | "es";
+  sidebarState: "expanded" | "compact" | "hidden";
   editorFontSize: string;
   readerFontSize: string;
   autosaveInterval: string;
@@ -71,6 +75,7 @@ export const emptyStudioData: StudioData = {
   notes: [],
   backups: [],
   writingActivities: [],
+  studioSettings: {} as PersistedStudioSettings,
   settings: {},
   notionSyncStates: []
 };
@@ -114,6 +119,9 @@ export const emptyScene: Scene = {
 };
 
 export const defaultPersistedStudioSettings: PersistedStudioSettings = {
+  theme: "light",
+  language: "en",
+  sidebarState: "expanded",
   editorFontSize: "18 px",
   readerFontSize: "18 px",
   autosaveInterval: "30 seconds",
@@ -150,6 +158,10 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
     writingActivities: Array.isArray(payload.writingActivities)
       ? payload.writingActivities
       : emptyStudioData.writingActivities,
+    studioSettings:
+      payload.studioSettings && typeof payload.studioSettings === "object"
+        ? { ...defaultPersistedStudioSettings, ...payload.studioSettings }
+        : defaultPersistedStudioSettings,
     settings:
       payload.settings && typeof payload.settings === "object"
         ? payload.settings

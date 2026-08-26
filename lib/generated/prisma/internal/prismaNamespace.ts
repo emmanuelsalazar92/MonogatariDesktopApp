@@ -396,6 +396,7 @@ export const ModelName = {
   Note: 'Note',
   Backup: 'Backup',
   AppSetting: 'AppSetting',
+  StudioConfiguration: 'StudioConfiguration',
   NotionMapping: 'NotionMapping',
   NotionSyncState: 'NotionSyncState'
 } as const
@@ -413,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "volume" | "chapter" | "scene" | "writingActivity" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "volume" | "chapter" | "scene" | "writingActivity" | "character" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1305,6 +1306,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    StudioConfiguration: {
+      payload: Prisma.$StudioConfigurationPayload<ExtArgs>
+      fields: Prisma.StudioConfigurationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StudioConfigurationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StudioConfigurationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>
+        }
+        findFirst: {
+          args: Prisma.StudioConfigurationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StudioConfigurationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>
+        }
+        findMany: {
+          args: Prisma.StudioConfigurationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>[]
+        }
+        create: {
+          args: Prisma.StudioConfigurationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>
+        }
+        createMany: {
+          args: Prisma.StudioConfigurationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StudioConfigurationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>[]
+        }
+        delete: {
+          args: Prisma.StudioConfigurationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>
+        }
+        update: {
+          args: Prisma.StudioConfigurationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>
+        }
+        deleteMany: {
+          args: Prisma.StudioConfigurationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StudioConfigurationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StudioConfigurationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>[]
+        }
+        upsert: {
+          args: Prisma.StudioConfigurationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StudioConfigurationPayload>
+        }
+        aggregate: {
+          args: Prisma.StudioConfigurationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStudioConfiguration>
+        }
+        groupBy: {
+          args: Prisma.StudioConfigurationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StudioConfigurationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StudioConfigurationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StudioConfigurationCountAggregateOutputType> | number
+        }
+      }
+    }
     NotionMapping: {
       payload: Prisma.$NotionMappingPayload<ExtArgs>
       fields: Prisma.NotionMappingFieldRefs
@@ -1670,6 +1745,16 @@ export const AppSettingScalarFieldEnum = {
 export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
 
 
+export const StudioConfigurationScalarFieldEnum = {
+  id: 'id',
+  version: 'version',
+  values: 'values',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StudioConfigurationScalarFieldEnum = (typeof StudioConfigurationScalarFieldEnum)[keyof typeof StudioConfigurationScalarFieldEnum]
+
+
 export const NotionMappingScalarFieldEnum = {
   localId: 'localId',
   entityType: 'entityType',
@@ -1873,6 +1958,7 @@ export type GlobalOmitConfig = {
   note?: Prisma.NoteOmit
   backup?: Prisma.BackupOmit
   appSetting?: Prisma.AppSettingOmit
+  studioConfiguration?: Prisma.StudioConfigurationOmit
   notionMapping?: Prisma.NotionMappingOmit
   notionSyncState?: Prisma.NotionSyncStateOmit
 }

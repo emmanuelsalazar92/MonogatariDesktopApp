@@ -1,14 +1,13 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+import { getStudioSettings } from "@/lib/db/studio";
 
 export type NotionPublishSource = Awaited<ReturnType<typeof getNotionPublishSource>>;
 
 export async function getNotionRootPageId() {
-  const setting = await prisma.appSetting.findUnique({
-    where: { key: "notionRootPageId" }
-  });
-  return setting?.value.trim() || null;
+  const settings = await getStudioSettings();
+  return settings.notionRootPageId.trim() || null;
 }
 
 export async function getNotionPublishSource(novelId: string) {
