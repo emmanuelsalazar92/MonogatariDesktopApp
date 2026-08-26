@@ -34,7 +34,6 @@ import {
   MapIcon,
   MetricCard,
   ProgressBar,
-  SectionHeader,
   StatusBadge
 } from "@/components/studio/shared";
 
@@ -71,26 +70,24 @@ export function DashboardScreen({
   ];
 
   return (
-    <div className="grid gap-7">
-      <SectionHeader
-        eyebrow={translate("Private desk")}
-        title={translate("Welcome back, writer")}
-        description={translate(
-          "Continue drafting, organize story material, and export local files from a calm workspace built for long writing sessions."
-        )}
-        action={
-          <>
-            <Button onClick={() => onSelectPage("editor")}>
-              <PenLine className="size-4" />
-              {translate("Continue")}
-            </Button>
-            <Button variant="outline" onClick={() => onSelectPage("library")}>
-              <Library className="size-4" />
-              {translate("Library")}
-            </Button>
-          </>
-        }
-      />
+    <div className="grid gap-5 sm:gap-6">
+      <section className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card/70 px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            {translate("Current Novel")}
+          </p>
+          <h1 className="mt-1 truncate text-2xl font-semibold leading-tight text-foreground sm:text-3xl">
+            {currentNovel.title}
+          </h1>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            {translate("Last edited chapter")}: {activeChapter.title}
+          </p>
+        </div>
+        <Button variant="outline" className="shrink-0" onClick={() => onOpenNovel(currentNovel.id, "overview")}>
+          <Library className="size-4" />
+          {translate("Current Novel")}
+        </Button>
+      </section>
 
       <Card className="overflow-hidden">
         <CardContent className="grid gap-0 p-0 sm:grid-cols-2 xl:grid-cols-4">
@@ -147,7 +144,7 @@ export function DashboardScreen({
               <div className="flex flex-wrap items-center gap-2.5">
                 <Button size="lg" onClick={() => onSelectPage("editor")}>
                   <PenLine className="size-4" />
-                  {translate("Open editor")}
+                  {translate("Continue writing")}
                 </Button>
                 <Button variant="outline" onClick={() => onSelectPage("reader")}>
                   <BookOpen className="size-4" />

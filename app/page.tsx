@@ -1284,27 +1284,17 @@ export default function PrivateNovelStudioPage() {
               pageLabel={pageLabelsByLanguage[language][activePage]}
               subtitle={`${currentNovel.title} - ${uiCopy[language].localStudio}`}
               sidebarState={sidebarState}
-              theme={theme}
-              language={language}
               novels={studioData.novels}
               activeNovelId={currentNovel.id}
               dataStatusLabel={dataSourceLabel(dataStatus, language)}
               copy={{
                 openNavigation: uiCopy[language].openNavigation,
                 toggleSidebar: uiCopy[language].toggleSidebar,
-                localStatus: uiCopy[language].localStatus,
-                language: uiCopy[language].language,
-                english: uiCopy[language].english,
-                spanish: uiCopy[language].spanish,
-                light: uiCopy[language].light,
-                dark: uiCopy[language].dark,
-                system: uiCopy[language].system
+                localStatus: uiCopy[language].localStatus
               }}
               onOpenMobileNav={() => setMobileDrawerOpen(true)}
               onCycleSidebar={cycleSidebar}
               onActiveNovelChange={setActiveNovel}
-              onThemeChange={updateTheme}
-              onLanguageChange={updateLanguage}
             />
 
           <div className="flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
