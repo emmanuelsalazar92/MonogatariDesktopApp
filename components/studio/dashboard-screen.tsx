@@ -107,14 +107,20 @@ export function DashboardScreen({
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-        <Card className="overflow-hidden surface-panel">
-          <CardHeader className="border-b border-border/55 pb-5">
+        <Card className="group relative overflow-hidden surface-panel transition-all duration-150 hover:border-primary/35 hover:shadow-paper focus-within:border-primary/55 focus-within:shadow-paper">
+          <button
+            type="button"
+            aria-label={`${translate("Continue writing")}: ${activeScene.title}`}
+            className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            onClick={() => onSelectPage("editor")}
+          />
+          <CardHeader className="pointer-events-none relative z-0 border-b border-border/55 pb-5">
             <CardTitle>{translate("Continue writing")}</CardTitle>
             <CardDescription>
               {translate("Last edited chapter")}: {activeChapter.title}
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-5 pt-5 md:grid-cols-[104px_1fr]">
+          <CardContent className="pointer-events-none relative z-0 grid gap-5 pt-5 md:grid-cols-[104px_1fr]">
             <CoverBlock title={currentNovel.title} compact />
             <div className="min-w-0 space-y-4">
               <div>
@@ -142,16 +148,17 @@ export function DashboardScreen({
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
-                <Button size="lg" onClick={() => onSelectPage("editor")}>
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
                   <PenLine className="size-4" />
                   {translate("Continue writing")}
-                </Button>
-                <Button variant="outline" onClick={() => onSelectPage("reader")}>
+                </span>
+                <Button
+                  variant="outline"
+                  className="pointer-events-auto relative z-20"
+                  onClick={() => onSelectPage("reader")}
+                >
                   <BookOpen className="size-4" />
                   {translate("Reader preview")}
-                </Button>
-                <Button variant="ghost" onClick={() => onOpenNovel(currentNovel.id, "overview")}>
-                  {translate("Current Novel")}
                 </Button>
               </div>
             </div>
@@ -204,7 +211,7 @@ export function DashboardScreen({
                 key={novel.id}
                 type="button"
                 onClick={() => onOpenNovel(novel.id, "overview")}
-                className="grid gap-3 rounded-lg border border-border/55 bg-surface/68 p-3 text-left transition-all duration-150 hover:border-border hover:bg-surface-elevated sm:grid-cols-[auto_1fr_auto]"
+                className="grid gap-3 rounded-lg border border-border/55 bg-surface/68 p-3 text-left transition-all duration-150 hover:border-primary/35 hover:bg-surface-elevated hover:shadow-paper-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:grid-cols-[auto_1fr_auto]"
               >
                 <CoverBlock title={novel.title} compact />
                 <div className="min-w-0">
