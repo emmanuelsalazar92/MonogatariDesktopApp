@@ -274,9 +274,7 @@ function PrivateNovelStudioContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeRoute = React.useMemo(() => parseStudioRoute(pathname), [pathname]);
-  const [activePage, setActivePage] = React.useState<PageId>(
-    () => activeRoute?.page ?? "dashboard"
-  );
+  const activePage = activeRoute?.page ?? "dashboard";
   const [sidebarState, setSidebarState] = React.useState<SidebarState>("expanded");
   const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
   const [theme, setTheme] = React.useState<"light" | "dark" | "system">("light");
@@ -331,11 +329,34 @@ function PrivateNovelStudioContent() {
       return studioData;
     }
 
+    const routeSceneId = activeRoute?.sceneId;
+    const routeScene = routeSceneId
+      ? studioData.scenes.find((scene) => scene.id === routeSceneId)
+      : undefined;
+    const routeChapter = routeScene
+      ? studioData.chapters.find((chapter) => chapter.id === routeScene.chapterId)
+      : undefined;
+    const routeVolume = routeChapter
+      ? studioData.volumes.find((volume) => volume.id === routeChapter.volumeId)
+      : undefined;
+    const routeSceneBelongsToNovel = routeVolume?.novelId === routeNovelId;
+
     return {
       ...studioData,
-      settings: { ...studioData.settings, activeNovelId: routeNovelId }
+      settings: {
+        ...studioData.settings,
+        activeNovelId: routeNovelId,
+        ...(routeSceneBelongsToNovel && routeScene && routeChapter
+          ? {
+              activeStructureType: "scene" as const,
+              activeStructureId: routeScene.id,
+              activeChapterId: routeChapter.id,
+              activeSceneId: routeScene.id
+            }
+          : {})
+      }
     };
-  }, [activeRoute?.novelId, studioData]);
+  }, [activeRoute?.novelId, activeRoute?.sceneId, studioData]);
   const scopedStudioData = React.useMemo(
     () => getScopedStudioData(routeContextData),
     [routeContextData]
@@ -438,49 +459,6 @@ function PrivateNovelStudioContent() {
   React.useEffect(() => {
     void refreshStudioData();
   }, [refreshStudioData]);
-
-  React.useEffect(() => {
-    if (activeRoute) setActivePage(activeRoute.page);
-  }, [activeRoute]);
-
-  React.useEffect(() => {
-    const routeNovelId = activeRoute?.novelId;
-    if (!routeNovelId || dataStatus !== "ready") return;
-    if (!studioData.novels.some((novel) => novel.id === routeNovelId)) return;
-
-    setStudioData((current) =>
-      current.settings.activeNovelId === routeNovelId
-        ? current
-        : { ...current, settings: { ...current.settings, activeNovelId: routeNovelId } }
-    );
-  }, [activeRoute?.novelId, dataStatus, studioData.novels]);
-
-  React.useEffect(() => {
-    const routeNovelId = activeRoute?.novelId;
-    const routeSceneId = activeRoute?.sceneId;
-    if (!routeNovelId || !routeSceneId || dataStatus !== "ready") return;
-
-    const scene = studioData.scenes.find((item) => item.id === routeSceneId);
-    const chapter = scene
-      ? studioData.chapters.find((item) => item.id === scene.chapterId)
-      : undefined;
-    const volume = chapter
-      ? studioData.volumes.find((item) => item.id === chapter.volumeId)
-      : undefined;
-    if (!scene || !chapter || volume?.novelId !== routeNovelId) return;
-
-    setStudioData((current) => ({
-      ...current,
-      settings: {
-        ...current.settings,
-        activeNovelId: routeNovelId,
-        activeStructureType: "scene",
-        activeStructureId: scene.id,
-        activeChapterId: chapter.id,
-        activeSceneId: scene.id
-      }
-    }));
-  }, [activeRoute?.novelId, activeRoute?.sceneId, dataStatus, studioData.chapters, studioData.scenes, studioData.volumes]);
 
   React.useEffect(() => {
     if (activePage !== "export") {
@@ -738,18 +716,6 @@ function PrivateNovelStudioContent() {
     },
     [currentNovel.id, router, scopedStudioData.scenes, setActiveStructureItem]
   );
-
-  React.useEffect(() => {
-    if (dataStatus !== "ready") {
-      return;
-    }
-
-    if (studioData.settings.activeNovelId || studioData.novels.length === 0) {
-      return;
-    }
-
-    void setActiveNovel(studioData.novels[0].id);
-  }, [dataStatus, setActiveNovel, studioData.novels, studioData.settings.activeNovelId]);
 
   const saveScene = React.useCallback(
     async (sceneId: string, input: SceneSaveInput) => {
