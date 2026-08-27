@@ -62,7 +62,6 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
@@ -216,12 +215,6 @@ function useStudioData() {
 const relationshipFilterTypes = [
   "All relationships",
   ...Object.values(relationshipCategories).flat()
-];
-
-const editorLevels = [
-  "Chapter editing",
-  "Scene editing",
-  "Full chapter assembled from scenes"
 ];
 
 const chapterStatusOptions = narrativeStatuses;
@@ -1682,9 +1675,13 @@ function EditorScreen({
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
-  const nextScene = data.scenes.find(
-    (scene) => scene.chapterId === activeScene.chapterId && scene.id !== activeScene.id
-  );
+  const [chapterPreviewOpen, setChapterPreviewOpen] = React.useState(false);
+  const [chapterPreview, setChapterPreview] = React.useState<{
+    chapter: { id: string; title: string };
+    scenes: Array<{ id: string; title: string; content: string }>;
+  } | null>(null);
+  const [chapterPreviewError, setChapterPreviewError] = React.useState<string | null>(null);
+  const [chapterPreviewLoading, setChapterPreviewLoading] = React.useState(false);
   const [title, setTitle] = React.useState(activeScene.title);
   const [status, setStatus] = React.useState<ChapterStatus>(activeScene.status);
   const [content, setContent] = React.useState(activeScene.content);
@@ -1749,6 +1746,21 @@ function EditorScreen({
       exitSaveRequestedRef.current = false;
     });
   }, []);
+
+  const openChapterPreview = React.useCallback(async () => {
+    setChapterPreviewOpen(true);
+    setChapterPreviewLoading(true);
+    setChapterPreviewError(null);
+    try {
+      const response = await fetch(`/api/chapters/${encodeURIComponent(activeChapter.id)}/preview`);
+      if (!response.ok) throw new Error("Could not load chapter preview");
+      setChapterPreview(await response.json());
+    } catch {
+      setChapterPreviewError("Could not load chapter preview. Your scene draft remains unchanged.");
+    } finally {
+      setChapterPreviewLoading(false);
+    }
+  }, [activeChapter.id]);
 
   React.useEffect(() => {
     if (loadedSceneIdRef.current === activeScene.id) return;
@@ -1824,6 +1836,10 @@ function EditorScreen({
             <Button variant="outline" onClick={onReader}>
               <BookOpen className="size-4" />
               Reader preview
+            </Button>
+            <Button variant="outline" onClick={() => void openChapterPreview()}>
+              <Eye className="size-4" />
+              Chapter preview
             </Button>
           </>
         }
@@ -1914,39 +1930,24 @@ function EditorScreen({
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Tabs defaultValue="Scene editing" className="p-4">
-              <div className="overflow-x-auto">
-                <TabsList className="min-w-max">
-                  {editorLevels.map((level) => (
-                    <TabsTrigger key={level} value={level}>
-                      {level}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+            <div className="p-4">
+              <div className="mx-auto mb-3 max-w-4xl text-sm text-muted-foreground">
+                Editing scene: <span className="font-medium text-foreground">{activeScene.title}</span>
               </div>
-              {editorLevels.map((level) => (
-                <TabsContent key={level} value={level}>
-                  <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
-                    <Textarea
-                      value={
-                        level === "Full chapter assembled from scenes" && nextScene
-                          ? `${content}\n\n${nextScene.content}`
-                          : content
-                      }
-                      readOnly={level === "Full chapter assembled from scenes"}
-                      onChange={(event) => {
-                        const nextContent = event.target.value;
-                        draftRef.current = { ...draftRef.current, content: nextContent };
-                        setContent(nextContent);
-                        markDirty();
-                      }}
-                      className="min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
-                      style={{ fontSize: `${editorFontSize}px` }}
-                    />
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
+              <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
+                <Textarea
+                  value={content}
+                  onChange={(event) => {
+                    const nextContent = event.target.value;
+                    draftRef.current = { ...draftRef.current, content: nextContent };
+                    setContent(nextContent);
+                    markDirty();
+                  }}
+                  className="min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
+                  style={{ fontSize: `${editorFontSize}px` }}
+                />
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-wrap justify-between gap-3 border-t bg-card/70 p-4">
             <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
@@ -1968,6 +1969,35 @@ function EditorScreen({
             </div>
           </CardFooter>
         </Card>
+
+        <Dialog open={chapterPreviewOpen} onOpenChange={setChapterPreviewOpen}>
+          <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Chapter Preview · {activeChapter.title}</DialogTitle>
+              <DialogDescription>
+                Read-only composition of saved scenes, ordered by the chapter structure.
+              </DialogDescription>
+            </DialogHeader>
+            {chapterPreviewLoading ? <p className="text-sm text-muted-foreground">Loading preview…</p> : null}
+            {chapterPreviewError ? <p className="text-sm text-destructive">{chapterPreviewError}</p> : null}
+            {chapterPreview ? (
+              <article aria-label="Read-only chapter preview" className="grid gap-6 font-typewriter leading-8">
+                {chapterPreview.scenes.map((scene, index) => (
+                  <React.Fragment key={scene.id}>
+                    {index > 0 ? <hr className="border-border" /> : null}
+                    <section>
+                      <h3 className="mb-3 font-sans text-base font-semibold">{scene.title}</h3>
+                      <p className="whitespace-pre-wrap">{scene.content || "(Empty scene)"}</p>
+                    </section>
+                  </React.Fragment>
+                ))}
+              </article>
+            ) : null}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setChapterPreviewOpen(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {inspectorOpen ? <EditorInspector /> : null}
       </div>

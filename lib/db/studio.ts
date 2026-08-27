@@ -1,5 +1,6 @@
 ﻿import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-preview";
 import {
   applyStudioSettings,
   parseStudioSettings,
@@ -768,5 +769,26 @@ export async function updateScene(
 export async function getScene(sceneId: string) {
   const scene = await prisma.scene.findUniqueOrThrow({ where: { id: sceneId } });
   return serializeScene(scene);
+}
+
+export async function getChapterPreview(chapterId: string) {
+  const chapter = await prisma.chapter.findUniqueOrThrow({
+    where: { id: chapterId },
+    include: {
+      volume: { select: { novelId: true } },
+      scenes: {
+        where: { archived: false },
+        select: { id: true, chapterId: true, title: true, content: true, sortOrder: true },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+      }
+    }
+  });
+  const scenes = orderChapterPreviewScenes(chapter.id, chapter.scenes);
+
+  return {
+    chapter: { id: chapter.id, title: chapter.title, novelId: chapter.volume.novelId },
+    scenes,
+    content: composeChapterPreview(chapter.id, scenes)
+  };
 }
 

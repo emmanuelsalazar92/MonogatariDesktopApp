@@ -117,6 +117,25 @@ test("structure title search is local, case-insensitive, unicode-safe, and bound
   assert.equal(search.searchStructureTitles([...items, ...items], "a", 1).length, 1);
 });
 
+test("chapter preview composes only its ordered, non-archived scenes", async () => {
+  const preview = await loadTypeScriptModule("lib/chapter-preview.ts");
+  const scenes = [
+    { id: "scene-b", chapterId: "chapter-1", title: "Second", content: "B", sortOrder: 2 },
+    { id: "scene-a", chapterId: "chapter-1", title: "First", content: "A", sortOrder: 1 },
+    { id: "scene-archived", chapterId: "chapter-1", title: "Hidden", content: "X", sortOrder: 0, archived: true },
+    { id: "other-scene", chapterId: "chapter-2", title: "Other", content: "Y", sortOrder: 0 }
+  ];
+
+  assert.deepEqual(
+    preview.orderChapterPreviewScenes("chapter-1", scenes).map((scene) => scene.id),
+    ["scene-a", "scene-b"]
+  );
+  assert.equal(
+    preview.composeChapterPreview("chapter-1", scenes),
+    "# First\n\nA\n\n---\n\n# Second\n\nB"
+  );
+});
+
 test("structure status allowlist excludes archival and rejects unknown values", async () => {
   const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
     if (moduleId === "lucide-react") return {};
