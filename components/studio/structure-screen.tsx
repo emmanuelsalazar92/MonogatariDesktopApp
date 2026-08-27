@@ -12,6 +12,7 @@ import {
   EyeOff,
   FolderPlus,
   MoreHorizontal,
+  PenLine,
   Plus,
   Trash2,
   Workflow
@@ -75,12 +76,14 @@ export function StructureScreen({
   translate,
   onRefresh,
   onSelectItem,
+  onOpenScene,
   onNotify
 }: {
   data: StudioData;
   translate: (value: string) => string;
   onRefresh: () => Promise<boolean>;
   onSelectItem: (selection: StructureSelection) => void;
+  onOpenScene: (sceneId: string) => void;
   onNotify: (message: string) => void;
 }) {
   const currentNovel = getCurrentNovel(data);
@@ -338,6 +341,11 @@ export function StructureScreen({
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
+            {selected?.type === "scene" ? (
+              <Button className="justify-start" disabled={busy || selected.archived} onClick={() => onOpenScene(selected.id)}>
+                <PenLine className="size-4" />{translate("Open in editor")}
+              </Button>
+            ) : null}
             <Button variant="outline" className="justify-start" disabled={!selected || busy} onClick={openEdit}>
               <Edit3 className="size-4" />{translate("Edit metadata")}
             </Button>
