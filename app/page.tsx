@@ -735,9 +735,21 @@ function PrivateNovelStudioContent() {
       const scene = scopedStudioData.scenes.find((item) => item.id === sceneId);
       if (!scene) return;
       if (!(await setActiveStructureItem({ type: "scene", id: scene.id }))) return;
+      try {
+        const response = await fetch(`/api/scenes/${encodeURIComponent(scene.id)}`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Could not load scene content");
+        const loadedScene = (await response.json()) as Scene;
+        setStudioData((current) => ({
+          ...current,
+          scenes: current.scenes.map((item) => item.id === loadedScene.id ? loadedScene : item)
+        }));
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : "Could not load scene content");
+        return;
+      }
       router.push(routeForPage("editor", currentNovel.id, scene.id));
     },
-    [currentNovel.id, router, scopedStudioData.scenes, setActiveStructureItem]
+    [currentNovel.id, router, scopedStudioData.scenes, setActiveStructureItem, showToast]
   );
 
   const saveScene = React.useCallback(
