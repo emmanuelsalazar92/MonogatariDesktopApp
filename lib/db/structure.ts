@@ -521,20 +521,9 @@ export async function mutateStructureItem(
     const archived = action === "archive";
     if (type === "volume") {
       const source = await tx.volume.findUniqueOrThrow({ where: { id } });
-      const chapters = await tx.chapter.findMany({
-        where: { volumeId: id },
-        select: { id: true }
-      });
-      const chapterIds = chapters.map((chapter) => chapter.id);
       await tx.volume.update({ where: { id }, data: { archived } });
-      await tx.chapter.updateMany({ where: { volumeId: id }, data: { archived } });
-      await tx.scene.updateMany({ where: { chapterId: { in: chapterIds } }, data: { archived } });
       if (archived) {
-        const sceneIds = await tx.scene.findMany({
-          where: { chapterId: { in: chapterIds } },
-          select: { id: true }
-        });
-        await clearSelectionSettings(tx, [id, ...chapterIds, ...sceneIds.map((scene) => scene.id)]);
+        await clearSelectionSettings(tx, [id]);
       }
       await recalculateWordCounts(tx, source.novelId);
     } else if (type === "chapter") {
@@ -543,13 +532,8 @@ export async function mutateStructureItem(
         include: { volume: true }
       });
       await tx.chapter.update({ where: { id }, data: { archived } });
-      await tx.scene.updateMany({ where: { chapterId: id }, data: { archived } });
       if (archived) {
-        const sceneIds = await tx.scene.findMany({
-          where: { chapterId: id },
-          select: { id: true }
-        });
-        await clearSelectionSettings(tx, [id, ...sceneIds.map((scene) => scene.id)]);
+        await clearSelectionSettings(tx, [id]);
       }
       await recalculateWordCounts(tx, source.volume.novelId);
     } else {

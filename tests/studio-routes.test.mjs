@@ -116,3 +116,38 @@ test("structure title search is local, case-insensitive, unicode-safe, and bound
   assert.equal(search.searchStructureTitles([...items, ...items], "", 1).length, 0);
   assert.equal(search.searchStructureTitles([...items, ...items], "a", 1).length, 1);
 });
+
+test("structure status allowlist excludes archival and rejects unknown values", async () => {
+  const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
+    if (moduleId === "lucide-react") return {};
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+
+  assert.equal(domain.isNarrativeStatus("Revision"), true);
+  assert.equal(domain.isNarrativeStatus("Archived"), false);
+  assert.equal(domain.isNarrativeStatus("SUPER_READY"), false);
+});
+
+test("archived parents hide descendants without changing their own archive state", async () => {
+  const visibility = await loadTypeScriptModule("lib/structure-visibility.ts");
+  const volumes = [{ id: "volume-1", archived: true }, { id: "volume-2", archived: false }];
+  const chapters = [
+    { id: "chapter-1", volumeId: "volume-1", archived: false },
+    { id: "chapter-2", volumeId: "volume-2", archived: false }
+  ];
+  const scenes = [
+    { id: "scene-1", chapterId: "chapter-1", archived: false },
+    { id: "scene-2", chapterId: "chapter-2", archived: false }
+  ];
+
+  assert.deepEqual(
+    visibility.getVisibleStructureItems(volumes, chapters, scenes, false),
+    { volumes: [volumes[1]], chapters: [chapters[1]], scenes: [scenes[1]] }
+  );
+  assert.deepEqual(
+    visibility.getVisibleStructureItems(volumes, chapters, scenes, true),
+    { volumes, chapters, scenes }
+  );
+  assert.equal(chapters[0].archived, false);
+  assert.equal(scenes[0].archived, false);
+});

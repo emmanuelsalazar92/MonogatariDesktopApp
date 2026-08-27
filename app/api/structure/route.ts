@@ -9,20 +9,11 @@ import {
   type StructureItemType
 } from "@/lib/db/structure";
 import { structureMovePositions, type StructureMovePosition } from "@/lib/structure-move";
-import type { ChapterStatus } from "@/lib/studio-domain";
+import { isNarrativeStatus } from "@/lib/studio-domain";
 
 const itemTypes = new Set<StructureItemType>(["volume", "chapter", "scene"]);
 const actions = new Set<StructureAction>(["move", "duplicate", "archive", "restore"]);
 const movePositions = new Set<StructureMovePosition>(structureMovePositions);
-const chapterStatuses = new Set<ChapterStatus>([
-  "Idea",
-  "Draft",
-  "Writing",
-  "Revision",
-  "Ready",
-  "Final",
-  "Archived"
-]);
 
 function isItemType(value: unknown): value is StructureItemType {
   return typeof value === "string" && itemTypes.has(value as StructureItemType);
@@ -30,10 +21,6 @@ function isItemType(value: unknown): value is StructureItemType {
 
 function isAction(value: unknown): value is StructureAction {
   return typeof value === "string" && actions.has(value as StructureAction);
-}
-
-function isChapterStatus(value: unknown): value is ChapterStatus {
-  return typeof value === "string" && chapterStatuses.has(value as ChapterStatus);
 }
 
 function isMovePosition(value: unknown): value is StructureMovePosition {
@@ -83,7 +70,7 @@ export async function POST(request: Request) {
   if (typeof body.title !== "string" || body.title.trim().length === 0) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
   }
-  if (body.status !== undefined && !isChapterStatus(body.status)) {
+  if (body.status !== undefined && !isNarrativeStatus(body.status)) {
     return NextResponse.json({ error: "status is invalid" }, { status: 400 });
   }
 
@@ -94,7 +81,7 @@ export async function POST(request: Request) {
       parentId: body.parentId,
       title: body.title.trim(),
       summary: typeof body.summary === "string" ? body.summary.trim() : undefined,
-      status: isChapterStatus(body.status) ? body.status : undefined,
+      status: isNarrativeStatus(body.status) ? body.status : undefined,
       objective: typeof body.objective === "string" ? body.objective.trim() : undefined,
       content: typeof body.content === "string" ? body.content : undefined,
       locationId: typeof body.locationId === "string" ? body.locationId : undefined
@@ -146,7 +133,7 @@ export async function PATCH(request: Request) {
   if (typeof body.title === "string" && body.title.trim().length === 0) {
     return NextResponse.json({ error: "title cannot be empty" }, { status: 400 });
   }
-  if (body.status !== undefined && !isChapterStatus(body.status)) {
+  if (body.status !== undefined && !isNarrativeStatus(body.status)) {
     return NextResponse.json({ error: "status is invalid" }, { status: 400 });
   }
 
@@ -154,7 +141,7 @@ export async function PATCH(request: Request) {
     const result = await updateStructureItem(body.type, body.id, {
       title: typeof body.title === "string" ? body.title.trim() : undefined,
       summary: typeof body.summary === "string" ? body.summary.trim() : undefined,
-      status: isChapterStatus(body.status) ? body.status : undefined,
+      status: isNarrativeStatus(body.status) ? body.status : undefined,
       objective: typeof body.objective === "string" ? body.objective.trim() : undefined,
       content: typeof body.content === "string" ? body.content : undefined,
       locationId: typeof body.locationId === "string" ? body.locationId : undefined

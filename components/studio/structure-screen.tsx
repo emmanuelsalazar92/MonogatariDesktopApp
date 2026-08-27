@@ -46,13 +46,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { StructureItemType, StructureSelection } from "@/lib/db/structure";
 import { formatNumber, getCurrentNovel, type StudioData } from "@/lib/studio-data";
-import type { Chapter, ChapterStatus, Scene, Volume } from "@/lib/studio-domain";
+import { narrativeStatuses, type Chapter, type ChapterStatus, type Scene, type Volume } from "@/lib/studio-domain";
 import { getStructureAncestorIds } from "@/lib/structure-tree";
 import { type StructureMovePosition } from "@/lib/structure-move";
 import { searchStructureTitles, type StructureTitleSearchItem } from "@/lib/structure-search";
+import { getVisibleStructureItems } from "@/lib/structure-visibility";
 import { cn } from "@/lib/utils";
 
-const statuses: ChapterStatus[] = ["Idea", "Draft", "Writing", "Revision", "Ready", "Final"];
+const statuses = narrativeStatuses;
 const maxSearchQueryLength = 160;
 
 type SelectedItem =
@@ -128,18 +129,11 @@ export function StructureScreen({
   const volumes = React.useMemo(() => [...data.volumes].sort(sortByOrder), [data.volumes]);
   const chapters = React.useMemo(() => [...data.chapters].sort(sortByOrder), [data.chapters]);
   const scenes = React.useMemo(() => [...data.scenes].sort(sortByOrder), [data.scenes]);
-  const visibleVolumes = React.useMemo(
-    () => volumes.filter((item) => showArchived || !item.archived),
-    [showArchived, volumes]
+  const visibleStructure = React.useMemo(
+    () => getVisibleStructureItems(volumes, chapters, scenes, showArchived),
+    [chapters, scenes, showArchived, volumes]
   );
-  const visibleChapters = React.useMemo(
-    () => chapters.filter((item) => showArchived || !item.archived),
-    [chapters, showArchived]
-  );
-  const visibleScenes = React.useMemo(
-    () => scenes.filter((item) => showArchived || !item.archived),
-    [scenes, showArchived]
-  );
+  const { volumes: visibleVolumes, chapters: visibleChapters, scenes: visibleScenes } = visibleStructure;
   const chaptersByVolume = React.useMemo(
     () => groupByParentId(visibleChapters, "volumeId"),
     [visibleChapters]
@@ -525,7 +519,7 @@ export function StructureScreen({
                     depth={0}
                     title={volume.title}
                     subtitle={volumeExpanded ? volume.summary || translate("Volume") : compactCount(volumeChapters.length, "chapter", volumeSceneCount, "scene", translate)}
-                    status={volume.archived ? "Archived" : "Ready"}
+                    status={volume.archived ? "Archived" : undefined}
                     selected={selection?.type === "volume" && selection.id === volume.id}
                     strong
                     translate={translate}
@@ -832,7 +826,9 @@ function InspectorMetadata({
           { label: translate("Novel"), value: currentNovelTitle }
         ]
       : [
-          { label: translate("Status"), value: <StatusBadge status={item.archived ? "Archived" : "Ready"} translate={translate} /> },
+          ...(item.archived
+            ? [{ label: translate("Archive"), value: <StatusBadge status="Archived" translate={translate} /> }]
+            : []),
           { label: translate("Novel"), value: currentNovelTitle },
           { label: translate("Summary"), value: item.summary || translate("No summary") }
         ];
@@ -933,7 +929,7 @@ function StructureRow({
   depth: number;
   title: string;
   subtitle: string;
-  status: ChapterStatus;
+  status?: ChapterStatus | "Archived";
   selected: boolean;
   strong?: boolean;
   translate: (value: string) => string;
@@ -1017,7 +1013,7 @@ function StructureRow({
           <span className={cn("block truncate text-[14px]", strong && "font-semibold")}>{title}</span>
           <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
         </span>
-        <StatusBadge status={status} translate={translate} />
+        {status ? <StatusBadge status={status} translate={translate} /> : null}
         <span className="grid size-8 place-items-center text-muted-foreground" aria-hidden="true"><MoreHorizontal className="size-4" /></span>
       </button>
     </div>
