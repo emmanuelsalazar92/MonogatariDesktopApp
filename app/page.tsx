@@ -312,8 +312,22 @@ export default function PrivateNovelStudioPage() {
   const [enabledExportOptions, setEnabledExportOptions] = React.useState(
     new Set(["Include cover", "Include table of contents", "Include metadata"])
   );
-  const scopedStudioData = React.useMemo(() => getScopedStudioData(studioData), [studioData]);
-  const currentNovel = getCurrentNovel(studioData);
+  const routeContextData = React.useMemo(() => {
+    const routeNovelId = activeRoute?.novelId;
+    if (!routeNovelId || !studioData.novels.some((novel) => novel.id === routeNovelId)) {
+      return studioData;
+    }
+
+    return {
+      ...studioData,
+      settings: { ...studioData.settings, activeNovelId: routeNovelId }
+    };
+  }, [activeRoute?.novelId, studioData]);
+  const scopedStudioData = React.useMemo(
+    () => getScopedStudioData(routeContextData),
+    [routeContextData]
+  );
+  const currentNovel = getCurrentNovel(routeContextData);
   const currentNotionSyncState = studioData.notionSyncStates.find(
     (state) => state.novelId === currentNovel.id
   );
@@ -1632,11 +1646,15 @@ function EditorScreen({
   const loadedSceneIdRef = React.useRef<string | null>(null);
   const activeSceneRef = React.useRef(activeScene);
   const draftRef = React.useRef({ title, status, content });
+  const dirtyRef = React.useRef(false);
+  const saveCurrentSceneRef = React.useRef<(() => Promise<boolean>) | null>(null);
+  const exitSaveRequestedRef = React.useRef(false);
   activeSceneRef.current = activeScene;
   const dirty =
     title !== activeScene.title ||
     status !== activeScene.status ||
     content !== activeScene.content;
+  dirtyRef.current = dirty;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
 
   const markDirty = React.useCallback(() => {
@@ -1674,6 +1692,16 @@ function EditorScreen({
     }
     return true;
   }, [onDirtyChange, onSaveScene, setSaveStatus]);
+  saveCurrentSceneRef.current = saveCurrentScene;
+
+  const persistDraftBeforeExit = React.useCallback(() => {
+    if (!dirtyRef.current || exitSaveRequestedRef.current) return;
+
+    exitSaveRequestedRef.current = true;
+    void saveCurrentSceneRef.current?.().finally(() => {
+      exitSaveRequestedRef.current = false;
+    });
+  }, []);
 
   React.useEffect(() => {
     if (loadedSceneIdRef.current === activeScene.id) return;
@@ -1710,6 +1738,29 @@ function EditorScreen({
     onRegisterPendingSave(saveCurrentScene);
     return () => onRegisterPendingSave(null);
   }, [onRegisterPendingSave, saveCurrentScene]);
+
+  React.useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!dirtyRef.current) return;
+      persistDraftBeforeExit();
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("pagehide", persistDraftBeforeExit);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("pagehide", persistDraftBeforeExit);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [persistDraftBeforeExit]);
+
+  React.useEffect(
+    () => () => {
+      persistDraftBeforeExit();
+    },
+    [persistDraftBeforeExit]
+  );
 
   return (
     <div className="grid gap-6">
