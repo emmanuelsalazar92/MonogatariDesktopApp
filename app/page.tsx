@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import * as React from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArchiveRestore,
   ArrowLeft,
@@ -117,6 +117,12 @@ import {
   parseExportDefaults
 } from "@/lib/studio-settings";
 import { parseStudioRoute, routeForPage } from "@/lib/studio-routes";
+import {
+  defaultLibraryNavigationState,
+  parseLibraryNavigationState,
+  serializeLibraryNavigationState,
+  type LibraryNavigationState
+} from "@/lib/studio-library-navigation";
 import { cn } from "@/lib/utils";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
@@ -256,8 +262,17 @@ function autosaveDelay(value: string) {
 }
 
 export default function PrivateNovelStudioPage() {
+  return (
+    <React.Suspense fallback={<main className="min-h-screen bg-background" />}>
+      <PrivateNovelStudioContent />
+    </React.Suspense>
+  );
+}
+
+function PrivateNovelStudioContent() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const activeRoute = React.useMemo(() => parseStudioRoute(pathname), [pathname]);
   const [activePage, setActivePage] = React.useState<PageId>(
     () => activeRoute?.page ?? "dashboard"
@@ -282,8 +297,6 @@ export default function PrivateNovelStudioPage() {
   const [resolvingNotionConflict, setResolvingNotionConflict] = React.useState(false);
   const [toast, setToast] = React.useState("");
   const [libraryQuery, setLibraryQuery] = React.useState("");
-  const [libraryStatus, setLibraryStatus] = React.useState("All statuses");
-  const [libraryGenre, setLibraryGenre] = React.useState("All genres");
   const [characterQuery, setCharacterQuery] = React.useState("");
   const [characterRole, setCharacterRole] = React.useState("All roles");
   const [characterStatus, setCharacterStatus] = React.useState("All statuses");
@@ -331,6 +344,10 @@ export default function PrivateNovelStudioPage() {
   const currentNotionSyncState = studioData.notionSyncStates.find(
     (state) => state.novelId === currentNovel.id
   );
+  const libraryNavigationState = React.useMemo(
+    () => parseLibraryNavigationState(searchParams),
+    [searchParams]
+  );
   const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
   const editorDirtyRef = React.useRef(false);
   const saveInFlightRef = React.useRef<Promise<boolean> | null>(null);
@@ -346,6 +363,15 @@ export default function PrivateNovelStudioPage() {
   );
 
   useLiveLocalization(language);
+
+  const updateLibraryNavigation = React.useCallback(
+    (changes: Partial<LibraryNavigationState>) => {
+      const nextState = { ...libraryNavigationState, ...changes };
+      const query = serializeLibraryNavigationState(nextState).toString();
+      router.push(query ? `/library?${query}` : "/library");
+    },
+    [libraryNavigationState, router]
+  );
 
   const showToast = React.useCallback((message: string) => {
     setToast(message);
@@ -1240,11 +1266,21 @@ export default function PrivateNovelStudioPage() {
 
   const filteredNovels = novels.filter((novel) => {
     const queryMatch = novel.title.toLowerCase().includes(libraryQuery.toLowerCase());
-    const statusMatch = libraryStatus === "All statuses" || novel.status === libraryStatus;
+    const statusMatch =
+      libraryNavigationState.status === "All statuses" ||
+      novel.status === libraryNavigationState.status;
     const genreMatch =
-      libraryGenre === "All genres" ||
-      novel.genre.toLowerCase().includes(libraryGenre.toLowerCase());
+      libraryNavigationState.genre === "All genres" ||
+      novel.genre.toLowerCase().includes(libraryNavigationState.genre.toLowerCase());
     return queryMatch && statusMatch && genreMatch;
+  }).sort((left, right) => {
+    if (libraryNavigationState.sort === "title") {
+      return left.title.localeCompare(right.title);
+    }
+    if (libraryNavigationState.sort === "created") {
+      return right.createdAt.localeCompare(left.createdAt);
+    }
+    return right.updatedAt.localeCompare(left.updatedAt);
   });
 
   const filteredCharacters = characters.filter((character) => {
@@ -1407,12 +1443,20 @@ export default function PrivateNovelStudioPage() {
                   novels={filteredNovels}
                   novelMetrics={novelMetrics}
                   query={libraryQuery}
-                  status={libraryStatus}
-                  genre={libraryGenre}
+                  status={libraryNavigationState.status}
+                  genre={libraryNavigationState.genre}
+                  sort={libraryNavigationState.sort}
+                  view={libraryNavigationState.view}
                   translate={translate}
                   onQueryChange={setLibraryQuery}
-                  onStatusChange={setLibraryStatus}
-                  onGenreChange={setLibraryGenre}
+                  onStatusChange={(status) => updateLibraryNavigation({ status })}
+                  onGenreChange={(genre) => updateLibraryNavigation({ genre })}
+                  onSortChange={(sort) => updateLibraryNavigation({ sort })}
+                  onViewChange={(view) => updateLibraryNavigation({ view })}
+                  onClearFilters={() => {
+                    setLibraryQuery("");
+                    updateLibraryNavigation(defaultLibraryNavigationState);
+                  }}
                   onOpenNovel={setActiveNovel}
                   onOpenDialog={() => setDialog("novel")}
                 />

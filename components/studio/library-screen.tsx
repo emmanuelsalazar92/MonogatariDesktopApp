@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Download, Library, Plus, Search } from "lucide-react";
+import { Archive, Download, Grid2X2, Library, List, Plus, Search } from "lucide-react";
 
 import { EmptyState, FieldLine, SectionHeader, StatusBadge, CoverBlock } from "@/components/studio/shared";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { formatNumber } from "@/lib/studio-data";
 import { genreFilters, statusFilters, type Novel, type PageId } from "@/lib/studio-domain";
+import { librarySortOptions, type LibrarySort, type LibraryView } from "@/lib/studio-library-navigation";
 
 type NovelMetricSummary = {
   volumeCount: number;
@@ -27,10 +28,15 @@ export function LibraryScreen({
   query,
   status,
   genre,
+  sort,
+  view,
   translate,
   onQueryChange,
   onStatusChange,
   onGenreChange,
+  onSortChange,
+  onViewChange,
+  onClearFilters,
   onOpenNovel,
   onOpenDialog
 }: {
@@ -39,10 +45,15 @@ export function LibraryScreen({
   query: string;
   status: string;
   genre: string;
+  sort: LibrarySort;
+  view: LibraryView;
   translate: (value: string) => string;
   onQueryChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   onGenreChange: (value: string) => void;
+  onSortChange: (value: LibrarySort) => void;
+  onViewChange: (value: LibraryView) => void;
+  onClearFilters: () => void;
   onOpenNovel: (novelId: string, nextPage?: PageId) => void;
   onOpenDialog: () => void;
 }) {
@@ -63,7 +74,7 @@ export function LibraryScreen({
       />
 
       <Card className="surface-panel">
-        <CardContent className="grid gap-3 p-4 lg:grid-cols-[1fr_180px_190px] lg:p-5">
+        <CardContent className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_180px_190px_150px_auto] lg:p-5">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -97,11 +108,54 @@ export function LibraryScreen({
               ))}
             </SelectContent>
           </Select>
+          <Select value={sort} onValueChange={(value) => onSortChange(value as LibrarySort)}>
+            <SelectTrigger aria-label={translate("Sort novels")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {librarySortOptions.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {translate(
+                    item === "updated"
+                      ? "Recently updated"
+                      : item === "created"
+                        ? "Recently created"
+                        : "Title"
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={view === "grid" ? "secondary" : "outline"}
+              size="icon"
+              type="button"
+              aria-label={translate("Grid view")}
+              aria-pressed={view === "grid"}
+              onClick={() => onViewChange("grid")}
+            >
+              <Grid2X2 className="size-4" />
+            </Button>
+            <Button
+              variant={view === "list" ? "secondary" : "outline"}
+              size="icon"
+              type="button"
+              aria-label={translate("List view")}
+              aria-pressed={view === "list"}
+              onClick={() => onViewChange("list")}
+            >
+              <List className="size-4" />
+            </Button>
+            <Button variant="ghost" type="button" onClick={onClearFilters}>
+              {translate("Clear")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
       {novels.length ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className={view === "list" ? "grid gap-4" : "grid gap-4 md:grid-cols-2 xl:grid-cols-3"}>
           {novels.map((novel) => (
             <Card key={novel.id} className="surface-panel overflow-hidden">
               <CardContent className="grid gap-5 p-5">
