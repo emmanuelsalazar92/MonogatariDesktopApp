@@ -23,14 +23,23 @@ export type NovelStatus =
   | "Complete"
   | "Archived";
 
-export type ChapterStatus =
-  | "Idea"
-  | "Draft"
-  | "Writing"
-  | "Revision"
-  | "Ready"
-  | "Final"
-  | "Archived";
+// Chapters and scenes share this persisted narrative workflow. Archival is
+// deliberately modeled by each entity's `archived` flag, not as a narrative
+// status, so restoring a parent cannot overwrite a child's own workflow.
+export const narrativeStatuses = [
+  "Idea",
+  "Draft",
+  "Writing",
+  "Revision",
+  "Ready",
+  "Final"
+] as const;
+
+export type ChapterStatus = (typeof narrativeStatuses)[number];
+
+export function isNarrativeStatus(value: unknown): value is ChapterStatus {
+  return typeof value === "string" && narrativeStatuses.includes(value as ChapterStatus);
+}
 
 export type SidebarState = "expanded" | "compact" | "hidden";
 

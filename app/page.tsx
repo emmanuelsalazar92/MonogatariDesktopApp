@@ -129,6 +129,7 @@ import {
   exportFormats,
   exportOptions,
   exportScopes,
+  narrativeStatuses,
   placeTypes,
   relationshipCategories,
   shortcutHints,
@@ -223,15 +224,7 @@ const editorLevels = [
   "Full chapter assembled from scenes"
 ];
 
-const chapterStatusOptions: ChapterStatus[] = [
-  "Idea",
-  "Draft",
-  "Writing",
-  "Revision",
-  "Ready",
-  "Final",
-  "Archived"
-];
+const chapterStatusOptions = narrativeStatuses;
 
 const readerScopes = [
   "Read full novel",
