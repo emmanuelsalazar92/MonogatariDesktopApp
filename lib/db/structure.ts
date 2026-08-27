@@ -7,6 +7,7 @@ export type StructureAction = "move" | "duplicate" | "archive" | "restore";
 
 export type CreateStructureInput = {
   type: StructureItemType;
+  novelId: string;
   parentId: string;
   title: string;
   summary?: string;
@@ -90,6 +91,7 @@ export async function createStructureItem(input: CreateStructureInput) {
   return prisma.$transaction(async (tx) => {
     if (input.type === "volume") {
       const novel = await tx.novel.findUniqueOrThrow({ where: { id: input.parentId } });
+      if (novel.id !== input.novelId) throw new Error("cannot create outside the current novel");
       const last = await tx.volume.aggregate({
         where: { novelId: novel.id },
         _max: { sortOrder: true }
@@ -111,6 +113,7 @@ export async function createStructureItem(input: CreateStructureInput) {
 
     if (input.type === "chapter") {
       const volume = await tx.volume.findUniqueOrThrow({ where: { id: input.parentId } });
+      if (volume.novelId !== input.novelId) throw new Error("cannot create outside the current novel");
       if (volume.archived) throw new Error("cannot create inside an archived volume");
       const last = await tx.chapter.aggregate({
         where: { volumeId: volume.id },
@@ -136,6 +139,9 @@ export async function createStructureItem(input: CreateStructureInput) {
       where: { id: input.parentId },
       include: { volume: true }
     });
+    if (chapter.volume.novelId !== input.novelId) {
+      throw new Error("cannot create outside the current novel");
+    }
     if (chapter.archived || chapter.volume.archived) {
       throw new Error("cannot create inside an archived chapter");
     }
