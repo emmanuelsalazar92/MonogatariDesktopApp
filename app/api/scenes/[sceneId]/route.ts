@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-import { updateScene } from "@/lib/db/studio";
+import { getScene, updateScene } from "@/lib/db/studio";
 import type { ChapterStatus } from "@/lib/studio-domain";
 
 const chapterStatuses = new Set([
@@ -58,6 +58,23 @@ export async function PATCH(
     });
 
     return NextResponse.json(scene);
+  } catch (error) {
+    if (isPrismaNotFound(error)) {
+      return NextResponse.json({ error: "scene not found" }, { status: 404 });
+    }
+
+    throw error;
+  }
+}
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ sceneId: string }> }
+) {
+  const { sceneId } = await context.params;
+
+  try {
+    return NextResponse.json(await getScene(sceneId));
   } catch (error) {
     if (isPrismaNotFound(error)) {
       return NextResponse.json({ error: "scene not found" }, { status: 404 });

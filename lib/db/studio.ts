@@ -46,7 +46,7 @@ function serializeScene(scene: {
   id: string;
   chapterId: string;
   title: string;
-  content: string;
+  content?: string;
   summary: string;
   status: string;
   locationId: string | null;
@@ -56,6 +56,7 @@ function serializeScene(scene: {
 }) {
   return {
     ...scene,
+    content: scene.content ?? "",
     status: scene.status as ChapterStatus,
     locationId: scene.locationId ?? ""
   };
@@ -209,7 +210,21 @@ export async function getStudioSnapshot() {
     prisma.novel.findMany({ orderBy: { updatedAt: "desc" } }),
     prisma.volume.findMany({ orderBy: [{ novelId: "asc" }, { sortOrder: "asc" }] }),
     prisma.chapter.findMany({ orderBy: [{ volumeId: "asc" }, { sortOrder: "asc" }] }),
-    prisma.scene.findMany({ orderBy: [{ chapterId: "asc" }, { sortOrder: "asc" }] }),
+    prisma.scene.findMany({
+      select: {
+        id: true,
+        chapterId: true,
+        title: true,
+        summary: true,
+        status: true,
+        locationId: true,
+        sortOrder: true,
+        wordCount: true,
+        objective: true,
+        archived: true
+      },
+      orderBy: [{ chapterId: "asc" }, { sortOrder: "asc" }]
+    }),
     prisma.character.findMany({ orderBy: [{ novelId: "asc" }, { name: "asc" }] }),
     prisma.location.findMany({ orderBy: [{ novelId: "asc" }, { name: "asc" }] }),
     prisma.relationship.findMany({ orderBy: { id: "asc" } }),
@@ -224,17 +239,10 @@ export async function getStudioSnapshot() {
   const studioSettings = configuration && configuration.version === STUDIO_CONFIGURATION_VERSION
     ? parseStudioSettings(configuration.values)
     : applyStudioSettings(parseStudioSettings(null), Object.fromEntries(settings.map((item) => [item.key, item.value])));
-  if (!configuration) {
-    await prisma.studioConfiguration.upsert({
-      where: { id: STUDIO_CONFIGURATION_ID },
-      update: {},
-      create: {
-        id: STUDIO_CONFIGURATION_ID,
-        version: STUDIO_CONFIGURATION_VERSION,
-        values: JSON.stringify(studioSettings)
-      }
-    });
-  }
+  const activeSceneId = settings.find((setting) => setting.key === "activeSceneId")?.value;
+  const activeScene = activeSceneId
+    ? await prisma.scene.findUnique({ where: { id: activeSceneId }, select: { id: true, content: true } })
+    : null;
 
   return {
     novels: novels.map((novel) => serializeNovel(novel)),
@@ -243,7 +251,10 @@ export async function getStudioSnapshot() {
       ...chapter,
       status: chapter.status as ChapterStatus
     })),
-    scenes: scenes.map((scene) => serializeScene(scene)),
+    scenes: scenes.map((scene) => serializeScene({
+      ...scene,
+      content: scene.id === activeScene?.id ? activeScene.content : ""
+    })),
     characters: characters.map((character) => serializeCharacter(character)),
     locations: locations.map((location) => serializeLocation(location)),
     relationships: relationships.map((relationship) => serializeRelationship(relationship)),
@@ -752,5 +763,10 @@ export async function updateScene(
   });
 
   return serializeScene(updatedScene);
+}
+
+export async function getScene(sceneId: string) {
+  const scene = await prisma.scene.findUniqueOrThrow({ where: { id: sceneId } });
+  return serializeScene(scene);
 }
 

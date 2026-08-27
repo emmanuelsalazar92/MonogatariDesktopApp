@@ -200,6 +200,12 @@ export function StructureScreen({
     else structureNodeButtons.current.delete(key);
   }, []);
 
+  const focusAdjacentStructureNode = React.useCallback((item: StructureSelection, direction: -1 | 1) => {
+    const nodes = [...structureNodeButtons.current.entries()];
+    const index = nodes.findIndex(([key]) => key === `${item.type}:${item.id}`);
+    nodes[index + direction]?.[1].focus();
+  }, []);
+
   const selectSearchResult = React.useCallback((result: StructureTitleSearchItem) => {
     choose({ type: result.type, id: result.id });
     setSearchAnnouncement(`${result.title} selected`);
@@ -335,6 +341,7 @@ export function StructureScreen({
       setDialogMode(null);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Could not move the structure item";
+      await onRefresh();
       setMoveAnnouncement(message);
       onNotify(message);
     } finally {
@@ -451,8 +458,8 @@ export function StructureScreen({
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-        <Card className="surface-panel">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22.5rem)]">
+        <Card className="surface-panel min-w-0 overflow-hidden">
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -534,6 +541,7 @@ export function StructureScreen({
                     onToggle={() => toggleExpandedId(volume.id, setExpandedVolumeIds)}
                     onSelect={() => choose({ type: "volume", id: volume.id })}
                     selectButtonRef={(node) => registerStructureNode({ type: "volume", id: volume.id }, node)}
+                    onFocusAdjacent={focusAdjacentStructureNode}
                     draggable={!volume.archived}
                     draggedItem={draggedItem}
                     dropPreview={dropPreview}
@@ -578,6 +586,7 @@ export function StructureScreen({
                             onToggle={() => toggleExpandedId(chapter.id, setExpandedChapterIds)}
                             onSelect={() => choose({ type: "chapter", id: chapter.id })}
                             selectButtonRef={(node) => registerStructureNode({ type: "chapter", id: chapter.id }, node)}
+                            onFocusAdjacent={focusAdjacentStructureNode}
                             draggable={!chapter.archived}
                             draggedItem={draggedItem}
                             dropPreview={dropPreview}
@@ -616,6 +625,7 @@ export function StructureScreen({
                                 nodeLabel={translate("Scene")}
                                 onSelect={() => choose({ type: "scene", id: scene.id })}
                                 selectButtonRef={(node) => registerStructureNode({ type: "scene", id: scene.id }, node)}
+                                onFocusAdjacent={focusAdjacentStructureNode}
                                 draggable={!scene.archived}
                                 draggedItem={draggedItem}
                                 dropPreview={dropPreview}
@@ -927,6 +937,7 @@ function StructureRow({
   onToggle,
   onSelect,
   selectButtonRef,
+  onFocusAdjacent,
   draggable = false,
   draggedItem,
   dropPreview,
@@ -950,6 +961,7 @@ function StructureRow({
   onToggle?: () => void;
   onSelect: () => void;
   selectButtonRef?: (node: HTMLButtonElement | null) => void;
+  onFocusAdjacent?: (item: StructureSelection, direction: -1 | 1) => void;
   draggable?: boolean;
   draggedItem: StructureSelection | null;
   dropPreview: { id: string; position: StructureMovePosition } | null;
@@ -1019,7 +1031,29 @@ function StructureRow({
       ) : (
         <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/60 bg-surface text-muted-foreground" aria-hidden="true"><Workflow className="size-4" /></span>
       )}
-      <button ref={selectButtonRef} type="button" className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-left" onClick={onSelect} aria-pressed={selected}>
+      <button
+        ref={selectButtonRef}
+        type="button"
+        className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-left"
+        onClick={onSelect}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            onFocusAdjacent?.(item, 1);
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            onFocusAdjacent?.(item, -1);
+          } else if (event.key === "ArrowRight" && expandable && !expanded) {
+            event.preventDefault();
+            onToggle?.();
+          } else if (event.key === "ArrowLeft" && expandable && expanded) {
+            event.preventDefault();
+            onToggle?.();
+          }
+        }}
+        aria-pressed={selected}
+        aria-keyshortcuts={expandable ? "ArrowUp ArrowDown ArrowLeft ArrowRight" : "ArrowUp ArrowDown"}
+      >
         <span className="min-w-0">
           <span className={cn("block truncate text-[14px]", strong && "font-semibold")}>{title}</span>
           <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
