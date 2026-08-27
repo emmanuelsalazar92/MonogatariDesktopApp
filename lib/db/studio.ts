@@ -54,6 +54,7 @@ function serializeScene(scene: {
   sortOrder: number;
   wordCount: number;
   objective: string;
+  revision: number;
 }) {
   return {
     ...scene,
@@ -222,6 +223,7 @@ export async function getStudioSnapshot() {
         sortOrder: true,
         wordCount: true,
         objective: true,
+        revision: true,
         archived: true
       },
       orderBy: [{ chapterId: "asc" }, { sortOrder: "asc" }]
@@ -692,6 +694,7 @@ export async function updateScene(
     status?: ChapterStatus;
     objective?: string;
     locationId?: string;
+    expectedRevision?: number;
   }
 ) {
   const updatedScene = await prisma.$transaction(async (tx) => {
@@ -708,8 +711,9 @@ export async function updateScene(
     const nextWordCount =
       typeof input.content === "string" ? countWords(input.content) : existing.wordCount;
     const wordDelta = nextWordCount - existing.wordCount;
-    const scene = await tx.scene.update({
-      where: { id: sceneId },
+    const expectedRevision = input.expectedRevision ?? existing.revision;
+    const update = await tx.scene.updateMany({
+      where: { id: sceneId, revision: expectedRevision },
       data: {
         title: typeof input.title === "string" ? input.title.trim() : undefined,
         content: typeof input.content === "string" ? input.content : undefined,
@@ -720,9 +724,14 @@ export async function updateScene(
           typeof input.locationId === "string"
             ? input.locationId.trim() || null
             : undefined,
-        wordCount: nextWordCount
+        wordCount: nextWordCount,
+        revision: { increment: 1 }
       }
     });
+    if (update.count === 0) {
+      throw new SceneRevisionConflictError();
+    }
+    const scene = await tx.scene.findUniqueOrThrow({ where: { id: sceneId } });
 
     const chapterWords = await tx.scene.aggregate({
       where: { chapterId: existing.chapterId },
@@ -764,6 +773,12 @@ export async function updateScene(
   });
 
   return serializeScene(updatedScene);
+}
+
+export class SceneRevisionConflictError extends Error {
+  constructor() {
+    super("scene revision is stale");
+  }
 }
 
 export async function getScene(sceneId: string) {

@@ -29,11 +29,13 @@ export type AggregateScene = {
 export type SceneAvgAggregateOutputType = {
   sortOrder: number | null
   wordCount: number | null
+  revision: number | null
 }
 
 export type SceneSumAggregateOutputType = {
   sortOrder: number | null
   wordCount: number | null
+  revision: number | null
 }
 
 export type SceneMinAggregateOutputType = {
@@ -47,6 +49,7 @@ export type SceneMinAggregateOutputType = {
   sortOrder: number | null
   wordCount: number | null
   objective: string | null
+  revision: number | null
   archived: boolean | null
 }
 
@@ -61,6 +64,7 @@ export type SceneMaxAggregateOutputType = {
   sortOrder: number | null
   wordCount: number | null
   objective: string | null
+  revision: number | null
   archived: boolean | null
 }
 
@@ -75,6 +79,7 @@ export type SceneCountAggregateOutputType = {
   sortOrder: number
   wordCount: number
   objective: number
+  revision: number
   archived: number
   _all: number
 }
@@ -83,11 +88,13 @@ export type SceneCountAggregateOutputType = {
 export type SceneAvgAggregateInputType = {
   sortOrder?: true
   wordCount?: true
+  revision?: true
 }
 
 export type SceneSumAggregateInputType = {
   sortOrder?: true
   wordCount?: true
+  revision?: true
 }
 
 export type SceneMinAggregateInputType = {
@@ -101,6 +108,7 @@ export type SceneMinAggregateInputType = {
   sortOrder?: true
   wordCount?: true
   objective?: true
+  revision?: true
   archived?: true
 }
 
@@ -115,6 +123,7 @@ export type SceneMaxAggregateInputType = {
   sortOrder?: true
   wordCount?: true
   objective?: true
+  revision?: true
   archived?: true
 }
 
@@ -129,6 +138,7 @@ export type SceneCountAggregateInputType = {
   sortOrder?: true
   wordCount?: true
   objective?: true
+  revision?: true
   archived?: true
   _all?: true
 }
@@ -230,6 +240,7 @@ export type SceneGroupByOutputType = {
   sortOrder: number
   wordCount: number
   objective: string
+  revision: number
   archived: boolean
   _count: SceneCountAggregateOutputType | null
   _avg: SceneAvgAggregateOutputType | null
@@ -267,6 +278,7 @@ export type SceneWhereInput = {
   sortOrder?: Prisma.IntFilter<"Scene"> | number
   wordCount?: Prisma.IntFilter<"Scene"> | number
   objective?: Prisma.StringFilter<"Scene"> | string
+  revision?: Prisma.IntFilter<"Scene"> | number
   archived?: Prisma.BoolFilter<"Scene"> | boolean
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
   location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
@@ -285,6 +297,7 @@ export type SceneOrderByWithRelationInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
   objective?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   archived?: Prisma.SortOrder
   chapter?: Prisma.ChapterOrderByWithRelationInput
   location?: Prisma.LocationOrderByWithRelationInput
@@ -306,6 +319,7 @@ export type SceneWhereUniqueInput = Prisma.AtLeast<{
   sortOrder?: Prisma.IntFilter<"Scene"> | number
   wordCount?: Prisma.IntFilter<"Scene"> | number
   objective?: Prisma.StringFilter<"Scene"> | string
+  revision?: Prisma.IntFilter<"Scene"> | number
   archived?: Prisma.BoolFilter<"Scene"> | boolean
   chapter?: Prisma.XOR<Prisma.ChapterScalarRelationFilter, Prisma.ChapterWhereInput>
   location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
@@ -324,6 +338,7 @@ export type SceneOrderByWithAggregationInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
   objective?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   archived?: Prisma.SortOrder
   _count?: Prisma.SceneCountOrderByAggregateInput
   _avg?: Prisma.SceneAvgOrderByAggregateInput
@@ -346,6 +361,7 @@ export type SceneScalarWhereWithAggregatesInput = {
   sortOrder?: Prisma.IntWithAggregatesFilter<"Scene"> | number
   wordCount?: Prisma.IntWithAggregatesFilter<"Scene"> | number
   objective?: Prisma.StringWithAggregatesFilter<"Scene"> | string
+  revision?: Prisma.IntWithAggregatesFilter<"Scene"> | number
   archived?: Prisma.BoolWithAggregatesFilter<"Scene"> | boolean
 }
 
@@ -358,6 +374,7 @@ export type SceneCreateInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
@@ -376,6 +393,7 @@ export type SceneUncheckedCreateInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
@@ -390,6 +408,7 @@ export type SceneUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
@@ -408,6 +427,7 @@ export type SceneUncheckedUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
@@ -424,6 +444,7 @@ export type SceneCreateManyInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
 }
 
@@ -436,6 +457,7 @@ export type SceneUpdateManyMutationInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -450,6 +472,7 @@ export type SceneUncheckedUpdateManyInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -474,12 +497,14 @@ export type SceneCountOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
   objective?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   archived?: Prisma.SortOrder
 }
 
 export type SceneAvgOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
 }
 
 export type SceneMaxOrderByAggregateInput = {
@@ -493,6 +518,7 @@ export type SceneMaxOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
   objective?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   archived?: Prisma.SortOrder
 }
 
@@ -507,12 +533,14 @@ export type SceneMinOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
   objective?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   archived?: Prisma.SortOrder
 }
 
 export type SceneSumOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
 }
 
 export type SceneScalarRelationFilter = {
@@ -652,6 +680,7 @@ export type SceneCreateWithoutChapterInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
@@ -668,6 +697,7 @@ export type SceneUncheckedCreateWithoutChapterInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
@@ -712,6 +742,7 @@ export type SceneScalarWhereInput = {
   sortOrder?: Prisma.IntFilter<"Scene"> | number
   wordCount?: Prisma.IntFilter<"Scene"> | number
   objective?: Prisma.StringFilter<"Scene"> | string
+  revision?: Prisma.IntFilter<"Scene"> | number
   archived?: Prisma.BoolFilter<"Scene"> | boolean
 }
 
@@ -724,6 +755,7 @@ export type SceneCreateWithoutWritingActivitiesInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
@@ -741,6 +773,7 @@ export type SceneUncheckedCreateWithoutWritingActivitiesInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
 }
@@ -770,6 +803,7 @@ export type SceneUpdateWithoutWritingActivitiesInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
@@ -787,6 +821,7 @@ export type SceneUncheckedUpdateWithoutWritingActivitiesInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
 }
@@ -800,6 +835,7 @@ export type SceneCreateWithoutLocationInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
@@ -816,6 +852,7 @@ export type SceneUncheckedCreateWithoutLocationInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
@@ -855,6 +892,7 @@ export type SceneCreateWithoutTimelineEventsInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
@@ -872,6 +910,7 @@ export type SceneUncheckedCreateWithoutTimelineEventsInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
 }
@@ -901,6 +940,7 @@ export type SceneUpdateWithoutTimelineEventsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
@@ -918,6 +958,7 @@ export type SceneUncheckedUpdateWithoutTimelineEventsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
 }
@@ -932,6 +973,7 @@ export type SceneCreateManyChapterInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
 }
 
@@ -944,6 +986,7 @@ export type SceneUpdateWithoutChapterInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
@@ -960,6 +1003,7 @@ export type SceneUncheckedUpdateWithoutChapterInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
@@ -975,6 +1019,7 @@ export type SceneUncheckedUpdateManyWithoutChapterInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -988,6 +1033,7 @@ export type SceneCreateManyLocationInput = {
   sortOrder?: number
   wordCount?: number
   objective?: string
+  revision?: number
   archived?: boolean
 }
 
@@ -1000,6 +1046,7 @@ export type SceneUpdateWithoutLocationInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
@@ -1016,6 +1063,7 @@ export type SceneUncheckedUpdateWithoutLocationInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
@@ -1031,6 +1079,7 @@ export type SceneUncheckedUpdateManyWithoutLocationInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -1085,6 +1134,7 @@ export type SceneSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   sortOrder?: boolean
   wordCount?: boolean
   objective?: boolean
+  revision?: boolean
   archived?: boolean
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
   location?: boolean | Prisma.Scene$locationArgs<ExtArgs>
@@ -1104,6 +1154,7 @@ export type SceneSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   sortOrder?: boolean
   wordCount?: boolean
   objective?: boolean
+  revision?: boolean
   archived?: boolean
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
   location?: boolean | Prisma.Scene$locationArgs<ExtArgs>
@@ -1120,6 +1171,7 @@ export type SceneSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   sortOrder?: boolean
   wordCount?: boolean
   objective?: boolean
+  revision?: boolean
   archived?: boolean
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
   location?: boolean | Prisma.Scene$locationArgs<ExtArgs>
@@ -1136,10 +1188,11 @@ export type SceneSelectScalar = {
   sortOrder?: boolean
   wordCount?: boolean
   objective?: boolean
+  revision?: boolean
   archived?: boolean
 }
 
-export type SceneOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "chapterId" | "title" | "content" | "summary" | "status" | "locationId" | "sortOrder" | "wordCount" | "objective" | "archived", ExtArgs["result"]["scene"]>
+export type SceneOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "chapterId" | "title" | "content" | "summary" | "status" | "locationId" | "sortOrder" | "wordCount" | "objective" | "revision" | "archived", ExtArgs["result"]["scene"]>
 export type SceneInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   chapter?: boolean | Prisma.ChapterDefaultArgs<ExtArgs>
   location?: boolean | Prisma.Scene$locationArgs<ExtArgs>
@@ -1175,6 +1228,7 @@ export type $ScenePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     sortOrder: number
     wordCount: number
     objective: string
+    revision: number
     archived: boolean
   }, ExtArgs["result"]["scene"]>
   composites: {}
@@ -1613,6 +1667,7 @@ export interface SceneFieldRefs {
   readonly sortOrder: Prisma.FieldRef<"Scene", 'Int'>
   readonly wordCount: Prisma.FieldRef<"Scene", 'Int'>
   readonly objective: Prisma.FieldRef<"Scene", 'String'>
+  readonly revision: Prisma.FieldRef<"Scene", 'Int'>
   readonly archived: Prisma.FieldRef<"Scene", 'Boolean'>
 }
     

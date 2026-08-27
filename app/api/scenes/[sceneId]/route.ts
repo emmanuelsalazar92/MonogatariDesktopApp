@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-import { getScene, updateScene } from "@/lib/db/studio";
+import { getScene, SceneRevisionConflictError, updateScene } from "@/lib/db/studio";
 import type { ChapterStatus } from "@/lib/studio-domain";
 
 const chapterStatuses = new Set([
@@ -37,6 +37,7 @@ export async function PATCH(
     status?: unknown;
     objective?: unknown;
     locationId?: unknown;
+    expectedRevision?: unknown;
   };
 
   if (typeof body.title === "string" && body.title.trim().length === 0) {
@@ -46,6 +47,17 @@ export async function PATCH(
   if (body.status !== undefined && !isChapterStatus(body.status)) {
     return NextResponse.json({ error: "status is invalid" }, { status: 400 });
   }
+  if (
+    body.expectedRevision !== undefined &&
+    (typeof body.expectedRevision !== "number" ||
+      !Number.isInteger(body.expectedRevision) ||
+      body.expectedRevision < 0)
+  ) {
+    return NextResponse.json({ error: "expectedRevision is invalid" }, { status: 400 });
+  }
+  if (typeof body.content === "string" && body.content.length > 1_000_000) {
+    return NextResponse.json({ error: "content is too large" }, { status: 413 });
+  }
 
   try {
     const scene = await updateScene(sceneId, {
@@ -54,11 +66,15 @@ export async function PATCH(
       summary: typeof body.summary === "string" ? body.summary : undefined,
       status: isChapterStatus(body.status) ? body.status : undefined,
       objective: typeof body.objective === "string" ? body.objective : undefined,
-      locationId: typeof body.locationId === "string" ? body.locationId : undefined
+      locationId: typeof body.locationId === "string" ? body.locationId : undefined,
+      expectedRevision: typeof body.expectedRevision === "number" ? body.expectedRevision : undefined
     });
 
     return NextResponse.json(scene);
   } catch (error) {
+    if (error instanceof SceneRevisionConflictError) {
+      return NextResponse.json({ error: "scene changed elsewhere; reload before retrying" }, { status: 409 });
+    }
     if (isPrismaNotFound(error)) {
       return NextResponse.json({ error: "scene not found" }, { status: 404 });
     }

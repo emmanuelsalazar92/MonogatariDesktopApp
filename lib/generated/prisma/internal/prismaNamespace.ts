@@ -1617,6 +1617,7 @@ export const SceneScalarFieldEnum = {
   sortOrder: 'sortOrder',
   wordCount: 'wordCount',
   objective: 'objective',
+  revision: 'revision',
   archived: 'archived'
 } as const
 

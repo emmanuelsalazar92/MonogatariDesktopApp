@@ -191,6 +191,7 @@ export const scenes: Scene[] = [
     sortOrder: 1,
     wordCount: 510,
     objective: "Presentar la curiosidad de Akira y la advertencia de Reina.",
+    revision: 0,
     archived: false
   },
   {
@@ -205,6 +206,7 @@ export const scenes: Scene[] = [
     sortOrder: 2,
     wordCount: 620,
     objective: "Vincular a Mika con el misterio central.",
+    revision: 0,
     archived: false
   },
   {
@@ -219,6 +221,7 @@ export const scenes: Scene[] = [
     sortOrder: 1,
     wordCount: 430,
     objective: "Dar una herramienta concreta al grupo.",
+    revision: 0,
     archived: false
   }
 ];

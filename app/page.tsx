@@ -123,6 +123,7 @@ import {
   type LibraryNavigationState
 } from "@/lib/studio-library-navigation";
 import { cn } from "@/lib/utils";
+import { statusAfterSaveConfirmation, type AutosaveStatus } from "@/lib/autosave-state";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
   exportFormats,
@@ -153,7 +154,7 @@ type SceneSaveInput = {
   locationId: string;
 };
 
-type SaveStatus = "Saved" | "Saving..." | "Unsaved changes" | "Save error";
+type SaveStatus = AutosaveStatus;
 type SettingsSaveState = "idle" | "saving" | "saved" | "error";
 type PendingSaveHandler = () => Promise<boolean>;
 type NotionPublishState = "idle" | "publishing" | "success" | "error";
@@ -270,7 +271,7 @@ function PrivateNovelStudioContent() {
   const [dialog, setDialog] = React.useState<
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
   >(null);
-  const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved");
+  const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved locally");
   const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
   const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
   const [notionPublishUrl, setNotionPublishUrl] = React.useState("");
@@ -746,15 +747,15 @@ function PrivateNovelStudioContent() {
   );
 
   const saveScene = React.useCallback(
-    async (sceneId: string, input: SceneSaveInput) => {
-      if (!sceneId) return true;
-      setSaveStatus("Saving...");
+    async (sceneId: string, input: SceneSaveInput, expectedRevision: number): Promise<Scene | null> => {
+      if (!sceneId) return null;
+      setSaveStatus("Saving…");
 
       try {
         const response = await fetch(`/api/scenes/${encodeURIComponent(sceneId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input)
+          body: JSON.stringify({ ...input, expectedRevision })
         });
 
         if (!response.ok) {
@@ -794,13 +795,12 @@ function PrivateNovelStudioContent() {
           };
         });
         await refreshStudioData(false);
-        setSaveStatus("Saved");
         showToast("Scene saved to SQLite");
-        return true;
+        return savedScene;
       } catch {
-        setSaveStatus("Save error");
+        setSaveStatus("Save failed — Retry");
         showToast("Could not save scene");
-        return false;
+        return null;
       }
     },
     [refreshStudioData, showToast]
@@ -1663,7 +1663,7 @@ function EditorScreen({
   autosaveDelayMs: number | null;
   saveStatus: SaveStatus;
   inspectorOpen: boolean;
-  onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
+  onSaveScene: (sceneId: string, input: SceneSaveInput, expectedRevision: number) => Promise<Scene | null>;
   onRequestSave: () => void;
   onRegisterPendingSave: (handler: PendingSaveHandler | null) => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -1717,23 +1717,25 @@ function EditorScreen({
       draft.content !== scene.content;
     if (!hasChanges) return true;
     const revisionAtStart = revisionRef.current;
-    const succeeded = await onSaveScene(scene.id, {
+    const savedScene = await onSaveScene(scene.id, {
       title: draft.title,
       status: draft.status,
       content: draft.content,
       summary: scene.summary,
       objective: scene.objective,
       locationId: scene.locationId
-    });
-    if (!succeeded) return false;
+    }, scene.revision);
+    if (!savedScene) return false;
 
-    activeSceneRef.current = { ...scene, ...draft };
+    activeSceneRef.current = { ...scene, ...draft, revision: savedScene.revision };
 
-    if (revisionRef.current === revisionAtStart) {
+    const nextStatus = statusAfterSaveConfirmation(revisionRef.current, revisionAtStart);
+    if (nextStatus === "Saved locally") {
       onDirtyChange(false);
     } else {
-      setSaveStatus("Unsaved changes");
+      onDirtyChange(true);
     }
+    setSaveStatus(nextStatus);
     return true;
   }, [onDirtyChange, onSaveScene, setSaveStatus]);
   saveCurrentSceneRef.current = saveCurrentScene;
@@ -1776,13 +1778,13 @@ function EditorScreen({
     revisionRef.current = 0;
     setDraftVersion(0);
     onDirtyChange(false);
-    setSaveStatus("Saved");
+    setSaveStatus("Saved locally");
   }, [activeScene, onDirtyChange, setSaveStatus]);
 
   React.useEffect(() => {
     onDirtyChange(dirty);
-    if (!dirty && saveStatus !== "Saving..." && saveStatus !== "Saved") {
-      setSaveStatus("Saved");
+    if (!dirty && saveStatus !== "Saving…" && saveStatus !== "Saved locally") {
+      setSaveStatus("Saved locally");
     }
   }, [dirty, onDirtyChange, saveStatus, setSaveStatus]);
 
@@ -1898,10 +1900,10 @@ function EditorScreen({
                 <Button
                   variant="outline"
                   onClick={onRequestSave}
-                  disabled={!dirty || saveStatus === "Saving..."}
+                  disabled={!dirty || saveStatus === "Saving…"}
                 >
                   <Save className="size-4" />
-                  {saveStatus === "Save error" ? "Retry save" : "Save"}
+                  {saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
                 </Button>
                 <Button variant="outline">
                   <Download className="size-4" />
@@ -1959,10 +1961,10 @@ function EditorScreen({
               <Circle
                 className={cn(
                   "size-2 fill-current",
-                  saveStatus === "Saved" && "text-emerald-600",
-                  saveStatus === "Saving..." && "text-accent",
+                  saveStatus === "Saved locally" && "text-emerald-600",
+                  saveStatus === "Saving…" && "text-accent",
                   saveStatus === "Unsaved changes" && "text-warning",
-                  saveStatus === "Save error" && "text-destructive"
+                  saveStatus === "Save failed — Retry" && "text-destructive"
                 )}
               />
               {saveStatus}
@@ -2081,7 +2083,7 @@ function WritingFocusMode({
   editorFontSize: number;
   autosaveDelayMs: number | null;
   saveStatus: SaveStatus;
-  onSaveScene: (sceneId: string, input: SceneSaveInput) => Promise<boolean>;
+  onSaveScene: (sceneId: string, input: SceneSaveInput, expectedRevision: number) => Promise<Scene | null>;
   onRequestSave: () => void;
   setSaveStatus: (status: SaveStatus) => void;
   onRegisterPendingSave: (handler: PendingSaveHandler | null) => void;
@@ -2105,21 +2107,23 @@ function WritingFocusMode({
     const latestContent = contentRef.current;
     if (latestContent === scene.content) return true;
     const revisionAtStart = revisionRef.current;
-    const succeeded = await onSaveScene(scene.id, {
+    const savedScene = await onSaveScene(scene.id, {
       title: scene.title,
       status: scene.status,
       content: latestContent,
       summary: scene.summary,
       objective: scene.objective,
       locationId: scene.locationId
-    });
-    if (!succeeded) return false;
-    activeSceneRef.current = { ...scene, content: latestContent };
-    if (revisionRef.current === revisionAtStart) {
+    }, scene.revision);
+    if (!savedScene) return false;
+    activeSceneRef.current = { ...scene, content: latestContent, revision: savedScene.revision };
+    const nextStatus = statusAfterSaveConfirmation(revisionRef.current, revisionAtStart);
+    if (nextStatus === "Saved locally") {
       onDirtyChange(false);
     } else {
-      setSaveStatus("Unsaved changes");
+      onDirtyChange(true);
     }
+    setSaveStatus(nextStatus);
     return true;
   }, [onDirtyChange, onSaveScene, setSaveStatus]);
 
@@ -2131,13 +2135,13 @@ function WritingFocusMode({
     revisionRef.current = 0;
     setDraftVersion(0);
     onDirtyChange(false);
-    setSaveStatus("Saved");
+    setSaveStatus("Saved locally");
   }, [activeScene, onDirtyChange, setSaveStatus]);
 
   React.useEffect(() => {
     onDirtyChange(dirty);
-    if (!dirty && saveStatus !== "Saving..." && saveStatus !== "Saved") {
-      setSaveStatus("Saved");
+    if (!dirty && saveStatus !== "Saving…" && saveStatus !== "Saved locally") {
+      setSaveStatus("Saved locally");
     }
   }, [dirty, onDirtyChange, saveStatus, setSaveStatus]);
 
@@ -2166,8 +2170,8 @@ function WritingFocusMode({
             variant="ghost"
             size="icon"
             onClick={onRequestSave}
-            aria-label={saveStatus === "Save error" ? "Retry save" : "Save"}
-            disabled={!dirty || saveStatus === "Saving..."}
+            aria-label={saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
+            disabled={!dirty || saveStatus === "Saving…"}
           >
             <Save className="size-4" />
           </Button>

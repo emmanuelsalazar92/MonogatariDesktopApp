@@ -145,6 +145,22 @@ test("dialog surface uses opaque theme tokens while preserving the blurred backd
   assert.match(dialogSource, /bg-background p-1\.5/);
 });
 
+test("autosave only reports saved when the confirmed revision is still current", async () => {
+  const autosave = await loadTypeScriptModule("lib/autosave-state.ts");
+
+  assert.equal(autosave.statusAfterSaveConfirmation(11, 10), "Unsaved changes");
+  assert.equal(autosave.statusAfterSaveConfirmation(11, 11), "Saved locally");
+});
+
+test("scene persistence uses an atomic revision guard against stale writes", async () => {
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const routeSource = await readFile(resolve(process.cwd(), "app/api/scenes/[sceneId]/route.ts"), "utf8");
+
+  assert.match(studioSource, /where: \{ id: sceneId, revision: expectedRevision \}/);
+  assert.match(studioSource, /revision: \{ increment: 1 \}/);
+  assert.match(routeSource, /status: 409/);
+});
+
 test("structure status allowlist excludes archival and rejects unknown values", async () => {
   const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
     if (moduleId === "lucide-react") return {};
