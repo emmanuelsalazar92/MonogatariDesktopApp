@@ -1349,6 +1349,7 @@ export default function PrivateNovelStudioPage() {
               compactSidebar: uiCopy[language].compactSidebar,
               hideSidebar: uiCopy[language].hideSidebar
             }}
+            hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
             onSelectPage={selectPage}
             onSidebarStateChange={updateSidebarState}
           />
