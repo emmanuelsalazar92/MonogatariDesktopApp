@@ -40,6 +40,8 @@ export function SettingsScreen({
   onLanguageChange,
   onSidebarStateChange,
   onSettingChange,
+  settingsSaveState,
+  settingsSaveMessage,
   onNotionConnectionVerified,
   notionAutosyncStatus,
   notionAutosyncRetryAt
@@ -53,11 +55,14 @@ export function SettingsScreen({
   onLanguageChange: (value: Language) => void;
   onSidebarStateChange: (value: SidebarState) => void;
   onSettingChange: (key: keyof PersistedStudioSettings, value: string | boolean) => void;
+  settingsSaveState: "idle" | "saving" | "saved" | "error";
+  settingsSaveMessage: string;
   onNotionConnectionVerified: (pageId: string, pageTitle: string) => void;
   notionAutosyncStatus: "idle" | "syncing" | "synced" | "error" | "remote-changes";
   notionAutosyncRetryAt: number;
 }) {
   const copy = uiCopy[language];
+  const settingsAreSaving = settingsSaveState === "saving";
   const [notionRootPage, setNotionRootPage] = React.useState(settings.notionRootPageId);
   const [notionConfigured, setNotionConfigured] = React.useState<boolean | null>(null);
   const [notionConnectionState, setNotionConnectionState] =
@@ -161,24 +166,38 @@ export function SettingsScreen({
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6" aria-busy={settingsAreSaving}>
       <SectionHeader
         eyebrow={copy.settingsEyebrow}
         title={copy.settingsTitle}
         description={copy.settingsDescription}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
-        <Card className="surface-panel">
+      {settingsSaveMessage ? (
+        <div
+          className={`rounded-lg border px-4 py-3 text-sm ${
+            settingsSaveState === "error"
+              ? "border-destructive/35 bg-destructive/10 text-destructive"
+              : "border-border/60 bg-surface-elevated/85 text-muted-foreground"
+          }`}
+          role={settingsSaveState === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          {translate(settingsSaveMessage)}
+        </div>
+      ) : null}
+
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
+        <Card className="surface-panel min-w-0">
           <CardHeader>
             <CardTitle>{copy.interface}</CardTitle>
             <CardDescription>{copy.interfaceDefaults}</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div>
+          <CardContent className="grid min-w-0 gap-4 md:grid-cols-2">
+            <div className="min-w-0">
               <Label>{copy.uiLanguage}</Label>
-              <Select value={language} onValueChange={(value) => onLanguageChange(value as Language)}>
-                <SelectTrigger className="mt-2">
+              <Select value={language} onValueChange={(value) => onLanguageChange(value as Language)} disabled={settingsAreSaving}>
+                <SelectTrigger className="mt-2" aria-label={copy.uiLanguage}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,6 +218,7 @@ export function SettingsScreen({
                 { value: "system", label: copy.system }
               ]}
               onChange={(value) => onThemeChange(value as ThemeMode)}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={copy.sidebarDefaultState}
@@ -210,6 +230,7 @@ export function SettingsScreen({
               ]}
               onChange={(value) => onSidebarStateChange(value as SidebarState)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Editor font size")}
@@ -217,6 +238,7 @@ export function SettingsScreen({
               values={["16 px", "18 px", "20 px", "22 px"]}
               onChange={(value) => onSettingChange("editorFontSize", value)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Reader font size")}
@@ -224,6 +246,7 @@ export function SettingsScreen({
               values={["16 px", "18 px", "20 px", "22 px"]}
               onChange={(value) => onSettingChange("readerFontSize", value)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Autosave interval")}
@@ -231,6 +254,7 @@ export function SettingsScreen({
               values={["10 seconds", "30 seconds", "60 seconds", "Manual only"]}
               onChange={(value) => onSettingChange("autosaveInterval", value)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Daily writing goal")}
@@ -238,6 +262,7 @@ export function SettingsScreen({
               values={["500", "1000", "1500", "2000", "3000"]}
               onChange={(value) => onSettingChange("dailyWordGoal", value)}
               translate={(value) => `${value} ${translate("words")}`}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Default focus mode")}
@@ -245,6 +270,7 @@ export function SettingsScreen({
               values={["Writing", "Reading", "Off"]}
               onChange={(value) => onSettingChange("defaultFocusMode", value)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Default reading mode")}
@@ -252,6 +278,7 @@ export function SettingsScreen({
               values={["Light", "Dark", "Sepia"]}
               onChange={(value) => onSettingChange("defaultReadingMode", value)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
             <SettingsSelect
               label={translate("Backup retention")}
@@ -259,12 +286,13 @@ export function SettingsScreen({
               values={[...backupRetentionPolicies]}
               onChange={(value) => onSettingChange("backupRetention", value)}
               translate={translate}
+              disabled={settingsAreSaving}
             />
           </CardContent>
         </Card>
 
-        <div className="grid gap-4">
-          <Card className="surface-panel">
+        <div className="grid min-w-0 gap-4">
+          <Card className="surface-panel min-w-0">
             <CardHeader>
               <CardTitle>{translate("Private Notion connection")}</CardTitle>
               <CardDescription>
@@ -334,18 +362,19 @@ export function SettingsScreen({
                 </div>
               ) : null}
 
-              <div className="rounded-lg border border-border/60 bg-surface/74 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <Label>{translate("Automatic Notion sync")}</Label>
+              <div className="min-w-0 rounded-lg border border-border/60 bg-surface/74 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <Label htmlFor="notion-autosync">{translate("Automatic Notion sync")}</Label>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {translate("Periodically checks pending local changes without interrupting your writing.")}
                     </p>
                   </div>
                   <Switch
+                    id="notion-autosync"
                     checked={settings.notionAutosyncEnabled}
                     onCheckedChange={(value) => onSettingChange("notionAutosyncEnabled", value)}
-                    disabled={!settings.notionRootPageId}
+                    disabled={settingsAreSaving || !settings.notionRootPageId}
                   />
                 </div>
                 <p className="mt-3 text-xs leading-relaxed text-muted-foreground" role="status">
@@ -358,13 +387,14 @@ export function SettingsScreen({
                     values={[...notionAutosyncIntervals]}
                     onChange={(value) => onSettingChange("notionAutosyncIntervalMinutes", value)}
                     translate={(value) => `${value} ${translate("minutes")}`}
+                    disabled={settingsAreSaving}
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="surface-panel">
+          <Card className="surface-panel min-w-0">
             <CardHeader>
               <CardTitle>{translate("Export defaults")}</CardTitle>
               <CardDescription>
@@ -377,15 +407,17 @@ export function SettingsScreen({
                 value={configuredExportDefaults.format}
                 values={exportFormats}
                 onChange={(format) => updateExportDefaults({ format })}
+                disabled={settingsAreSaving}
               />
               <div className="grid gap-3">
                 {exportOptions.map((option) => (
                   <div
                     key={option}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-surface/74 px-4 py-3"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-surface/74 px-4 py-3"
                   >
-                    <span className="text-sm">{translate(option)}</span>
+                    <Label htmlFor={`export-option-${option.replaceAll(" ", "-").toLowerCase()}`} className="leading-relaxed">{translate(option)}</Label>
                     <Switch
+                      id={`export-option-${option.replaceAll(" ", "-").toLowerCase()}`}
                       checked={configuredExportDefaults.options.includes(option)}
                       onCheckedChange={(enabled) =>
                         updateExportDefaults({
@@ -394,21 +426,24 @@ export function SettingsScreen({
                             : configuredExportDefaults.options.filter((item) => item !== option)
                         })
                       }
+                      disabled={settingsAreSaving}
                     />
                   </div>
                 ))}
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-border/60 bg-surface/74 px-4 py-3">
-                <span className="text-sm">{copy.typewriterFont}</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-surface/74 px-4 py-3">
+                <Label htmlFor="typewriter-font" className="leading-relaxed">{copy.typewriterFont}</Label>
                 <Switch
+                  id="typewriter-font"
                   checked={settings.typewriterFont}
                   onCheckedChange={(value) => onSettingChange("typewriterFont", value)}
+                  disabled={settingsAreSaving}
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="surface-panel">
+          <Card className="surface-panel min-w-0">
             <CardHeader>
               <CardTitle>{copy.localFirstNotice}</CardTitle>
             </CardHeader>
@@ -429,19 +464,21 @@ function SettingsSelect({
   value,
   values,
   translate,
-  onChange
+  onChange,
+  disabled = false
 }: {
   label: string;
   value: string;
   values: Array<string | { value: string; label: string }>;
   translate?: (value: string) => string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <Label>{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="mt-2">
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="mt-2" aria-label={label}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

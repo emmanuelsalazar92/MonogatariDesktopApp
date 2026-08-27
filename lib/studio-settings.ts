@@ -123,6 +123,40 @@ export function hasOnlyKnownStudioSettings(changes: Record<string, unknown>) {
   return Object.keys(changes).length > 0 && Object.keys(changes).every((key) => key in allowedValues);
 }
 
+/**
+ * Validates a client-side Settings update before it reaches the canonical
+ * configuration record. Parsing existing configuration remains deliberately
+ * lenient so a future or malformed stored value can fall back safely, but an
+ * incoming update must be completely valid: silently dropping one invalid
+ * field would incorrectly acknowledge a save that did not happen.
+ */
+export function validateStudioSettingsUpdate(
+  changes: Record<string, unknown>
+): Record<string, string> | null {
+  if (!hasOnlyKnownStudioSettings(changes)) return null;
+
+  const normalizedChanges: Record<string, string> = {};
+  for (const [key, value] of Object.entries(changes)) {
+    if (!isNonSecretText(value)) return null;
+
+    const settingKey = key as keyof PersistedStudioSettings;
+    let normalized = value.trim();
+    if (settingKey === "exportDefaults") {
+      const exportDefaults = normalizeExportDefaults(normalized);
+      if (!exportDefaults) return null;
+      normalized = exportDefaults;
+    }
+
+    const options = allowedValues[settingKey];
+    if ((options.length > 0 && !options.includes(normalized)) || (options.length === 0 && !normalized)) {
+      return null;
+    }
+    normalizedChanges[key] = normalized;
+  }
+
+  return normalizedChanges;
+}
+
 export function notionAutosyncIntervalMilliseconds(value: string) {
   if (!notionAutosyncIntervals.includes(value as (typeof notionAutosyncIntervals)[number])) {
     return null;
