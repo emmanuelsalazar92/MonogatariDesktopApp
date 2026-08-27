@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import * as React from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArchiveRestore,
   ArrowLeft,
@@ -115,6 +116,7 @@ import {
   notionAutosyncIntervalMilliseconds,
   parseExportDefaults
 } from "@/lib/studio-settings";
+import { parseStudioRoute, routeForPage } from "@/lib/studio-routes";
 import { cn } from "@/lib/utils";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
@@ -254,7 +256,12 @@ function autosaveDelay(value: string) {
 }
 
 export default function PrivateNovelStudioPage() {
-  const [activePage, setActivePage] = React.useState<PageId>("dashboard");
+  const router = useRouter();
+  const pathname = usePathname();
+  const activeRoute = React.useMemo(() => parseStudioRoute(pathname), [pathname]);
+  const [activePage, setActivePage] = React.useState<PageId>(
+    () => activeRoute?.page ?? "dashboard"
+  );
   const [sidebarState, setSidebarState] = React.useState<SidebarState>("expanded");
   const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
   const [theme, setTheme] = React.useState<"light" | "dark" | "system">("light");
@@ -391,6 +398,22 @@ export default function PrivateNovelStudioPage() {
   React.useEffect(() => {
     void refreshStudioData();
   }, [refreshStudioData]);
+
+  React.useEffect(() => {
+    if (activeRoute) setActivePage(activeRoute.page);
+  }, [activeRoute]);
+
+  React.useEffect(() => {
+    const routeNovelId = activeRoute?.novelId;
+    if (!routeNovelId || dataStatus !== "ready") return;
+    if (!studioData.novels.some((novel) => novel.id === routeNovelId)) return;
+
+    setStudioData((current) =>
+      current.settings.activeNovelId === routeNovelId
+        ? current
+        : { ...current, settings: { ...current.settings, activeNovelId: routeNovelId } }
+    );
+  }, [activeRoute?.novelId, dataStatus, studioData.novels]);
 
   React.useEffect(() => {
     if (activePage !== "export") {
@@ -570,7 +593,7 @@ export default function PrivateNovelStudioPage() {
         settings: { ...current.settings, activeNovelId: novelId }
       }));
       if (nextPage) {
-        setActivePage(nextPage);
+        router.push(routeForPage(nextPage, novelId));
       }
       setMobileDrawerOpen(false);
       setFocusMode("none");
@@ -582,7 +605,7 @@ export default function PrivateNovelStudioPage() {
         showToast("Could not save active novel")
       );
     },
-    [flushPendingChanges, showToast]
+    [flushPendingChanges, router, showToast]
   );
 
   const setActiveStructureItem = React.useCallback(
@@ -991,10 +1014,10 @@ export default function PrivateNovelStudioPage() {
       }
 
       await refreshStudioData(false);
-      setActivePage("characters");
+      router.push(routeForPage("characters", currentNovel.id));
       showToast("Character created in SQLite");
     },
-    [currentNovel.id, refreshStudioData, showToast]
+    [currentNovel.id, refreshStudioData, router, showToast]
   );
 
   const createPlaceFromDialog = React.useCallback(
@@ -1015,10 +1038,10 @@ export default function PrivateNovelStudioPage() {
       }
 
       await refreshStudioData(false);
-      setActivePage("places");
+      router.push(routeForPage("places", currentNovel.id));
       showToast("Place created in SQLite");
     },
-    [currentNovel.id, refreshStudioData, showToast]
+    [currentNovel.id, refreshStudioData, router, showToast]
   );
 
   const createNoteFromDialog = React.useCallback(
@@ -1041,10 +1064,10 @@ export default function PrivateNovelStudioPage() {
       }
 
       await refreshStudioData(false);
-      setActivePage("notes");
+      router.push(routeForPage("notes", currentNovel.id));
       showToast("Note created in SQLite");
     },
-    [currentNovel.id, refreshStudioData, showToast]
+    [currentNovel.id, refreshStudioData, router, showToast]
   );
 
   const createRelationshipFromDialog = React.useCallback(
@@ -1064,10 +1087,10 @@ export default function PrivateNovelStudioPage() {
       }
 
       await refreshStudioData(false);
-      setActivePage("relationships");
+      router.push(routeForPage("relationships", currentNovel.id));
       showToast("Relationship saved to SQLite");
     },
-    [currentNovel.id, refreshStudioData, showToast]
+    [currentNovel.id, refreshStudioData, router, showToast]
   );
 
   const createTimelineEventFromDialog = React.useCallback(
@@ -1087,10 +1110,10 @@ export default function PrivateNovelStudioPage() {
       }
 
       await refreshStudioData(false);
-      setActivePage("timeline");
+      router.push(routeForPage("timeline", currentNovel.id));
       showToast("Timeline event saved to SQLite");
     },
-    [currentNovel.id, refreshStudioData, showToast]
+    [currentNovel.id, refreshStudioData, router, showToast]
   );
 
   const createBackup = React.useCallback(async () => {
@@ -1223,7 +1246,7 @@ export default function PrivateNovelStudioPage() {
       showToast("Save failed. Navigation was cancelled to protect your draft.");
       return;
     }
-    setActivePage(page);
+    router.push(routeForPage(page, currentNovel.id));
     setMobileDrawerOpen(false);
     setFocusMode(
       page === "editor" && studioSettings.defaultFocusMode === "Writing"
@@ -1306,7 +1329,12 @@ export default function PrivateNovelStudioPage() {
               }}
               onOpenMobileNav={() => setMobileDrawerOpen(true)}
               onCycleSidebar={cycleSidebar}
-              onActiveNovelChange={setActiveNovel}
+              onActiveNovelChange={(novelId) =>
+                void setActiveNovel(
+                  novelId,
+                  activeRoute?.novelId ? activePage : "overview"
+                )
+              }
             />
 
           <div className="flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-7">

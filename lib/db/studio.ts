@@ -629,6 +629,15 @@ export async function getStudioSettings() {
   return settings;
 }
 
+export async function novelExistsForRoute(id: string) {
+  return Boolean(
+    await prisma.novel.findUnique({
+      where: { id },
+      select: { id: true }
+    })
+  );
+}
+
 export async function updateAppSettings(input: Record<string, string>) {
   const entries = Object.entries(input).filter(([, value]) => value.length > 0);
 
