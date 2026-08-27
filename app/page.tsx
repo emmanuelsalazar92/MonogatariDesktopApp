@@ -461,6 +461,17 @@ function PrivateNovelStudioContent() {
   }, [refreshStudioData]);
 
   React.useEffect(() => {
+    const desktopMedia = window.matchMedia("(min-width: 768px)");
+    const closeDrawerOnDesktop = () => {
+      if (desktopMedia.matches) setMobileDrawerOpen(false);
+    };
+
+    closeDrawerOnDesktop();
+    desktopMedia.addEventListener("change", closeDrawerOnDesktop);
+    return () => desktopMedia.removeEventListener("change", closeDrawerOnDesktop);
+  }, []);
+
+  React.useEffect(() => {
     if (activePage !== "export") {
       exportDefaultsAppliedRef.current = false;
       return;
@@ -1375,6 +1386,7 @@ function PrivateNovelStudioContent() {
               pageLabel={pageLabelsByLanguage[language][activePage]}
               subtitle={`${currentNovel.title} - ${uiCopy[language].localStudio}`}
               sidebarState={sidebarState}
+              mobileNavigationOpen={mobileDrawerOpen}
               novels={studioData.novels}
               activeNovelId={currentNovel.id}
               dataStatusLabel={dataSourceLabel(dataStatus, language)}
@@ -1581,6 +1593,7 @@ function PrivateNovelStudioContent() {
         activePage={activePage}
         labels={pageLabelsByLanguage[language]}
         description={uiCopy[language].openNavigation}
+        hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
         onOpenChange={setMobileDrawerOpen}
         onSelectPage={selectPage}
       />
