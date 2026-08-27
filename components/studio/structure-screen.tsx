@@ -185,9 +185,13 @@ export function StructureScreen({
     const type = data.settings.activeStructureType;
     const id = data.settings.activeStructureId;
     if (!isStructureType(type) || !id) return;
+    if (!getSelectedItem({ type, id }, volumes, chapters, scenes)) {
+      setSelection(null);
+      return;
+    }
     if (selection?.type === type && selection.id === id) return;
     setSelection({ type, id });
-  }, [data.settings.activeStructureId, data.settings.activeStructureType, selection?.id, selection?.type]);
+  }, [chapters, data.settings.activeStructureId, data.settings.activeStructureType, scenes, selection?.id, selection?.type, volumes]);
 
   React.useEffect(() => {
     if (selection) revealSelection(selection);
@@ -574,35 +578,52 @@ export function StructureScreen({
 
         <Card className="surface-panel h-fit xl:sticky xl:top-24">
           <CardHeader>
-            <CardTitle>{selected?.title ?? translate("Outline actions")}</CardTitle>
-            <CardDescription>
+            <CardTitle id="structure-inspector-title">{selected?.title ?? translate("Outline actions")}</CardTitle>
+            <CardDescription aria-live="polite">
               {selected
                 ? `${translate(capitalize(selected.type))} · ${selected.archived ? translate("Archived") : translate("Active")}`
                 : translate("Select a structure item")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2">
+          <CardContent className="space-y-5">
+            {selected ? <InspectorMetadata
+              item={selected}
+              currentNovelTitle={currentNovel.title}
+              volumes={volumes}
+              chapters={chapters}
+              translate={translate}
+            /> : <p className="rounded-lg border border-dashed border-border/70 bg-surface/60 p-4 text-sm text-muted-foreground" role="status">
+              {translate("Choose a volume, chapter, or scene to see its context and available actions.")}
+            </p>}
             {selected?.type === "scene" ? (
-              <Button className="justify-start" disabled={busy || selected.archived} onClick={() => onOpenScene(selected.id)}>
+              <Button className="w-full justify-start" size="lg" disabled={busy || selected.archived} onClick={() => onOpenScene(selected.id)}>
                 <PenLine className="size-4" />{translate("Open in editor")}
               </Button>
             ) : null}
-            <Button variant="outline" className="justify-start" disabled={!selected || busy} onClick={openEdit}>
-              <Edit3 className="size-4" />{translate("Edit metadata")}
-            </Button>
-            <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={() => void performAction("duplicate")}>
-              <Copy className="size-4" />{translate("Duplicate")}
-            </Button>
-            <Button variant="outline" className="justify-start" disabled={!selected || busy} onClick={() => void performAction(selected?.archived ? "restore" : "archive")}>
-              {selected?.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
-              {translate(selected?.archived ? "Restore" : "Archive")}
-            </Button>
-            <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={openMove}>
-              <Move className="size-4" />{translate("Move")}
-            </Button>
-            <Button variant="outline" className="justify-start text-destructive hover:text-destructive" disabled={!selected || busy} onClick={() => { setError(""); setDialogMode("delete"); }}>
-              <Trash2 className="size-4" />{translate("Delete")}
-            </Button>
+            <section aria-labelledby="structure-organize-actions" className="space-y-2">
+              <p id="structure-organize-actions" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{translate("Organize")}</p>
+              <div className="grid gap-2">
+                <Button variant="outline" className="justify-start" disabled={!selected || busy} onClick={openEdit}>
+                  <Edit3 className="size-4" />{translate("Edit details")}
+                </Button>
+                <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={() => void performAction("duplicate")}>
+                  <Copy className="size-4" />{translate("Duplicate")}
+                </Button>
+                <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={openMove}>
+                  <Move className="size-4" />{translate("Move")}
+                </Button>
+              </div>
+            </section>
+            <section aria-labelledby="structure-risk-actions" className="space-y-2 border-t border-border/70 pt-4">
+              <p id="structure-risk-actions" className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{translate("Archive or delete")}</p>
+              <Button variant="outline" className="w-full justify-start" disabled={!selected || busy} onClick={() => void performAction(selected?.archived ? "restore" : "archive")}>
+                {selected?.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
+                {translate(selected?.archived ? "Restore from archive" : "Archive item")}
+              </Button>
+              <Button variant="destructive" className="w-full justify-start" disabled={!selected || busy} onClick={() => { setError(""); setDialogMode("delete"); }}>
+                <Trash2 className="size-4" />{translate("Delete permanently")}
+              </Button>
+            </section>
           </CardContent>
         </Card>
       </div>
@@ -699,6 +720,56 @@ export function StructureScreen({
       </Dialog>
       <p className="sr-only" role="status" aria-live="polite">{moveAnnouncement}</p>
     </div>
+  );
+}
+
+function InspectorMetadata({
+  item,
+  currentNovelTitle,
+  volumes,
+  chapters,
+  translate
+}: {
+  item: SelectedItem;
+  currentNovelTitle: string;
+  volumes: Volume[];
+  chapters: Chapter[];
+  translate: (value: string) => string;
+}) {
+  const chapter = item.type === "scene" ? chapters.find((candidate) => candidate.id === item.chapterId) : undefined;
+  const volumeId = item.type === "volume" ? item.id : item.type === "chapter" ? item.volumeId : chapter?.volumeId;
+  const volume = volumes.find((candidate) => candidate.id === volumeId);
+  const entries = item.type === "scene"
+    ? [
+        { label: translate("Status"), value: <StatusBadge status={item.archived ? "Archived" : item.status} translate={translate} /> },
+        { label: translate("Words"), value: formatNumber(item.wordCount) },
+        { label: translate("Chapter"), value: chapter?.title ?? translate("Unavailable") },
+        { label: translate("Volume"), value: volume?.title ?? translate("Unavailable") }
+      ]
+    : item.type === "chapter"
+      ? [
+          { label: translate("Status"), value: <StatusBadge status={item.archived ? "Archived" : item.status} translate={translate} /> },
+          { label: translate("Words"), value: formatNumber(item.wordCount) },
+          { label: translate("Volume"), value: volume?.title ?? translate("Unavailable") },
+          { label: translate("Novel"), value: currentNovelTitle }
+        ]
+      : [
+          { label: translate("Status"), value: <StatusBadge status={item.archived ? "Archived" : "Ready"} translate={translate} /> },
+          { label: translate("Novel"), value: currentNovelTitle },
+          { label: translate("Summary"), value: item.summary || translate("No summary") }
+        ];
+
+  return (
+    <section aria-label={translate("Selected item context")} className="rounded-lg border border-border/65 bg-surface/65 p-3">
+      <dl className="grid gap-3 text-sm">
+        {entries.map((entry) => (
+          <div key={entry.label} className="grid gap-1">
+            <dt className="text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground">{entry.label}</dt>
+            <dd className="min-w-0 break-words font-medium text-foreground">{entry.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
