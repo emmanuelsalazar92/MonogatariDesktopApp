@@ -50,7 +50,9 @@ export function parseStudioRoute(pathname: string): StudioRoute | null {
     try {
       const novelId = decodeURIComponent(sceneMatch[1]);
       const sceneId = decodeURIComponent(sceneMatch[2]);
-      return novelId && sceneId ? { page: "editor", novelId, sceneId } : null;
+      return isValidNovelRouteId(novelId) && isValidSceneRouteId(sceneId)
+        ? { page: "editor", novelId, sceneId }
+        : null;
     } catch {
       return null;
     }
@@ -65,15 +67,17 @@ export function parseStudioRoute(pathname: string): StudioRoute | null {
   } catch {
     return null;
   }
-  if (!novelId) return null;
+  if (!isValidNovelRouteId(novelId)) return null;
 
   if (!match[2]) return { page: "overview", novelId };
-  const page = novelSections[match[2]];
-  return page ? { page, novelId } : null;
+  const section = match[2];
+  return isNovelWorkspaceSection(section)
+    ? { page: novelSections[section], novelId }
+    : null;
 }
 
 export function isNovelWorkspaceSection(section: string) {
-  return section in novelSections;
+  return Object.hasOwn(novelSections, section);
 }
 
 export function isValidNovelRouteId(value: string) {

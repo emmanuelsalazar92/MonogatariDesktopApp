@@ -378,6 +378,7 @@ function PrivateNovelStudioContent() {
   const autosyncStatusTimerRef = React.useRef<number | null>(null);
   const exportDefaultsAppliedRef = React.useRef(false);
   const settingsSaveInFlightRef = React.useRef(false);
+  const staleRouteRecoveryRef = React.useRef<string | null>(null);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
     [language]
@@ -459,6 +460,24 @@ function PrivateNovelStudioContent() {
   React.useEffect(() => {
     void refreshStudioData();
   }, [refreshStudioData]);
+
+  React.useEffect(() => {
+    const routeNovelId = activeRoute?.novelId;
+    if (!routeNovelId || dataStatus !== "ready") {
+      staleRouteRecoveryRef.current = null;
+      return;
+    }
+
+    if (studioData.novels.some((novel) => novel.id === routeNovelId)) {
+      staleRouteRecoveryRef.current = null;
+      return;
+    }
+
+    if (staleRouteRecoveryRef.current === pathname) return;
+    staleRouteRecoveryRef.current = pathname;
+    showToast("This novel is no longer available. Returned to Library.");
+    router.replace("/library");
+  }, [activeRoute?.novelId, dataStatus, pathname, router, showToast, studioData.novels]);
 
   React.useEffect(() => {
     const desktopMedia = window.matchMedia("(min-width: 768px)");
