@@ -207,19 +207,25 @@ export function ToolbarIconButton({
   label,
   children,
   onClick,
-  active = false
+  active = false,
+  expanded,
+  id
 }: {
   label: string;
   children: React.ReactNode;
   onClick?: () => void;
   active?: boolean;
+  expanded?: boolean;
+  id?: string;
 }) {
   return (
     <Button
       type="button"
+      id={id}
       variant={active ? "secondary" : "ghost"}
       size="icon"
       aria-label={label}
+      aria-expanded={expanded}
       title={label}
       onClick={onClick}
       className={cn("shrink-0 rounded-full", active && "bg-secondary")}

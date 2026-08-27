@@ -5,7 +5,6 @@ import {
   ChevronsRight,
   Columns3,
   Menu,
-  PanelLeftOpen,
   ShieldCheck
 } from "lucide-react";
 
@@ -30,6 +29,7 @@ export function TopBar({
   pageLabel,
   subtitle,
   sidebarState,
+  mobileNavigationOpen,
   novels,
   activeNovelId,
   dataStatusLabel,
@@ -41,6 +41,7 @@ export function TopBar({
   pageLabel: string;
   subtitle: string;
   sidebarState: SidebarState;
+  mobileNavigationOpen: boolean;
   novels: Novel[];
   activeNovelId: string;
   dataStatusLabel: string;
@@ -52,21 +53,29 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/82 backdrop-blur-xl">
       <div className="flex min-h-[4.5rem] flex-wrap items-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
-        <ToolbarIconButton label={copy.openNavigation} onClick={onOpenMobileNav}>
-          <Menu className="size-5 md:hidden" />
-          <PanelLeftOpen className="hidden size-5 md:block" />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label={copy.toggleSidebar}
-          onClick={onCycleSidebar}
-          active={sidebarState !== "hidden"}
-        >
-          {sidebarState === "hidden" ? (
-            <ChevronsRight className="size-5" />
-          ) : (
-            <Columns3 className="size-5" />
-          )}
-        </ToolbarIconButton>
+        <div className="md:hidden">
+          <ToolbarIconButton
+            id="mobile-navigation-toggle"
+            label={copy.openNavigation}
+            expanded={mobileNavigationOpen}
+            onClick={onOpenMobileNav}
+          >
+            <Menu className="size-5" />
+          </ToolbarIconButton>
+        </div>
+        <div className="hidden md:block">
+          <ToolbarIconButton
+            label={copy.toggleSidebar}
+            onClick={onCycleSidebar}
+            active={sidebarState !== "hidden"}
+          >
+            {sidebarState === "hidden" ? (
+              <ChevronsRight className="size-5" />
+            ) : (
+              <Columns3 className="size-5" />
+            )}
+          </ToolbarIconButton>
+        </div>
 
         <Separator orientation="vertical" className="hidden h-7 sm:block" />
 
