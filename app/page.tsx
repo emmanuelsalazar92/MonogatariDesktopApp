@@ -146,6 +146,7 @@ type SceneSaveInput = {
 };
 
 type SaveStatus = "Saved" | "Saving..." | "Unsaved changes" | "Save error";
+type SettingsSaveState = "idle" | "saving" | "saved" | "error";
 type PendingSaveHandler = () => Promise<boolean>;
 type NotionPublishState = "idle" | "publishing" | "success" | "error";
 type NotionAutosyncStatus = "idle" | "syncing" | "synced" | "error" | "remote-changes";
@@ -297,6 +298,8 @@ export default function PrivateNovelStudioPage() {
   const [studioSettings, setStudioSettings] = React.useState<PersistedStudioSettings>(
     defaultPersistedStudioSettings
   );
+  const [settingsSaveState, setSettingsSaveState] = React.useState<SettingsSaveState>("idle");
+  const [settingsSaveMessage, setSettingsSaveMessage] = React.useState("");
   const [dataStatus, setDataStatus] = React.useState<DataStatus>("loading");
   const [creatingBackup, setCreatingBackup] = React.useState(false);
   const [enabledExportOptions, setEnabledExportOptions] = React.useState(
@@ -315,6 +318,7 @@ export default function PrivateNovelStudioPage() {
   const autosyncFailureCountRef = React.useRef(0);
   const autosyncStatusTimerRef = React.useRef<number | null>(null);
   const exportDefaultsAppliedRef = React.useRef(false);
+  const settingsSaveInFlightRef = React.useRef(false);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
     [language]
@@ -465,37 +469,58 @@ export default function PrivateNovelStudioPage() {
       });
 
       if (!response.ok) {
-        const details = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(details?.error ?? `Settings save failed with ${response.status}`);
+        throw new Error("Settings could not be saved.");
       }
 
-      await refreshStudioData(false);
+      return (await response.json()) as PersistedStudioSettings;
     },
-    [refreshStudioData]
+    []
+  );
+
+  const saveSettings = React.useCallback(
+    async (nextSettings: Record<string, string>, afterSave?: () => void) => {
+      if (settingsSaveInFlightRef.current) return;
+
+      settingsSaveInFlightRef.current = true;
+      setSettingsSaveState("saving");
+      setSettingsSaveMessage("Saving settings…");
+      try {
+        const savedSettings = await persistSettings(nextSettings);
+        setStudioSettings(savedSettings);
+        afterSave?.();
+        setSettingsSaveState("saved");
+        setSettingsSaveMessage("Settings saved.");
+      } catch {
+        setSettingsSaveState("error");
+        setSettingsSaveMessage(
+          "Settings could not be saved. Your previous configuration is still active."
+        );
+      } finally {
+        settingsSaveInFlightRef.current = false;
+      }
+    },
+    [persistSettings]
   );
 
   const updateTheme = React.useCallback(
     (value: "light" | "dark" | "system") => {
-      setTheme(value);
-      void persistSettings({ theme: value }).catch(() => showToast("Could not save settings"));
+      void saveSettings({ theme: value }, () => setTheme(value));
     },
-    [persistSettings, showToast]
+    [saveSettings]
   );
 
   const updateLanguage = React.useCallback(
     (value: Language) => {
-      setLanguage(value);
-      void persistSettings({ language: value }).catch(() => showToast("Could not save settings"));
+      void saveSettings({ language: value }, () => setLanguage(value));
     },
-    [persistSettings, showToast]
+    [saveSettings]
   );
 
   const updateSidebarState = React.useCallback(
     (value: SidebarState) => {
-      setSidebarState(value);
-      void persistSettings({ sidebarState: value }).catch(() => showToast("Could not save settings"));
+      void saveSettings({ sidebarState: value }, () => setSidebarState(value));
     },
-    [persistSettings, showToast]
+    [saveSettings]
   );
 
   const cycleSidebar = React.useCallback(() => {
@@ -510,22 +535,20 @@ export default function PrivateNovelStudioPage() {
 
   const updateStudioSetting = React.useCallback(
     (key: keyof PersistedStudioSettings, value: string | boolean) => {
-      setStudioSettings((current) => ({ ...current, [key]: value }));
-
-      if (key === "readerFontSize") {
-        const nextValue = Number.parseInt(String(value), 10);
-        if (!Number.isNaN(nextValue)) {
-          setReaderFontSize(nextValue);
+      void saveSettings({ [key]: String(value) }, () => {
+        if (key === "readerFontSize") {
+          const nextValue = Number.parseInt(String(value), 10);
+          if (!Number.isNaN(nextValue)) {
+            setReaderFontSize(nextValue);
+          }
         }
-      }
 
-      if (key === "defaultReadingMode") {
-        setReaderTheme(String(value));
-      }
-
-      void persistSettings({ [key]: String(value) }).catch(() => showToast("Could not save settings"));
+        if (key === "defaultReadingMode") {
+          setReaderTheme(String(value));
+        }
+      });
     },
-    [persistSettings, showToast]
+    [saveSettings]
   );
 
   const applyVerifiedNotionConnection = React.useCallback((pageId: string, pageTitle: string) => {
@@ -1448,6 +1471,8 @@ export default function PrivateNovelStudioPage() {
                   onLanguageChange={updateLanguage}
                   onSidebarStateChange={updateSidebarState}
                   onSettingChange={updateStudioSetting}
+                  settingsSaveState={settingsSaveState}
+                  settingsSaveMessage={settingsSaveMessage}
                   onNotionConnectionVerified={applyVerifiedNotionConnection}
                   notionAutosyncStatus={notionAutosyncStatus}
                   notionAutosyncRetryAt={notionAutosyncRetryAt}

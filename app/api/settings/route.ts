@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
-import { updateStudioSettings } from "@/lib/db/studio";
+import { StudioSettingsValidationError, updateStudioSettings } from "@/lib/db/studio";
+
+const safeSaveError = "Settings could not be saved. Your previous configuration is still active.";
 
 export async function PATCH(request: Request) {
-  const body = (await request.json()) as Record<string, unknown>;
+  let body: unknown;
   try {
-    return NextResponse.json(await updateStudioSettings(body));
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: safeSaveError }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: safeSaveError }, { status: 400 });
+  }
+
+  try {
+    return NextResponse.json(await updateStudioSettings(body as Record<string, unknown>));
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "invalid settings" },
-      { status: 400 }
+      { error: safeSaveError },
+      { status: error instanceof StudioSettingsValidationError ? 400 : 500 }
     );
   }
 }

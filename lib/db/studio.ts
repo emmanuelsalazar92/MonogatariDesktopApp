@@ -2,10 +2,10 @@
 import type { Prisma } from "@/lib/generated/prisma/client";
 import {
   applyStudioSettings,
-  hasOnlyKnownStudioSettings,
   parseStudioSettings,
   STUDIO_CONFIGURATION_ID,
-  STUDIO_CONFIGURATION_VERSION
+  STUDIO_CONFIGURATION_VERSION,
+  validateStudioSettingsUpdate
 } from "@/lib/studio-settings";
 import type {
   Character,
@@ -561,15 +561,16 @@ export async function createBackupRecord(input: {
 }
 
 async function persistStudioSettings(input: Record<string, unknown>) {
-  if (!hasOnlyKnownStudioSettings(input)) {
-    throw new Error("settings contain unsupported keys");
+  const validatedInput = validateStudioSettingsUpdate(input);
+  if (!validatedInput) {
+    throw new StudioSettingsValidationError();
   }
 
   return prisma.$transaction(async (tx) => {
     const stored = await tx.studioConfiguration.findUnique({
       where: { id: STUDIO_CONFIGURATION_ID }
     });
-    const next = applyStudioSettings(parseStudioSettings(stored?.values), input);
+    const next = applyStudioSettings(parseStudioSettings(stored?.values), validatedInput);
     await tx.studioConfiguration.upsert({
       where: { id: STUDIO_CONFIGURATION_ID },
       update: { version: STUDIO_CONFIGURATION_VERSION, values: JSON.stringify(next) },
@@ -581,6 +582,12 @@ async function persistStudioSettings(input: Record<string, unknown>) {
     });
     return next;
   });
+}
+
+export class StudioSettingsValidationError extends Error {
+  constructor() {
+    super("Settings validation failed");
+  }
 }
 
 export async function updateStudioSettings(input: Record<string, unknown>) {
