@@ -5,7 +5,6 @@ import {
   Archive,
   ArchiveRestore,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   ChevronsDown,
   ChevronsUp,
@@ -14,6 +13,8 @@ import {
   Eye,
   EyeOff,
   FolderPlus,
+  GripVertical,
+  Move,
   MoreHorizontal,
   PenLine,
   Plus,
@@ -46,6 +47,7 @@ import type { StructureItemType, StructureSelection } from "@/lib/db/structure";
 import { formatNumber, getCurrentNovel, type StudioData } from "@/lib/studio-data";
 import type { Chapter, ChapterStatus, Scene, Volume } from "@/lib/studio-domain";
 import { getStructureAncestorIds } from "@/lib/structure-tree";
+import { type StructureMovePosition } from "@/lib/structure-move";
 import { cn } from "@/lib/utils";
 
 const statuses: ChapterStatus[] = ["Idea", "Draft", "Writing", "Revision", "Ready", "Final"];
@@ -103,13 +105,19 @@ export function StructureScreen({
     const id = data.settings.activeStructureId;
     return isStructureType(type) && id ? { type, id } : null;
   });
-  const [dialogMode, setDialogMode] = React.useState<"create" | "edit" | "delete" | null>(null);
+  const [dialogMode, setDialogMode] = React.useState<"create" | "edit" | "move" | "delete" | null>(null);
   const [form, setForm] = React.useState<StructureForm>(emptyForm);
   const [createParent, setCreateParent] = React.useState<StructureCreateParent | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [expandedVolumeIds, setExpandedVolumeIds] = React.useState<Set<string>>(() => new Set());
   const [expandedChapterIds, setExpandedChapterIds] = React.useState<Set<string>>(() => new Set());
+  const [draggedItem, setDraggedItem] = React.useState<StructureSelection | null>(null);
+  const [dropPreview, setDropPreview] = React.useState<{ id: string; position: StructureMovePosition } | null>(null);
+  const [moveParentId, setMoveParentId] = React.useState("");
+  const [movePosition, setMovePosition] = React.useState<StructureMovePosition>("end");
+  const [moveReferenceId, setMoveReferenceId] = React.useState("");
+  const [moveAnnouncement, setMoveAnnouncement] = React.useState("");
 
   const volumes = React.useMemo(() => [...data.volumes].sort(sortByOrder), [data.volumes]);
   const chapters = React.useMemo(() => [...data.chapters].sort(sortByOrder), [data.chapters]);
@@ -135,6 +143,18 @@ export function StructureScreen({
     [visibleScenes]
   );
   const selected = getSelectedItem(selection, volumes, chapters, scenes);
+  const moveParentOptions = React.useMemo(() => {
+    if (!selected) return [];
+    if (selected.type === "volume") return currentNovel.id ? [{ id: currentNovel.id, title: currentNovel.title }] : [];
+    if (selected.type === "chapter") return visibleVolumes.filter((volume) => !volume.archived).map((volume) => ({ id: volume.id, title: volume.title }));
+    return visibleChapters.filter((chapter) => !chapter.archived).map((chapter) => ({ id: chapter.id, title: chapter.title }));
+  }, [currentNovel.id, currentNovel.title, selected, visibleChapters, visibleVolumes]);
+  const moveReferenceOptions = React.useMemo(() => {
+    if (!selected || !moveParentId) return [];
+    if (selected.type === "volume") return visibleVolumes.filter((volume) => volume.id !== selected.id);
+    if (selected.type === "chapter") return (chaptersByVolume.get(moveParentId) ?? []).filter((chapter) => chapter.id !== selected.id);
+    return (scenesByChapter.get(moveParentId) ?? []).filter((scene) => scene.id !== selected.id);
+  }, [chaptersByVolume, moveParentId, scenesByChapter, selected, visibleVolumes]);
 
   const revealSelection = React.useCallback((next: StructureSelection) => {
     const ancestors = getStructureAncestorIds(next, volumes, chapters, scenes);
@@ -182,6 +202,19 @@ export function StructureScreen({
       setSelection(null);
     }
   }, [choose, selected, selection, showArchived, visibleChapters, visibleScenes, visibleVolumes]);
+
+  React.useEffect(() => {
+    if (!draggedItem) return;
+    const cancelDrag = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDraggedItem(null);
+        setDropPreview(null);
+        setMoveAnnouncement("Move cancelled");
+      }
+    };
+    window.addEventListener("keydown", cancelDrag);
+    return () => window.removeEventListener("keydown", cancelDrag);
+  }, [draggedItem]);
 
   const expandAll = () => {
     setExpandedVolumeIds(new Set(visibleVolumes.map((volume) => volume.id)));
@@ -236,6 +269,62 @@ export function StructureScreen({
     if (!response.ok) throw new Error(payload?.error ?? `Structure operation failed with ${response.status}`);
     return payload;
   }, []);
+
+  const requestMove = React.useCallback(async (
+    source: StructureSelection,
+    destinationParentId: string,
+    position: StructureMovePosition,
+    referenceId?: string
+  ) => {
+    if (busy || !destinationParentId) return;
+    setBusy(true);
+    setDropPreview(null);
+    try {
+      const payload = await request("PATCH", {
+        type: source.type,
+        id: source.id,
+        action: "move",
+        destinationParentId,
+        position,
+        ...(referenceId ? { referenceId } : {})
+      });
+      await onRefresh();
+      if (payload?.selection) choose(payload.selection);
+      setMoveAnnouncement("Structure item moved and saved to SQLite");
+      onNotify("Structure item moved and saved to SQLite");
+      setDialogMode(null);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Could not move the structure item";
+      setMoveAnnouncement(message);
+      onNotify(message);
+    } finally {
+      setBusy(false);
+      setDraggedItem(null);
+    }
+  }, [busy, choose, onNotify, onRefresh, request]);
+
+  const openMove = () => {
+    if (!selected) return;
+    const currentParentId = selected.type === "volume"
+      ? currentNovel.id
+      : selected.type === "chapter"
+        ? selected.volumeId
+        : selected.chapterId;
+    setMoveParentId(currentParentId);
+    setMovePosition("end");
+    setMoveReferenceId("");
+    setError("");
+    setDialogMode("move");
+  };
+
+  const submitMove = () => {
+    if (!selected) return;
+    if ((movePosition === "before" || movePosition === "after") && !moveReferenceId) {
+      setError("Choose the item used as the move reference");
+      return;
+    }
+    void requestMove(selected, moveParentId, movePosition, moveReferenceId || undefined);
+  };
 
   const submitForm = async () => {
     if (!form.title.trim()) {
@@ -353,6 +442,7 @@ export function StructureScreen({
               return (
                 <div key={volume.id} className={cn("rounded-xl border border-border/55 bg-surface-elevated/90 p-3 shadow-paper-sm", volume.archived && "opacity-65")}>
                   <StructureRow
+                    item={{ type: "volume", id: volume.id }}
                     depth={0}
                     title={volume.title}
                     subtitle={volumeExpanded ? volume.summary || translate("Volume") : compactCount(volumeChapters.length, "chapter", volumeSceneCount, "scene", translate)}
@@ -365,6 +455,17 @@ export function StructureScreen({
                     expanded={volumeExpanded}
                     onToggle={() => toggleExpandedId(volume.id, setExpandedVolumeIds)}
                     onSelect={() => choose({ type: "volume", id: volume.id })}
+                    draggable={!volume.archived}
+                    draggedItem={draggedItem}
+                    dropPreview={dropPreview}
+                    onDragStart={setDraggedItem}
+                    onDragEnd={() => { setDraggedItem(null); setDropPreview(null); }}
+                    onDropPreview={setDropPreview}
+                    acceptsDropTypes={["volume", "chapter"]}
+                    onDropItem={(source, position) => {
+                      if (source.type === "volume") void requestMove(source, currentNovel.id, position, volume.id);
+                      if (source.type === "chapter") void requestMove(source, volume.id, "end");
+                    }}
                   />
                   {!volume.archived ? (
                     <div className="mt-2 flex justify-end">
@@ -385,6 +486,7 @@ export function StructureScreen({
                       return (
                         <div key={chapter.id} className={cn(chapter.archived && "opacity-65")}>
                           <StructureRow
+                            item={{ type: "chapter", id: chapter.id }}
                             depth={1}
                             title={chapter.title}
                             subtitle={chapterExpanded ? `${formatNumber(chapter.wordCount)} ${translate("words")}` : compactCount(chapterScenes.length, "scene", null, "", translate)}
@@ -396,6 +498,17 @@ export function StructureScreen({
                             expanded={chapterExpanded}
                             onToggle={() => toggleExpandedId(chapter.id, setExpandedChapterIds)}
                             onSelect={() => choose({ type: "chapter", id: chapter.id })}
+                            draggable={!chapter.archived}
+                            draggedItem={draggedItem}
+                            dropPreview={dropPreview}
+                            onDragStart={setDraggedItem}
+                            onDragEnd={() => { setDraggedItem(null); setDropPreview(null); }}
+                            onDropPreview={setDropPreview}
+                            acceptsDropTypes={["chapter", "scene"]}
+                            onDropItem={(source, position) => {
+                              if (source.type === "chapter") void requestMove(source, volume.id, position, chapter.id);
+                              if (source.type === "scene") void requestMove(source, chapter.id, "end");
+                            }}
                           />
                           {!chapter.archived ? (
                             <div className="mt-1 flex justify-end">
@@ -412,6 +525,7 @@ export function StructureScreen({
                           {chapterExpanded ? <div className="space-y-2" role="group" aria-label={`${translate("Scenes in")} ${chapter.title}`}>
                             {chapterScenes.map((scene) => (
                               <StructureRow
+                                item={{ type: "scene", id: scene.id }}
                                 key={scene.id}
                                 depth={2}
                                 title={scene.title}
@@ -421,6 +535,16 @@ export function StructureScreen({
                                 translate={translate}
                                 nodeLabel={translate("Scene")}
                                 onSelect={() => choose({ type: "scene", id: scene.id })}
+                                draggable={!scene.archived}
+                                draggedItem={draggedItem}
+                                dropPreview={dropPreview}
+                                onDragStart={setDraggedItem}
+                                onDragEnd={() => { setDraggedItem(null); setDropPreview(null); }}
+                                onDropPreview={setDropPreview}
+                                acceptsDropTypes={["scene"]}
+                                onDropItem={(source, position) => {
+                                  if (source.type === "scene") void requestMove(source, chapter.id, position, scene.id);
+                                }}
                               />
                             ))}
                           </div> : null}
@@ -473,11 +597,8 @@ export function StructureScreen({
               {selected?.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
               {translate(selected?.archived ? "Restore" : "Archive")}
             </Button>
-            <Button variant="outline" className="justify-start" disabled={!selected || busy} onClick={() => void performAction("move", "before")}>
-              <ChevronUpIcon />{translate("Move before")}
-            </Button>
-            <Button variant="outline" className="justify-start" disabled={!selected || busy} onClick={() => void performAction("move", "after")}>
-              <ChevronDown className="size-4" />{translate("Move after")}
+            <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={openMove}>
+              <Move className="size-4" />{translate("Move")}
             </Button>
             <Button variant="outline" className="justify-start text-destructive hover:text-destructive" disabled={!selected || busy} onClick={() => { setError(""); setDialogMode("delete"); }}>
               <Trash2 className="size-4" />{translate("Delete")}
@@ -513,6 +634,56 @@ export function StructureScreen({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={dialogMode === "move"} onOpenChange={(open) => !open && setDialogMode(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{translate("Move structure item")}</DialogTitle>
+            <DialogDescription>
+              {selected ? `${translate(capitalize(selected.type))}: ${selected.title}` : translate("Select a structure item")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div>
+              <Label htmlFor="move-destination">{translate("Destination")}</Label>
+              <Select value={moveParentId} onValueChange={(value) => { setMoveParentId(value); setMoveReferenceId(""); }}>
+                <SelectTrigger id="move-destination" className="mt-2"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {moveParentOptions.map((parent) => <SelectItem key={parent.id} value={parent.id}>{parent.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="move-position">{translate("Position")}</Label>
+              <Select value={movePosition} onValueChange={(value) => { setMovePosition(value as StructureMovePosition); setMoveReferenceId(""); }}>
+                <SelectTrigger id="move-position" className="mt-2"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="start">{translate("Start")}</SelectItem>
+                  <SelectItem value="end">{translate("End")}</SelectItem>
+                  <SelectItem value="before">{translate("Before")}</SelectItem>
+                  <SelectItem value="after">{translate("After")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {movePosition === "before" || movePosition === "after" ? (
+              <div>
+                <Label htmlFor="move-reference">{translate("Reference item")}</Label>
+                <Select value={moveReferenceId} onValueChange={setMoveReferenceId}>
+                  <SelectTrigger id="move-reference" className="mt-2"><SelectValue placeholder={translate("Choose an item")} /></SelectTrigger>
+                  <SelectContent>
+                    {moveReferenceOptions.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+          </div>
+          {error ? <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</p> : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogMode(null)} disabled={busy}>{translate("Cancel")}</Button>
+            <Button onClick={submitMove} disabled={busy || !moveParentId}>{busy ? translate("Moving...") : translate("Move item")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={dialogMode === "delete"} onOpenChange={(open) => !open && setDialogMode(null)}>
         <DialogContent>
           <DialogHeader>
@@ -526,6 +697,7 @@ export function StructureScreen({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <p className="sr-only" role="status" aria-live="polite">{moveAnnouncement}</p>
     </div>
   );
 }
@@ -585,6 +757,7 @@ function StructureFields({
 }
 
 function StructureRow({
+  item,
   depth,
   title,
   subtitle,
@@ -596,8 +769,17 @@ function StructureRow({
   expandable = false,
   expanded = false,
   onToggle,
-  onSelect
+  onSelect,
+  draggable = false,
+  draggedItem,
+  dropPreview,
+  onDragStart,
+  onDragEnd,
+  onDropPreview,
+  acceptsDropTypes = [],
+  onDropItem
 }: {
+  item: StructureSelection;
   depth: number;
   title: string;
   subtitle: string;
@@ -610,7 +792,24 @@ function StructureRow({
   expanded?: boolean;
   onToggle?: () => void;
   onSelect: () => void;
+  draggable?: boolean;
+  draggedItem: StructureSelection | null;
+  dropPreview: { id: string; position: StructureMovePosition } | null;
+  onDragStart: (item: StructureSelection) => void;
+  onDragEnd: () => void;
+  onDropPreview: React.Dispatch<React.SetStateAction<{ id: string; position: StructureMovePosition } | null>>;
+  acceptsDropTypes?: StructureItemType[];
+  onDropItem: (source: StructureSelection, position: StructureMovePosition) => void;
 }) {
+  const acceptsDraggedItem = Boolean(
+    draggedItem && acceptsDropTypes.includes(draggedItem.type) && !(draggedItem.type === item.type && draggedItem.id === item.id)
+  );
+  const previewPosition = (event: React.DragEvent<HTMLDivElement>): StructureMovePosition => {
+    if (!draggedItem || draggedItem.type !== item.type) return "end";
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return event.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+  };
+
   return (
     <div
       role="treeitem"
@@ -619,10 +818,36 @@ function StructureRow({
       aria-expanded={expandable ? expanded : undefined}
       className={cn(
         "flex w-[calc(100%-var(--structure-indent))] items-center gap-3 rounded-lg bg-card/82 p-3 shadow-soft ring-1 ring-border/55 transition-colors hover:bg-secondary/35",
-        selected && "bg-secondary/55 ring-2 ring-primary/55"
+        selected && "bg-secondary/55 ring-2 ring-primary/55",
+        draggedItem?.type === item.type && draggedItem.id === item.id && "opacity-55",
+        dropPreview?.id === item.id && dropPreview.position === "before" && "border-t-4 border-t-primary",
+        dropPreview?.id === item.id && dropPreview.position !== "before" && "border-b-4 border-b-primary"
       )}
       style={{ marginLeft: `${depth * 1.5}rem`, "--structure-indent": `${depth * 1.5}rem` } as React.CSSProperties}
+      draggable={draggable}
+      onDragStart={(event) => {
+        if (!draggable) return;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", `${item.type}:${item.id}`);
+        onDragStart(item);
+      }}
+      onDragEnd={onDragEnd}
+      onDragOver={(event) => {
+        if (!acceptsDraggedItem) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        onDropPreview({ id: item.id, position: previewPosition(event) });
+      }}
+      onDragLeave={(event) => {
+        if (event.currentTarget === event.target) onDropPreview(null);
+      }}
+      onDrop={(event) => {
+        if (!acceptsDraggedItem || !draggedItem) return;
+        event.preventDefault();
+        onDropItem(draggedItem, previewPosition(event));
+      }}
     >
+      {draggable ? <span className="grid size-5 shrink-0 place-items-center text-muted-foreground" aria-label={translate("Drag to move")} title={translate("Drag to move")}><GripVertical className="size-4" /></span> : null}
       {expandable ? (
         <button
           type="button"
@@ -682,10 +907,6 @@ function groupByParentId<T extends { volumeId?: string; chapterId?: string }>(
     else groups.set(parentId, [item]);
   }
   return groups;
-}
-
-function ChevronUpIcon() {
-  return <ChevronLeft className="size-4 -rotate-90" />;
 }
 
 function sortByOrder(left: { sortOrder: number; id: string }, right: { sortOrder: number; id: string }) {

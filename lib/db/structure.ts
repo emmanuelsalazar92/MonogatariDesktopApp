@@ -1,6 +1,7 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import type { ChapterStatus } from "@/lib/studio-domain";
+import { insertStructureItem, type StructureMovePosition } from "@/lib/structure-move";
 
 export type StructureItemType = "volume" | "chapter" | "scene";
 export type StructureAction = "move" | "duplicate" | "archive" | "restore";
@@ -29,6 +30,14 @@ export type UpdateStructureInput = {
 export type StructureSelection = {
   type: StructureItemType;
   id: string;
+};
+
+export type MoveStructureInput = {
+  type: StructureItemType;
+  id: string;
+  destinationParentId: string;
+  position: StructureMovePosition;
+  referenceId?: string;
 };
 
 function countWords(content: string) {
@@ -224,6 +233,82 @@ export async function updateStructureItem(
     }
 
     return { selection: { type, id } satisfies StructureSelection };
+  });
+}
+
+export async function moveStructureItem(input: MoveStructureInput) {
+  return prisma.$transaction(async (tx) => {
+    if (input.type === "volume") {
+      const [source, destination] = await Promise.all([
+        tx.volume.findUniqueOrThrow({ where: { id: input.id } }),
+        tx.novel.findUniqueOrThrow({ where: { id: input.destinationParentId } })
+      ]);
+      if (source.archived) throw new Error("cannot move an archived structure item");
+      if (source.novelId !== destination.id) throw new Error("cannot move outside the current novel");
+
+      const siblings = await tx.volume.findMany({
+        where: { novelId: destination.id, archived: false },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+      });
+      const finalOrder = insertStructureItem(siblings.map((item) => item.id), source.id, input.position, input.referenceId);
+      await Promise.all(finalOrder.map((id, index) => tx.volume.update({ where: { id }, data: { sortOrder: index + 1 } })));
+      await recalculateWordCounts(tx, source.novelId);
+      return { selection: { type: input.type, id: source.id } satisfies StructureSelection };
+    }
+
+    if (input.type === "chapter") {
+      const [source, destination] = await Promise.all([
+        tx.chapter.findUniqueOrThrow({ where: { id: input.id }, include: { volume: true } }),
+        tx.volume.findUniqueOrThrow({ where: { id: input.destinationParentId } })
+      ]);
+      if (source.archived || source.volume.archived || destination.archived) {
+        throw new Error("cannot move an archived structure item");
+      }
+      if (source.volume.novelId !== destination.novelId) throw new Error("cannot move outside the current novel");
+
+      const [sourceSiblings, destinationSiblings] = await Promise.all([
+        tx.chapter.findMany({ where: { volumeId: source.volumeId, archived: false }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] }),
+        tx.chapter.findMany({ where: { volumeId: destination.id, archived: false }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] })
+      ]);
+      const finalDestination = insertStructureItem(destinationSiblings.map((item) => item.id), source.id, input.position, input.referenceId);
+      if (source.volumeId === destination.id) {
+        await Promise.all(finalDestination.map((id, index) => tx.chapter.update({ where: { id }, data: { sortOrder: index + 1 } })));
+      } else {
+        const sourceRemaining = sourceSiblings.filter((item) => item.id !== source.id);
+        await Promise.all([
+          ...sourceRemaining.map((item, index) => tx.chapter.update({ where: { id: item.id }, data: { sortOrder: index + 1 } })),
+          ...finalDestination.map((id, index) => tx.chapter.update({ where: { id }, data: id === source.id ? { volumeId: destination.id, sortOrder: index + 1 } : { sortOrder: index + 1 } }))
+        ]);
+      }
+      await recalculateWordCounts(tx, source.volume.novelId);
+      return { selection: { type: input.type, id: source.id } satisfies StructureSelection };
+    }
+
+    const [source, destination] = await Promise.all([
+      tx.scene.findUniqueOrThrow({ where: { id: input.id }, include: { chapter: { include: { volume: true } } } }),
+      tx.chapter.findUniqueOrThrow({ where: { id: input.destinationParentId }, include: { volume: true } })
+    ]);
+    if (source.archived || source.chapter.archived || source.chapter.volume.archived || destination.archived || destination.volume.archived) {
+      throw new Error("cannot move an archived structure item");
+    }
+    if (source.chapter.volume.novelId !== destination.volume.novelId) throw new Error("cannot move outside the current novel");
+
+    const [sourceSiblings, destinationSiblings] = await Promise.all([
+      tx.scene.findMany({ where: { chapterId: source.chapterId, archived: false }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] }),
+      tx.scene.findMany({ where: { chapterId: destination.id, archived: false }, orderBy: [{ sortOrder: "asc" }, { id: "asc" }] })
+    ]);
+    const finalDestination = insertStructureItem(destinationSiblings.map((item) => item.id), source.id, input.position, input.referenceId);
+    if (source.chapterId === destination.id) {
+      await Promise.all(finalDestination.map((id, index) => tx.scene.update({ where: { id }, data: { sortOrder: index + 1 } })));
+    } else {
+      const sourceRemaining = sourceSiblings.filter((item) => item.id !== source.id);
+      await Promise.all([
+        ...sourceRemaining.map((item, index) => tx.scene.update({ where: { id: item.id }, data: { sortOrder: index + 1 } })),
+        ...finalDestination.map((id, index) => tx.scene.update({ where: { id }, data: id === source.id ? { chapterId: destination.id, sortOrder: index + 1 } : { sortOrder: index + 1 } }))
+      ]);
+    }
+    await recalculateWordCounts(tx, source.chapter.volume.novelId);
+    return { selection: { type: input.type, id: source.id } satisfies StructureSelection };
   });
 }
 
