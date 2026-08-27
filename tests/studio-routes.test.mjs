@@ -101,3 +101,18 @@ test("structure moves normalize sibling order and reject an invalid reference", 
     /destination/
   );
 });
+
+test("structure title search is local, case-insensitive, unicode-safe, and bounded", async () => {
+  const search = await loadTypeScriptModule("lib/structure-search.ts");
+  const items = [
+    { type: "volume", id: "volume-a", title: "Volumen Ámbar" },
+    { type: "chapter", id: "chapter-a", title: "La puerta abierta" },
+    { type: "scene", id: "scene-a", title: "01 — Opening scene" }
+  ];
+
+  assert.deepEqual(search.searchStructureTitles(items, "  OPENING "), [items[2]]);
+  assert.deepEqual(search.searchStructureTitles(items, "áMBAR"), [items[0]]);
+  assert.deepEqual(search.searchStructureTitles(items, "ausente"), []);
+  assert.equal(search.searchStructureTitles([...items, ...items], "", 1).length, 0);
+  assert.equal(search.searchStructureTitles([...items, ...items], "a", 1).length, 1);
+});

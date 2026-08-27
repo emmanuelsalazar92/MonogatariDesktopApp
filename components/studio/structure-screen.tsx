@@ -18,6 +18,7 @@ import {
   MoreHorizontal,
   PenLine,
   Plus,
+  Search,
   Trash2,
   Workflow
 } from "lucide-react";
@@ -48,9 +49,11 @@ import { formatNumber, getCurrentNovel, type StudioData } from "@/lib/studio-dat
 import type { Chapter, ChapterStatus, Scene, Volume } from "@/lib/studio-domain";
 import { getStructureAncestorIds } from "@/lib/structure-tree";
 import { type StructureMovePosition } from "@/lib/structure-move";
+import { searchStructureTitles, type StructureTitleSearchItem } from "@/lib/structure-search";
 import { cn } from "@/lib/utils";
 
 const statuses: ChapterStatus[] = ["Idea", "Draft", "Writing", "Revision", "Ready", "Final"];
+const maxSearchQueryLength = 160;
 
 type SelectedItem =
   | ({ type: "volume" } & Volume)
@@ -118,6 +121,9 @@ export function StructureScreen({
   const [movePosition, setMovePosition] = React.useState<StructureMovePosition>("end");
   const [moveReferenceId, setMoveReferenceId] = React.useState("");
   const [moveAnnouncement, setMoveAnnouncement] = React.useState("");
+  const [structureSearch, setStructureSearch] = React.useState("");
+  const [searchAnnouncement, setSearchAnnouncement] = React.useState("");
+  const structureNodeButtons = React.useRef(new Map<string, HTMLButtonElement>());
 
   const volumes = React.useMemo(() => [...data.volumes].sort(sortByOrder), [data.volumes]);
   const chapters = React.useMemo(() => [...data.chapters].sort(sortByOrder), [data.chapters]);
@@ -143,6 +149,14 @@ export function StructureScreen({
     [visibleScenes]
   );
   const selected = getSelectedItem(selection, volumes, chapters, scenes);
+  const structureSearchResults = React.useMemo(() => {
+    const items: StructureTitleSearchItem[] = [
+      ...visibleVolumes.map((item) => ({ type: "volume" as const, id: item.id, title: item.title })),
+      ...visibleChapters.map((item) => ({ type: "chapter" as const, id: item.id, title: item.title })),
+      ...visibleScenes.map((item) => ({ type: "scene" as const, id: item.id, title: item.title }))
+    ];
+    return searchStructureTitles(items, structureSearch);
+  }, [structureSearch, visibleChapters, visibleScenes, visibleVolumes]);
   const moveParentOptions = React.useMemo(() => {
     if (!selected) return [];
     if (selected.type === "volume") return currentNovel.id ? [{ id: currentNovel.id, title: currentNovel.title }] : [];
@@ -181,6 +195,24 @@ export function StructureScreen({
     [onSelectItem, revealSelection]
   );
 
+  const registerStructureNode = React.useCallback((item: StructureSelection, node: HTMLButtonElement | null) => {
+    const key = `${item.type}:${item.id}`;
+    if (node) structureNodeButtons.current.set(key, node);
+    else structureNodeButtons.current.delete(key);
+  }, []);
+
+  const selectSearchResult = React.useCallback((result: StructureTitleSearchItem) => {
+    choose({ type: result.type, id: result.id });
+    setSearchAnnouncement(`${result.title} selected`);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const node = structureNodeButtons.current.get(`${result.type}:${result.id}`);
+        node?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        node?.focus({ preventScroll: true });
+      });
+    });
+  }, [choose]);
+
   React.useEffect(() => {
     const type = data.settings.activeStructureType;
     const id = data.settings.activeStructureId;
@@ -196,6 +228,11 @@ export function StructureScreen({
   React.useEffect(() => {
     if (selection) revealSelection(selection);
   }, [revealSelection, selection]);
+
+  React.useEffect(() => {
+    setStructureSearch("");
+    setSearchAnnouncement("");
+  }, [currentNovel.id]);
 
   React.useEffect(() => {
     if (selected && (showArchived || !selected.archived)) return;
@@ -434,6 +471,44 @@ export function StructureScreen({
                 <ChevronsUp className="size-4" />{translate("Collapse all")}
               </Button>
             </div>
+            <div className="relative mt-4">
+              <Label htmlFor="structure-title-search" className="sr-only">{translate("Search structure titles")}</Label>
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                id="structure-title-search"
+                type="search"
+                value={structureSearch}
+                maxLength={maxSearchQueryLength}
+                className="pl-9"
+                placeholder={translate("Search volume, chapter, or scene")}
+                onChange={(event) => setStructureSearch(event.target.value.slice(0, maxSearchQueryLength))}
+                aria-describedby="structure-search-status"
+              />
+            </div>
+            {structureSearch.trim() ? (
+              <div className="mt-3 rounded-lg border border-border/65 bg-surface/65 p-2">
+                {structureSearchResults.length ? (
+                  <div className="grid gap-1" role="listbox" aria-label={translate("Structure search results")}>
+                    {structureSearchResults.map((result) => (
+                      <button
+                        key={`${result.type}:${result.id}`}
+                        type="button"
+                        role="option"
+                        aria-selected={selection?.type === result.type && selection.id === result.id}
+                        className="flex min-w-0 items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onClick={() => selectSearchResult(result)}
+                      >
+                        <span className="truncate font-medium">{result.title}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground">{translate(capitalize(result.type))}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : <p className="px-3 py-2 text-sm text-muted-foreground" role="status">{translate("No structure items found")}</p>}
+              </div>
+            ) : null}
+            <p id="structure-search-status" className="sr-only" role="status" aria-live="polite">
+              {searchAnnouncement || (structureSearch.trim() ? `${structureSearchResults.length} structure items found` : "")}
+            </p>
           </CardHeader>
           <CardContent className="space-y-5" role="tree" aria-label={translate("Story structure")}>
             {visibleVolumes.length ? visibleVolumes.map((volume) => {
@@ -459,6 +534,7 @@ export function StructureScreen({
                     expanded={volumeExpanded}
                     onToggle={() => toggleExpandedId(volume.id, setExpandedVolumeIds)}
                     onSelect={() => choose({ type: "volume", id: volume.id })}
+                    selectButtonRef={(node) => registerStructureNode({ type: "volume", id: volume.id }, node)}
                     draggable={!volume.archived}
                     draggedItem={draggedItem}
                     dropPreview={dropPreview}
@@ -502,6 +578,7 @@ export function StructureScreen({
                             expanded={chapterExpanded}
                             onToggle={() => toggleExpandedId(chapter.id, setExpandedChapterIds)}
                             onSelect={() => choose({ type: "chapter", id: chapter.id })}
+                            selectButtonRef={(node) => registerStructureNode({ type: "chapter", id: chapter.id }, node)}
                             draggable={!chapter.archived}
                             draggedItem={draggedItem}
                             dropPreview={dropPreview}
@@ -539,6 +616,7 @@ export function StructureScreen({
                                 translate={translate}
                                 nodeLabel={translate("Scene")}
                                 onSelect={() => choose({ type: "scene", id: scene.id })}
+                                selectButtonRef={(node) => registerStructureNode({ type: "scene", id: scene.id }, node)}
                                 draggable={!scene.archived}
                                 draggedItem={draggedItem}
                                 dropPreview={dropPreview}
@@ -841,6 +919,7 @@ function StructureRow({
   expanded = false,
   onToggle,
   onSelect,
+  selectButtonRef,
   draggable = false,
   draggedItem,
   dropPreview,
@@ -863,6 +942,7 @@ function StructureRow({
   expanded?: boolean;
   onToggle?: () => void;
   onSelect: () => void;
+  selectButtonRef?: (node: HTMLButtonElement | null) => void;
   draggable?: boolean;
   draggedItem: StructureSelection | null;
   dropPreview: { id: string; position: StructureMovePosition } | null;
@@ -932,7 +1012,7 @@ function StructureRow({
       ) : (
         <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/60 bg-surface text-muted-foreground" aria-hidden="true"><Workflow className="size-4" /></span>
       )}
-      <button type="button" className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-left" onClick={onSelect} aria-pressed={selected}>
+      <button ref={selectButtonRef} type="button" className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-left" onClick={onSelect} aria-pressed={selected}>
         <span className="min-w-0">
           <span className={cn("block truncate text-[14px]", strong && "font-semibold")}>{title}</span>
           <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
