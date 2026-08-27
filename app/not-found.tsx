@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isValidNovelRouteId } from "@/lib/studio-routes";
 
 function recoveryNovelId(pathname: string) {
   const match = /^\/novels\/([^/]+)/.exec(pathname);
   if (!match) return null;
   try {
-    return decodeURIComponent(match[1]);
+    const novelId = decodeURIComponent(match[1]);
+    return isValidNovelRouteId(novelId) ? novelId : null;
   } catch {
     return null;
   }
