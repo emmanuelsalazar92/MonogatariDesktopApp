@@ -2,15 +2,18 @@ import { NextResponse } from "next/server";
 import {
   createStructureItem,
   deleteStructureItem,
+  moveStructureItem,
   mutateStructureItem,
   updateStructureItem,
   type StructureAction,
   type StructureItemType
 } from "@/lib/db/structure";
+import { structureMovePositions, type StructureMovePosition } from "@/lib/structure-move";
 import type { ChapterStatus } from "@/lib/studio-domain";
 
 const itemTypes = new Set<StructureItemType>(["volume", "chapter", "scene"]);
 const actions = new Set<StructureAction>(["move", "duplicate", "archive", "restore"]);
+const movePositions = new Set<StructureMovePosition>(structureMovePositions);
 const chapterStatuses = new Set<ChapterStatus>([
   "Idea",
   "Draft",
@@ -33,11 +36,19 @@ function isChapterStatus(value: unknown): value is ChapterStatus {
   return typeof value === "string" && chapterStatuses.has(value as ChapterStatus);
 }
 
+function isMovePosition(value: unknown): value is StructureMovePosition {
+  return typeof value === "string" && movePositions.has(value as StructureMovePosition);
+}
+
 function apiError(error: unknown) {
   if (
     error instanceof Error &&
     (error.message.startsWith("cannot create inside") ||
-      error.message.startsWith("cannot create outside"))
+      error.message.startsWith("cannot create outside") ||
+      error.message.startsWith("cannot move") ||
+      error.message.startsWith("move reference") ||
+      error.message.startsWith("an item cannot") ||
+      error.message.startsWith("a reference item"))
   ) {
     return NextResponse.json({ error: error.message }, { status: 409 });
   }
@@ -107,19 +118,25 @@ export async function PATCH(request: Request) {
     }
     if (
       body.action === "move" &&
-      body.direction !== "before" &&
-      body.direction !== "after"
+      (typeof body.destinationParentId !== "string" ||
+        body.destinationParentId.length === 0 ||
+        !isMovePosition(body.position) ||
+        ((body.position === "before" || body.position === "after") &&
+          (typeof body.referenceId !== "string" || body.referenceId.length === 0)))
     ) {
-      return NextResponse.json({ error: "move direction is invalid" }, { status: 400 });
+      return NextResponse.json({ error: "move destination or position is invalid" }, { status: 400 });
     }
 
     try {
-      const result = await mutateStructureItem(
-        body.type,
-        body.id,
-        body.action,
-        body.direction === "before" || body.direction === "after" ? body.direction : undefined
-      );
+      const result = body.action === "move"
+        ? await moveStructureItem({
+            type: body.type,
+            id: body.id,
+            destinationParentId: body.destinationParentId as string,
+            position: body.position as StructureMovePosition,
+            referenceId: typeof body.referenceId === "string" ? body.referenceId : undefined
+          })
+        : await mutateStructureItem(body.type, body.id, body.action);
       return NextResponse.json(result);
     } catch (error) {
       return apiError(error);

@@ -84,3 +84,20 @@ test("structure ancestor lookup only reveals validated parent branches", async (
     null
   );
 });
+
+test("structure moves normalize sibling order and reject an invalid reference", async () => {
+  const moves = await loadTypeScriptModule("lib/structure-move.ts");
+
+  assert.deepEqual(
+    moves.insertStructureItem(["scene-a", "scene-b", "scene-c"], "scene-c", "before", "scene-a"),
+    ["scene-c", "scene-a", "scene-b"]
+  );
+  assert.deepEqual(
+    moves.insertStructureItem(["scene-a", "scene-b"], "scene-c", "start"),
+    ["scene-c", "scene-a", "scene-b"]
+  );
+  assert.throws(
+    () => moves.insertStructureItem(["scene-a"], "scene-c", "before", "missing-scene"),
+    /destination/
+  );
+});
