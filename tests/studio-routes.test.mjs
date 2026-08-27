@@ -12,9 +12,9 @@ async function loadTypeScriptModule(path, requireModule = () => ({})) {
       target: ts.ScriptTarget.ES2022
     }
   });
-  const module = { exports: {} };
-  new Function("require", "exports", "module", outputText)(requireModule, module.exports, module);
-  return module.exports;
+  const loadedModule = { exports: {} };
+  new Function("require", "exports", "module", outputText)(requireModule, loadedModule.exports, loadedModule);
+  return loadedModule.exports;
 }
 
 test("route parser rejects malformed IDs and prototype section names", async () => {
@@ -61,5 +61,26 @@ test("Library navigation accepts only allowlisted query parameters", async () =>
   assert.equal(
     navigation.serializeLibraryNavigationState(navigation.defaultLibraryNavigationState).toString(),
     ""
+  );
+});
+
+test("structure ancestor lookup only reveals validated parent branches", async () => {
+  const structureTree = await loadTypeScriptModule("lib/structure-tree.ts");
+  const volumes = [{ id: "volume-1" }];
+  const chapters = [{ id: "chapter-1", volumeId: "volume-1" }];
+  const scenes = [{ id: "scene-1", chapterId: "chapter-1" }];
+
+  assert.deepEqual(
+    structureTree.getStructureAncestorIds({ type: "scene", id: "scene-1" }, volumes, chapters, scenes),
+    { volumeId: "volume-1", chapterId: "chapter-1" }
+  );
+  assert.equal(
+    structureTree.getStructureAncestorIds(
+      { type: "scene", id: "scene-with-missing-parent" },
+      volumes,
+      chapters,
+      [{ id: "scene-with-missing-parent", chapterId: "missing-chapter" }]
+    ),
+    null
   );
 });

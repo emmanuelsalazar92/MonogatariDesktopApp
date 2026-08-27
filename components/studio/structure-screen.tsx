@@ -6,6 +6,9 @@ import {
   ArchiveRestore,
   ChevronDown,
   ChevronLeft,
+  ChevronRight,
+  ChevronsDown,
+  ChevronsUp,
   Copy,
   Edit3,
   Eye,
@@ -42,6 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { StructureItemType, StructureSelection } from "@/lib/db/structure";
 import { formatNumber, getCurrentNovel, type StudioData } from "@/lib/studio-data";
 import type { Chapter, ChapterStatus, Scene, Volume } from "@/lib/studio-domain";
+import { getStructureAncestorIds } from "@/lib/structure-tree";
 import { cn } from "@/lib/utils";
 
 const statuses: ChapterStatus[] = ["Idea", "Draft", "Writing", "Revision", "Ready", "Final"];
@@ -97,6 +101,8 @@ export function StructureScreen({
   const [form, setForm] = React.useState<StructureForm>(emptyForm);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [expandedVolumeIds, setExpandedVolumeIds] = React.useState<Set<string>>(() => new Set());
+  const [expandedChapterIds, setExpandedChapterIds] = React.useState<Set<string>>(() => new Set());
 
   const volumes = React.useMemo(() => [...data.volumes].sort(sortByOrder), [data.volumes]);
   const chapters = React.useMemo(() => [...data.chapters].sort(sortByOrder), [data.chapters]);
@@ -113,25 +119,72 @@ export function StructureScreen({
     () => scenes.filter((item) => showArchived || !item.archived),
     [scenes, showArchived]
   );
+  const chaptersByVolume = React.useMemo(
+    () => groupByParentId(visibleChapters, "volumeId"),
+    [visibleChapters]
+  );
+  const scenesByChapter = React.useMemo(
+    () => groupByParentId(visibleScenes, "chapterId"),
+    [visibleScenes]
+  );
   const selected = getSelectedItem(selection, volumes, chapters, scenes);
+
+  const revealSelection = React.useCallback((next: StructureSelection) => {
+    const ancestors = getStructureAncestorIds(next, volumes, chapters, scenes);
+    if (!ancestors) return;
+
+    setExpandedVolumeIds((current) => {
+      if (current.has(ancestors.volumeId)) return current;
+      return new Set(current).add(ancestors.volumeId);
+    });
+    if (ancestors.chapterId) {
+      setExpandedChapterIds((current) => {
+        if (current.has(ancestors.chapterId!)) return current;
+        return new Set(current).add(ancestors.chapterId!);
+      });
+    }
+  }, [chapters, scenes, volumes]);
 
   const choose = React.useCallback(
     (next: StructureSelection) => {
       setSelection(next);
+      revealSelection(next);
       onSelectItem(next);
     },
-    [onSelectItem]
+    [onSelectItem, revealSelection]
   );
 
   React.useEffect(() => {
+    const type = data.settings.activeStructureType;
+    const id = data.settings.activeStructureId;
+    if (!isStructureType(type) || !id) return;
+    if (selection?.type === type && selection.id === id) return;
+    setSelection({ type, id });
+  }, [data.settings.activeStructureId, data.settings.activeStructureType, selection?.id, selection?.type]);
+
+  React.useEffect(() => {
+    if (selection) revealSelection(selection);
+  }, [revealSelection, selection]);
+
+  React.useEffect(() => {
     if (selected && (showArchived || !selected.archived)) return;
-    const first = firstSelection(visibleVolumes, visibleChapters, visibleScenes);
+    const first = firstSelection(visibleVolumes);
     if (first && (selection?.id !== first.id || selection.type !== first.type)) {
       choose(first);
     } else if (!first) {
       setSelection(null);
     }
   }, [choose, selected, selection, showArchived, visibleChapters, visibleScenes, visibleVolumes]);
+
+  const expandAll = () => {
+    setExpandedVolumeIds(new Set(visibleVolumes.map((volume) => volume.id)));
+    setExpandedChapterIds(new Set(visibleChapters.map((chapter) => chapter.id)));
+  };
+
+  const collapseAll = () => {
+    setExpandedVolumeIds(new Set());
+    setExpandedChapterIds(new Set());
+  };
 
   const openCreate = (type: StructureItemType) => {
     if (type !== "volume" && !resolveParentId(type, selected, volumes, chapters, currentNovel.id)) {
@@ -268,38 +321,58 @@ export function StructureScreen({
                 {showArchived ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 {translate(showArchived ? "Hide archived" : "Show archived")}
               </Button>
+              <Button variant="outline" size="sm" onClick={expandAll} disabled={!visibleVolumes.length}>
+                <ChevronsDown className="size-4" />{translate("Expand all")}
+              </Button>
+              <Button variant="outline" size="sm" onClick={collapseAll} disabled={!expandedVolumeIds.size && !expandedChapterIds.size}>
+                <ChevronsUp className="size-4" />{translate("Collapse all")}
+              </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-5" role="tree" aria-label={translate("Story structure")}>
             {visibleVolumes.length ? visibleVolumes.map((volume) => {
-              const volumeChapters = visibleChapters.filter((chapter) => chapter.volumeId === volume.id);
+              const volumeChapters = chaptersByVolume.get(volume.id) ?? [];
+              const volumeSceneCount = volumeChapters.reduce(
+                (total, chapter) => total + (scenesByChapter.get(chapter.id)?.length ?? 0),
+                0
+              );
+              const volumeExpanded = expandedVolumeIds.has(volume.id);
               return (
                 <div key={volume.id} className={cn("rounded-xl border border-border/55 bg-surface-elevated/90 p-3 shadow-paper-sm", volume.archived && "opacity-65")}>
                   <StructureRow
                     depth={0}
                     title={volume.title}
-                    subtitle={volume.summary || translate("Volume")}
+                    subtitle={volumeExpanded ? volume.summary || translate("Volume") : compactCount(volumeChapters.length, "chapter", volumeSceneCount, "scene", translate)}
                     status={volume.archived ? "Archived" : "Ready"}
                     selected={selection?.type === "volume" && selection.id === volume.id}
                     strong
                     translate={translate}
+                    nodeLabel={translate("Volume")}
+                    expandable
+                    expanded={volumeExpanded}
+                    onToggle={() => toggleExpandedId(volume.id, setExpandedVolumeIds)}
                     onSelect={() => choose({ type: "volume", id: volume.id })}
                   />
-                  <div className="mt-2 space-y-2">
+                  {volumeExpanded ? <div className="mt-2 space-y-2" role="group" aria-label={`${translate("Chapters in")} ${volume.title}`}>
                     {volumeChapters.length ? volumeChapters.map((chapter) => {
-                      const chapterScenes = visibleScenes.filter((scene) => scene.chapterId === chapter.id);
+                      const chapterScenes = scenesByChapter.get(chapter.id) ?? [];
+                      const chapterExpanded = expandedChapterIds.has(chapter.id);
                       return (
                         <div key={chapter.id} className={cn(chapter.archived && "opacity-65")}>
                           <StructureRow
                             depth={1}
                             title={chapter.title}
-                            subtitle={`${formatNumber(chapter.wordCount)} ${translate("words")}`}
+                            subtitle={chapterExpanded ? `${formatNumber(chapter.wordCount)} ${translate("words")}` : compactCount(chapterScenes.length, "scene", null, "", translate)}
                             status={chapter.archived ? "Archived" : chapter.status}
                             selected={selection?.type === "chapter" && selection.id === chapter.id}
                             translate={translate}
+                            nodeLabel={translate("Chapter")}
+                            expandable
+                            expanded={chapterExpanded}
+                            onToggle={() => toggleExpandedId(chapter.id, setExpandedChapterIds)}
                             onSelect={() => choose({ type: "chapter", id: chapter.id })}
                           />
-                          <div className="space-y-2">
+                          {chapterExpanded ? <div className="space-y-2" role="group" aria-label={`${translate("Scenes in")} ${chapter.title}`}>
                             {chapterScenes.map((scene) => (
                               <StructureRow
                                 key={scene.id}
@@ -309,10 +382,11 @@ export function StructureScreen({
                                 status={scene.archived ? "Archived" : scene.status}
                                 selected={selection?.type === "scene" && selection.id === scene.id}
                                 translate={translate}
+                                nodeLabel={translate("Scene")}
                                 onSelect={() => choose({ type: "scene", id: scene.id })}
                               />
                             ))}
-                          </div>
+                          </div> : null}
                         </div>
                       );
                     }) : (
@@ -320,12 +394,15 @@ export function StructureScreen({
                         {translate("Empty volume. Add chapter to continue the outline.")}
                       </div>
                     )}
-                  </div>
+                  </div> : null}
                 </div>
               );
             }) : (
-              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-                {translate("No volumes yet. Add the first volume to begin the outline.")}
+              <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground" role="status">
+                <p>{translate("No volumes yet. Add the first volume to begin the outline.")}</p>
+                <Button className="mt-4" onClick={() => openCreate("volume")} disabled={!currentNovel.id}>
+                  <FolderPlus className="size-4" />{translate("Add volume")}
+                </Button>
               </div>
             )}
           </CardContent>
@@ -463,6 +540,10 @@ function StructureRow({
   selected,
   strong = false,
   translate,
+  nodeLabel,
+  expandable = false,
+  expanded = false,
+  onToggle,
   onSelect
 }: {
   depth: number;
@@ -472,28 +553,83 @@ function StructureRow({
   selected: boolean;
   strong?: boolean;
   translate: (value: string) => string;
+  nodeLabel: string;
+  expandable?: boolean;
+  expanded?: boolean;
+  onToggle?: () => void;
   onSelect: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="treeitem"
+      aria-level={depth + 1}
+      aria-selected={selected}
+      aria-expanded={expandable ? expanded : undefined}
       className={cn(
-        "grid w-[calc(100%-var(--structure-indent))] grid-cols-[auto_1fr_auto_auto] items-center gap-3 rounded-lg bg-card/82 p-3 text-left shadow-soft ring-1 ring-border/55 transition-colors hover:bg-secondary/35",
+        "flex w-[calc(100%-var(--structure-indent))] items-center gap-3 rounded-lg bg-card/82 p-3 shadow-soft ring-1 ring-border/55 transition-colors hover:bg-secondary/35",
         selected && "bg-secondary/55 ring-2 ring-primary/55"
       )}
       style={{ marginLeft: `${depth * 1.5}rem`, "--structure-indent": `${depth * 1.5}rem` } as React.CSSProperties}
-      onClick={onSelect}
-      aria-pressed={selected}
     >
-      <span className="grid size-8 place-items-center rounded-md border border-border/60 bg-surface text-muted-foreground"><Workflow className="size-4" /></span>
-      <span className="min-w-0">
-        <span className={cn("block truncate text-[14px]", strong && "font-semibold")}>{title}</span>
-        <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
-      </span>
-      <StatusBadge status={status} translate={translate} />
-      <span className="grid size-8 place-items-center text-muted-foreground" aria-hidden="true"><MoreHorizontal className="size-4" /></span>
-    </button>
+      {expandable ? (
+        <button
+          type="button"
+          className="grid size-8 shrink-0 place-items-center rounded-md border border-border/60 bg-surface text-muted-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`${translate(expanded ? "Collapse" : "Expand")} ${nodeLabel}: ${title}`}
+          aria-expanded={expanded}
+          onClick={onToggle}
+        >
+          {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+        </button>
+      ) : (
+        <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border/60 bg-surface text-muted-foreground" aria-hidden="true"><Workflow className="size-4" /></span>
+      )}
+      <button type="button" className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 text-left" onClick={onSelect} aria-pressed={selected}>
+        <span className="min-w-0">
+          <span className={cn("block truncate text-[14px]", strong && "font-semibold")}>{title}</span>
+          <span className="block truncate text-xs text-muted-foreground">{subtitle}</span>
+        </span>
+        <StatusBadge status={status} translate={translate} />
+        <span className="grid size-8 place-items-center text-muted-foreground" aria-hidden="true"><MoreHorizontal className="size-4" /></span>
+      </button>
+    </div>
   );
+}
+
+function toggleExpandedId(id: string, setExpanded: React.Dispatch<React.SetStateAction<Set<string>>>) {
+  setExpanded((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+}
+
+function compactCount(
+  primaryCount: number,
+  primaryLabel: string,
+  secondaryCount: number | null,
+  secondaryLabel: string,
+  translate: (value: string) => string
+) {
+  const primary = `${formatNumber(primaryCount)} ${translate(primaryCount === 1 ? primaryLabel : `${primaryLabel}s`)}`;
+  if (secondaryCount === null) return primary;
+  return `${primary} · ${formatNumber(secondaryCount)} ${translate(secondaryCount === 1 ? secondaryLabel : `${secondaryLabel}s`)}`;
+}
+
+function groupByParentId<T extends { volumeId?: string; chapterId?: string }>(
+  items: readonly T[],
+  parentKey: "volumeId" | "chapterId"
+) {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const parentId = item[parentKey];
+    if (!parentId) continue;
+    const group = groups.get(parentId);
+    if (group) group.push(item);
+    else groups.set(parentId, [item]);
+  }
+  return groups;
 }
 
 function ChevronUpIcon() {
@@ -527,13 +663,9 @@ function getSelectedItem(
   return item ? { type: "scene", ...item } : null;
 }
 
-function firstSelection(volumes: Volume[], chapters: Chapter[], scenes: Scene[]): StructureSelection | null {
+function firstSelection(volumes: Volume[]): StructureSelection | null {
   const firstVolume = volumes[0];
   if (!firstVolume) return null;
-  const firstChapter = chapters.find((chapter) => chapter.volumeId === firstVolume.id);
-  const firstScene = firstChapter ? scenes.find((scene) => scene.chapterId === firstChapter.id) : undefined;
-  if (firstScene) return { type: "scene", id: firstScene.id };
-  if (firstChapter) return { type: "chapter", id: firstChapter.id };
   return { type: "volume", id: firstVolume.id };
 }
 
