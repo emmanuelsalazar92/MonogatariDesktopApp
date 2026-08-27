@@ -638,6 +638,18 @@ export async function novelExistsForRoute(id: string) {
   );
 }
 
+export async function sceneBelongsToNovelForRoute(novelId: string, sceneId: string) {
+  return Boolean(
+    await prisma.scene.findFirst({
+      where: {
+        id: sceneId,
+        chapter: { volume: { novelId } }
+      },
+      select: { id: true }
+    })
+  );
+}
+
 export async function updateAppSettings(input: Record<string, string>) {
   const entries = Object.entries(input).filter(([, value]) => value.length > 0);
 

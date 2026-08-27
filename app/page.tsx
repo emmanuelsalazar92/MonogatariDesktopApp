@@ -416,6 +416,33 @@ export default function PrivateNovelStudioPage() {
   }, [activeRoute?.novelId, dataStatus, studioData.novels]);
 
   React.useEffect(() => {
+    const routeNovelId = activeRoute?.novelId;
+    const routeSceneId = activeRoute?.sceneId;
+    if (!routeNovelId || !routeSceneId || dataStatus !== "ready") return;
+
+    const scene = studioData.scenes.find((item) => item.id === routeSceneId);
+    const chapter = scene
+      ? studioData.chapters.find((item) => item.id === scene.chapterId)
+      : undefined;
+    const volume = chapter
+      ? studioData.volumes.find((item) => item.id === chapter.volumeId)
+      : undefined;
+    if (!scene || !chapter || volume?.novelId !== routeNovelId) return;
+
+    setStudioData((current) => ({
+      ...current,
+      settings: {
+        ...current.settings,
+        activeNovelId: routeNovelId,
+        activeStructureType: "scene",
+        activeStructureId: scene.id,
+        activeChapterId: chapter.id,
+        activeSceneId: scene.id
+      }
+    }));
+  }, [activeRoute?.novelId, activeRoute?.sceneId, dataStatus, studioData.chapters, studioData.scenes, studioData.volumes]);
+
+  React.useEffect(() => {
     if (activePage !== "export") {
       exportDefaultsAppliedRef.current = false;
       return;
@@ -612,7 +639,7 @@ export default function PrivateNovelStudioPage() {
     async (selection: StructureSelection) => {
       if (!(await flushPendingChanges())) {
         showToast("Save failed. The current scene was not changed.");
-        return;
+        return false;
       }
       let activeChapterId: string | undefined;
       let activeSceneId: string | undefined;
@@ -656,8 +683,20 @@ export default function PrivateNovelStudioPage() {
       }).then((response) => {
         if (!response.ok) showToast("Could not save the current structure selection");
       }).catch(() => showToast("Could not save the current structure selection"));
+
+      return true;
     },
     [flushPendingChanges, scopedStudioData.chapters, scopedStudioData.scenes, showToast]
+  );
+
+  const openSceneInEditor = React.useCallback(
+    async (sceneId: string) => {
+      const scene = scopedStudioData.scenes.find((item) => item.id === sceneId);
+      if (!scene) return;
+      if (!(await setActiveStructureItem({ type: "scene", id: scene.id }))) return;
+      router.push(routeForPage("editor", currentNovel.id, scene.id));
+    },
+    [currentNovel.id, router, scopedStudioData.scenes, setActiveStructureItem]
   );
 
   React.useEffect(() => {
@@ -1384,6 +1423,7 @@ export default function PrivateNovelStudioPage() {
                   translate={translate}
                   onRefresh={() => refreshStudioData(false)}
                   onSelectItem={setActiveStructureItem}
+                  onOpenScene={(sceneId) => void openSceneInEditor(sceneId)}
                   onNotify={showToast}
                 />
               ) : null}
