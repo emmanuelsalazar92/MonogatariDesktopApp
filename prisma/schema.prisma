@@ -68,6 +68,7 @@ model Scene {
   sortOrder      Int             @default(0)
   wordCount      Int             @default(0)
   objective      String          @default("")
+  revision       Int             @default(0)
   archived       Boolean         @default(false)
   chapter        Chapter         @relation(fields: [chapterId], references: [id], onDelete: Cascade)
   location       Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)

@@ -63,6 +63,7 @@ export type Chapter = Prisma.ChapterModel
 export type Scene = Prisma.SceneModel
 /**
  * Model WritingActivity
+ * 
  */
 export type WritingActivity = Prisma.WritingActivityModel
 /**
@@ -102,6 +103,7 @@ export type Backup = Prisma.BackupModel
 export type AppSetting = Prisma.AppSettingModel
 /**
  * Model StudioConfiguration
+ * 
  */
 export type StudioConfiguration = Prisma.StudioConfigurationModel
 /**

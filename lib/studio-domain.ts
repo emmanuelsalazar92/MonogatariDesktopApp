@@ -105,6 +105,7 @@ export interface Scene {
   sortOrder: number;
   wordCount: number;
   objective: string;
+  revision: number;
   archived: boolean;
 }
 

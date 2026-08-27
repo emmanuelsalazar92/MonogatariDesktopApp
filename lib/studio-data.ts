@@ -115,6 +115,7 @@ export const emptyScene: Scene = {
   sortOrder: 0,
   wordCount: 0,
   objective: "",
+  revision: 0,
   archived: false
 };
 
