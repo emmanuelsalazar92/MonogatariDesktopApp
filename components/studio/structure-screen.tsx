@@ -65,6 +65,12 @@ type StructureForm = {
   locationId: string;
 };
 
+type StructureCreateParent = {
+  type: "novel" | "volume" | "chapter";
+  id: string;
+  title: string;
+};
+
 const emptyForm: StructureForm = {
   type: "volume",
   title: "",
@@ -99,6 +105,7 @@ export function StructureScreen({
   });
   const [dialogMode, setDialogMode] = React.useState<"create" | "edit" | "delete" | null>(null);
   const [form, setForm] = React.useState<StructureForm>(emptyForm);
+  const [createParent, setCreateParent] = React.useState<StructureCreateParent | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [expandedVolumeIds, setExpandedVolumeIds] = React.useState<Set<string>>(() => new Set());
@@ -186,12 +193,17 @@ export function StructureScreen({
     setExpandedChapterIds(new Set());
   };
 
-  const openCreate = (type: StructureItemType) => {
-    if (type !== "volume" && !resolveParentId(type, selected, volumes, chapters, currentNovel.id)) {
-      onNotify(type === "chapter" ? "Create or select a volume first" : "Create or select a chapter first");
+  const openCreate = (type: StructureItemType, parent?: StructureCreateParent) => {
+    const expectedParentType = type === "volume" ? "novel" : type === "chapter" ? "volume" : "chapter";
+    const destination = type === "volume"
+      ? { type: "novel" as const, id: currentNovel.id, title: currentNovel.title }
+      : parent;
+    if (!destination?.id || destination.type !== expectedParentType) {
+      onNotify(type === "chapter" ? "Choose a volume before adding a chapter" : "Choose a chapter before adding a scene");
       return;
     }
     setError("");
+    setCreateParent(destination);
     setForm({ ...emptyForm, type });
     setDialogMode("create");
   };
@@ -199,6 +211,7 @@ export function StructureScreen({
   const openEdit = () => {
     if (!selected) return;
     setError("");
+    setCreateParent(null);
     setForm({
       type: selected.type,
       title: selected.title,
@@ -229,6 +242,10 @@ export function StructureScreen({
       setError("Title is required");
       return;
     }
+    if (dialogMode === "create" && !createParent?.id) {
+      setError("Choose a destination before creating this item");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -236,13 +253,15 @@ export function StructureScreen({
         ? await request("POST", {
             ...form,
             title: form.title.trim(),
-            parentId: resolveParentId(form.type, selected, volumes, chapters, currentNovel.id)
+            novelId: currentNovel.id,
+            parentId: createParent?.id
           })
         : await request("PATCH", { ...form, id: selected?.id, title: form.title.trim() });
       await onRefresh();
       if (payload?.selection) choose(payload.selection);
       onNotify(dialogMode === "create" ? "Structure item created in SQLite" : "Structure item updated");
       setDialogMode(null);
+      setCreateParent(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not save the structure item");
     } finally {
@@ -299,12 +318,6 @@ export function StructureScreen({
             <Button onClick={() => openCreate("volume")} disabled={!currentNovel.id}>
               <FolderPlus className="size-4" />{translate("Add volume")}
             </Button>
-            <Button variant="outline" onClick={() => openCreate("chapter")}>
-              <Plus className="size-4" />{translate("Add chapter")}
-            </Button>
-            <Button variant="outline" onClick={() => openCreate("scene")}>
-              <Plus className="size-4" />{translate("Add scene")}
-            </Button>
           </>
         }
       />
@@ -353,6 +366,18 @@ export function StructureScreen({
                     onToggle={() => toggleExpandedId(volume.id, setExpandedVolumeIds)}
                     onSelect={() => choose({ type: "volume", id: volume.id })}
                   />
+                  {!volume.archived ? (
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openCreate("chapter", { type: "volume", id: volume.id, title: volume.title })}
+                        aria-label={`${translate("Add chapter to")} ${volume.title}`}
+                      >
+                        <Plus className="size-4" />{translate("Add chapter")}
+                      </Button>
+                    </div>
+                  ) : null}
                   {volumeExpanded ? <div className="mt-2 space-y-2" role="group" aria-label={`${translate("Chapters in")} ${volume.title}`}>
                     {volumeChapters.length ? volumeChapters.map((chapter) => {
                       const chapterScenes = scenesByChapter.get(chapter.id) ?? [];
@@ -372,6 +397,18 @@ export function StructureScreen({
                             onToggle={() => toggleExpandedId(chapter.id, setExpandedChapterIds)}
                             onSelect={() => choose({ type: "chapter", id: chapter.id })}
                           />
+                          {!chapter.archived ? (
+                            <div className="mt-1 flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openCreate("scene", { type: "chapter", id: chapter.id, title: chapter.title })}
+                                aria-label={`${translate("Add scene to")} ${chapter.title}`}
+                              >
+                                <Plus className="size-4" />{translate("Add scene")}
+                              </Button>
+                            </div>
+                          ) : null}
                           {chapterExpanded ? <div className="space-y-2" role="group" aria-label={`${translate("Scenes in")} ${chapter.title}`}>
                             {chapterScenes.map((scene) => (
                               <StructureRow
@@ -390,8 +427,11 @@ export function StructureScreen({
                         </div>
                       );
                     }) : (
-                      <div className="ml-8 rounded-lg border border-dashed border-border/70 bg-surface/74 p-3 text-sm text-muted-foreground">
-                        {translate("Empty volume. Add chapter to continue the outline.")}
+                      <div className="ml-8 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border/70 bg-surface/74 p-3 text-sm text-muted-foreground">
+                        <span>{translate("Empty volume. Add chapter to continue the outline.")}</span>
+                        {!volume.archived ? <Button size="sm" variant="outline" onClick={() => openCreate("chapter", { type: "volume", id: volume.id, title: volume.title })}>
+                          <Plus className="size-4" />{translate("Add chapter")}
+                        </Button> : null}
                       </div>
                     )}
                   </div> : null}
@@ -446,16 +486,28 @@ export function StructureScreen({
         </Card>
       </div>
 
-      <Dialog open={dialogMode === "create" || dialogMode === "edit"} onOpenChange={(open) => !open && setDialogMode(null)}>
+      <Dialog open={dialogMode === "create" || dialogMode === "edit"} onOpenChange={(open) => {
+        if (!open) {
+          setDialogMode(null);
+          setCreateParent(null);
+        }
+      }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{dialogMode === "create" ? translate(`Add ${form.type}`) : translate(`Edit ${form.type}`)}</DialogTitle>
-            <DialogDescription>{translate("Changes are persisted immediately to the local SQLite database.")}</DialogDescription>
+            <DialogDescription>
+              {dialogMode === "create" && createParent ? (
+                <span className="block" role="status">
+                  {translate("Destination")}: {translate(capitalize(createParent.type))} — {createParent.title}
+                </span>
+              ) : null}
+              <span className="block">{translate("Changes are persisted immediately to the local SQLite database.")}</span>
+            </DialogDescription>
           </DialogHeader>
           <StructureFields form={form} locations={data.locations} onChange={setForm} />
-          {error ? <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">{error}</p> : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogMode(null)} disabled={busy}>{translate("Cancel")}</Button>
+            <Button variant="outline" onClick={() => { setDialogMode(null); setCreateParent(null); }} disabled={busy}>{translate("Cancel")}</Button>
             <Button onClick={() => void submitForm()} disabled={busy}>{busy ? translate("Saving...") : translate("Save item")}</Button>
           </DialogFooter>
         </DialogContent>
@@ -667,33 +719,6 @@ function firstSelection(volumes: Volume[]): StructureSelection | null {
   const firstVolume = volumes[0];
   if (!firstVolume) return null;
   return { type: "volume", id: firstVolume.id };
-}
-
-function resolveParentId(
-  type: StructureItemType,
-  selected: SelectedItem | null,
-  volumes: Volume[],
-  chapters: Chapter[],
-  novelId: string
-) {
-  if (type === "volume") return novelId;
-  if (type === "chapter") {
-    if (selected?.type === "volume" && !selected.archived) return selected.id;
-    if (selected?.type === "chapter") {
-      return volumes.find((volume) => volume.id === selected.volumeId && !volume.archived)?.id ?? "";
-    }
-    if (selected?.type === "scene") {
-      const volumeId = chapters.find((chapter) => chapter.id === selected.chapterId)?.volumeId;
-      return volumes.find((volume) => volume.id === volumeId && !volume.archived)?.id ?? "";
-    }
-    return volumes.find((volume) => !volume.archived)?.id ?? "";
-  }
-  if (selected?.type === "scene") {
-    return chapters.find((chapter) => chapter.id === selected.chapterId && !chapter.archived)?.id ?? "";
-  }
-  if (selected?.type === "chapter" && !selected.archived) return selected.id;
-  if (selected?.type === "volume" && !selected.archived) return chapters.find((chapter) => chapter.volumeId === selected.id && !chapter.archived)?.id ?? "";
-  return chapters.find((chapter) => !chapter.archived)?.id ?? "";
 }
 
 function fallbackSelection(

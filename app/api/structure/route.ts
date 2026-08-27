@@ -34,7 +34,11 @@ function isChapterStatus(value: unknown): value is ChapterStatus {
 }
 
 function apiError(error: unknown) {
-  if (error instanceof Error && error.message.startsWith("cannot create inside")) {
+  if (
+    error instanceof Error &&
+    (error.message.startsWith("cannot create inside") ||
+      error.message.startsWith("cannot create outside"))
+  ) {
     return NextResponse.json({ error: error.message }, { status: 409 });
   }
 
@@ -59,6 +63,9 @@ export async function POST(request: Request) {
   if (!isItemType(body.type)) {
     return NextResponse.json({ error: "type is invalid" }, { status: 400 });
   }
+  if (typeof body.novelId !== "string" || body.novelId.length === 0) {
+    return NextResponse.json({ error: "novelId is required" }, { status: 400 });
+  }
   if (typeof body.parentId !== "string" || body.parentId.length === 0) {
     return NextResponse.json({ error: "parentId is required" }, { status: 400 });
   }
@@ -72,6 +79,7 @@ export async function POST(request: Request) {
   try {
     const result = await createStructureItem({
       type: body.type,
+      novelId: body.novelId,
       parentId: body.parentId,
       title: body.title.trim(),
       summary: typeof body.summary === "string" ? body.summary.trim() : undefined,
