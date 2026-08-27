@@ -136,6 +136,15 @@ test("chapter preview composes only its ordered, non-archived scenes", async () 
   );
 });
 
+test("dialog surface uses opaque theme tokens while preserving the blurred backdrop", async () => {
+  const dialogSource = await readFile(resolve(process.cwd(), "components/ui/dialog.tsx"), "utf8");
+
+  assert.match(dialogSource, /bg-popover p-5/);
+  assert.doesNotMatch(dialogSource, /bg-popover\/\d+/);
+  assert.match(dialogSource, /backdrop-blur-\[2px\]/);
+  assert.match(dialogSource, /bg-background p-1\.5/);
+});
+
 test("structure status allowlist excludes archival and rejects unknown values", async () => {
   const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
     if (moduleId === "lucide-react") return {};
