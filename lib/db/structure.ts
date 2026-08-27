@@ -555,21 +555,16 @@ export async function deleteStructureItem(type: StructureItemType, id: string) {
     if (type === "volume") {
       const volume = await tx.volume.findUniqueOrThrow({
         where: { id },
-        include: { chapters: { select: { id: true, scenes: { select: { id: true } } } } }
+        include: { chapters: { select: { id: true } } }
       });
-      const chapterIds = volume.chapters.map((chapter) => chapter.id);
-      const sceneIds = volume.chapters.flatMap((chapter) => chapter.scenes.map((scene) => scene.id));
+      if (volume.chapters.length > 0) {
+        throw new Error("cannot delete a non-empty volume; archive it instead");
+      }
       await tx.note.deleteMany({
-        where: {
-          OR: [
-            { linkedType: "Volume", linkedId: id },
-            { linkedType: "Chapter", linkedId: { in: chapterIds } },
-            { linkedType: "Scene", linkedId: { in: sceneIds } }
-          ]
-        }
+        where: { linkedType: "Volume", linkedId: id }
       });
       await tx.timelineEvent.updateMany({ where: { volumeId: id }, data: { volumeId: null } });
-      await clearSelectionSettings(tx, [id, ...chapterIds, ...sceneIds]);
+      await clearSelectionSettings(tx, [id]);
       await tx.volume.delete({ where: { id } });
       await recalculateWordCounts(tx, volume.novelId);
     } else if (type === "chapter") {
@@ -577,16 +572,11 @@ export async function deleteStructureItem(type: StructureItemType, id: string) {
         where: { id },
         include: { volume: true, scenes: { select: { id: true } } }
       });
-      const sceneIds = chapter.scenes.map((scene) => scene.id);
-      await tx.note.deleteMany({
-        where: {
-          OR: [
-            { linkedType: "Chapter", linkedId: id },
-            { linkedType: "Scene", linkedId: { in: sceneIds } }
-          ]
-        }
-      });
-      await clearSelectionSettings(tx, [id, ...sceneIds]);
+      if (chapter.scenes.length > 0) {
+        throw new Error("cannot delete a non-empty chapter; archive it instead");
+      }
+      await tx.note.deleteMany({ where: { linkedType: "Chapter", linkedId: id } });
+      await clearSelectionSettings(tx, [id]);
       await tx.chapter.delete({ where: { id } });
       await recalculateWordCounts(tx, chapter.volume.novelId);
     } else {

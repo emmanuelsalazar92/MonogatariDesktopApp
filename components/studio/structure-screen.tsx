@@ -50,6 +50,7 @@ import { narrativeStatuses, type Chapter, type ChapterStatus, type Scene, type V
 import { getStructureAncestorIds } from "@/lib/structure-tree";
 import { type StructureMovePosition } from "@/lib/structure-move";
 import { searchStructureTitles, type StructureTitleSearchItem } from "@/lib/structure-search";
+import { getStructureDeleteImpact, type StructureDeleteImpact } from "@/lib/structure-impact";
 import { getVisibleStructureItems } from "@/lib/structure-visibility";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +144,10 @@ export function StructureScreen({
     [visibleScenes]
   );
   const selected = getSelectedItem(selection, volumes, chapters, scenes);
+  const deleteImpact = React.useMemo(
+    () => selected ? getStructureDeleteImpact(selected.type, selected.id, volumes, chapters, scenes) : null,
+    [chapters, scenes, selected, volumes]
+  );
   const structureSearchResults = React.useMemo(() => {
     const items: StructureTitleSearchItem[] = [
       ...visibleVolumes.map((item) => ({ type: "volume" as const, id: item.id, title: item.title })),
@@ -679,7 +684,7 @@ export function StructureScreen({
                   <Edit3 className="size-4" />{translate("Edit details")}
                 </Button>
                 <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={() => void performAction("duplicate")}>
-                  <Copy className="size-4" />{translate("Duplicate")}
+                  <Copy className="size-4" />{translate(duplicateLabel(selected, volumes, chapters, scenes))}
                 </Button>
                 <Button variant="outline" className="justify-start" disabled={!selected || busy || selected.archived} onClick={openMove}>
                   <Move className="size-4" />{translate("Move")}
@@ -781,12 +786,18 @@ export function StructureScreen({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{translate("Delete permanently?")}</DialogTitle>
-            <DialogDescription>{deleteDescription(selected)}</DialogDescription>
+          <DialogDescription>{deleteDescription(selected, deleteImpact)}</DialogDescription>
           </DialogHeader>
           {error ? <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogMode(null)} disabled={busy}>{translate("Cancel")}</Button>
-            <Button variant="destructive" onClick={() => void confirmDelete()} disabled={busy}>{busy ? translate("Deleting...") : translate("Delete permanently")}</Button>
+            {deleteImpact?.hardDeleteBlocked ? (
+              <Button onClick={() => { setDialogMode(null); void performAction("archive"); }} disabled={busy}>
+                <Archive className="size-4" />{translate("Archive item instead")}
+              </Button>
+            ) : (
+              <Button variant="destructive" onClick={() => void confirmDelete()} disabled={busy}>{busy ? translate("Deleting...") : translate("Delete permanently")}</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1124,9 +1135,27 @@ function capitalize(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function deleteDescription(selected: SelectedItem | null) {
+function deleteDescription(selected: SelectedItem | null, impact: StructureDeleteImpact | null) {
   if (!selected) return "This action cannot be undone.";
-  if (selected.type === "volume") return `“${selected.title}” and all of its chapters and scenes will be deleted. Linked timeline references are cleared and attached notes are removed.`;
-  if (selected.type === "chapter") return `“${selected.title}” and all of its scenes will be deleted. Linked timeline references are cleared and attached notes are removed.`;
-  return `“${selected.title}” will be deleted. Linked timeline references are cleared and attached notes are removed.`;
+  if (impact && impact.hardDeleteBlocked) {
+    const chapterText = impact.chapterCount ? `${impact.chapterCount} ${impact.chapterCount === 1 ? "chapter" : "chapters"}` : "";
+    const sceneText = `${impact.sceneCount} ${impact.sceneCount === 1 ? "scene" : "scenes"}`;
+    const impactText = [chapterText, sceneText, `${formatNumber(impact.wordCount)} words`].filter(Boolean).join(", ");
+    return `“${selected.title}” contains ${impactText}. Permanent deletion is blocked to protect this hierarchy. Archive it instead; it can be restored later.`;
+  }
+  if (selected.type === "scene" && impact && impact.wordCount > 0) return `“${selected.title}” contains ${formatNumber(impact.wordCount)} words. This permanent action cannot be undone.`;
+  return `“${selected.title}” will be permanently deleted. This action cannot be undone.`;
+}
+
+function duplicateLabel(
+  selected: SelectedItem | null,
+  volumes: Volume[],
+  chapters: Chapter[],
+  scenes: Scene[]
+) {
+  if (!selected) return "Duplicate";
+  const impact = getStructureDeleteImpact(selected.type, selected.id, volumes, chapters, scenes);
+  if (selected.type === "volume") return `Duplicate volume with ${impact.chapterCount} ${impact.chapterCount === 1 ? "chapter" : "chapters"} and ${impact.sceneCount} ${impact.sceneCount === 1 ? "scene" : "scenes"}`;
+  if (selected.type === "chapter") return `Duplicate chapter with ${impact.sceneCount} ${impact.sceneCount === 1 ? "scene" : "scenes"}`;
+  return "Duplicate scene";
 }

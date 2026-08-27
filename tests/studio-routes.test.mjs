@@ -151,3 +151,23 @@ test("archived parents hide descendants without changing their own archive state
   assert.equal(chapters[0].archived, false);
   assert.equal(scenes[0].archived, false);
 });
+
+test("structure delete impact protects non-empty parents and reports their words", async () => {
+  const impact = await loadTypeScriptModule("lib/structure-impact.ts");
+  const volumes = [{ id: "volume-1" }];
+  const chapters = [{ id: "chapter-1", volumeId: "volume-1", wordCount: 12 }];
+  const scenes = [{ id: "scene-1", chapterId: "chapter-1", wordCount: 12 }];
+
+  assert.deepEqual(
+    impact.getStructureDeleteImpact("volume", "volume-1", volumes, chapters, scenes),
+    { chapterCount: 1, sceneCount: 1, wordCount: 12, hardDeleteBlocked: true }
+  );
+  assert.deepEqual(
+    impact.getStructureDeleteImpact("chapter", "chapter-1", volumes, chapters, scenes),
+    { chapterCount: 0, sceneCount: 1, wordCount: 12, hardDeleteBlocked: true }
+  );
+  assert.deepEqual(
+    impact.getStructureDeleteImpact("scene", "scene-1", volumes, chapters, scenes),
+    { chapterCount: 0, sceneCount: 0, wordCount: 12, hardDeleteBlocked: false }
+  );
+});

@@ -33,6 +33,7 @@ function apiError(error: unknown) {
     (error.message.startsWith("cannot create inside") ||
       error.message.startsWith("cannot create outside") ||
       error.message.startsWith("cannot move") ||
+      error.message.startsWith("cannot delete a non-empty") ||
       error.message.startsWith("move reference") ||
       error.message.startsWith("an item cannot") ||
       error.message.startsWith("a reference item"))
