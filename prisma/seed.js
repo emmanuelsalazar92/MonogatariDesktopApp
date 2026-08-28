@@ -6,7 +6,11 @@ const json = (value) => JSON.stringify(value);
 async function main() {
   const { join } = await import("node:path");
   const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
-  const { PrismaClient } = await import("@prisma/client");
+  const { default: createJiti } = await import("jiti");
+  const jiti = createJiti(__filename);
+  const { PrismaClient } = jiti(
+    join(process.cwd(), "lib", "generated", "prisma", "client.ts")
+  );
 
   const adapter = new PrismaBetterSqlite3({
     url: join(process.cwd(), "prisma", "dev.db")
