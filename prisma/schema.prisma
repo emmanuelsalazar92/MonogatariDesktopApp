@@ -26,6 +26,19 @@ model Novel {
   notes             Note[]
   backups           Backup[]
   writingActivities WritingActivity[]
+  readingProgress   ReadingProgress?
+}
+
+model ReadingProgress {
+  novelId         String   @id
+  preferredScope  String   @default("chapter")
+  volumeId        String?
+  chapterId       String?
+  sceneId         String?
+  positionRatio   Float    @default(0)
+  contentRevision Int?
+  lastReadAt      DateTime @default(now())
+  novel           Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
 }
 
 model Volume {
