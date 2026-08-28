@@ -312,6 +312,26 @@ test("editor navigation crosses chapters and stops at novel bounds", async () =>
   assert.deepEqual(navigation.getAdjacentSceneIds("s2", ["s1", "s2"]), { previousId: "s1", nextId: null });
 });
 
+test("reading focus keeps the live reader mounted and exposes reversible accessible controls", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+
+  assert.doesNotMatch(pageSource, /function ReadingFocusMode/);
+  assert.match(pageSource, /isFocusMode=\{focusMode === "reading"\}/);
+  assert.ok(
+    (pageSource.match(/focusMode === "reading" \? "hidden" : "contents"/g) ?? []).length >= 2,
+  );
+  assert.match(pageSource, /data-reading-focus=\{focusMode === "reading" \? "active"/);
+  assert.match(pageSource, /React\.useLayoutEffect\(\(\) => \{[\s\S]*previousFocusModeRef/);
+  assert.match(pageSource, /readerFocusOverlayOpen\) return/);
+  assert.match(pageSource, /aria-label="Reading focus controls"/);
+  assert.match(pageSource, /aria-label="Open table of contents"/);
+  assert.match(pageSource, /aria-label="Open reading preferences"/);
+  assert.match(pageSource, /motion-reduce:transition-none/);
+  assert.match(pageSource, /role="alert"[\s\S]*readerLoadError/);
+  assert.match(pageSource, /const position = captureCurrentReaderPosition\(\)/);
+  assert.match(pageSource, /scheduleReadingProgress\(position\.sceneId, position\.ratio\)/);
+});
+
 test("structure status allowlist excludes archival and rejects unknown values", async () => {
   const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
     if (moduleId === "lucide-react") return {};

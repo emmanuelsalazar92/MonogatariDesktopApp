@@ -27,6 +27,7 @@ import {
   RotateCcw,
   Save,
   Search,
+  SlidersHorizontal,
   Tag,
   Trash2,
   Upload,
@@ -264,6 +265,7 @@ function PrivateNovelStudioContent() {
   const [theme, setTheme] = React.useState<"light" | "dark" | "system">("light");
   const [language, setLanguage] = React.useState<Language>("en");
   const [focusMode, setFocusMode] = React.useState<FocusMode>("none");
+  const [readerFocusOverlayOpen, setReaderFocusOverlayOpen] = React.useState(false);
   const [inspectorOpen, setInspectorOpen] = React.useState(true);
   const [dialog, setDialog] = React.useState<
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
@@ -354,6 +356,7 @@ function PrivateNovelStudioContent() {
     [searchParams]
   );
   const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
+  const readerFocusToggleHandlerRef = React.useRef<(() => void) | null>(null);
   const editorDirtyRef = React.useRef(false);
   const saveInFlightRef = React.useRef<Promise<boolean> | null>(null);
   const autosyncInFlightRef = React.useRef(false);
@@ -499,6 +502,10 @@ function PrivateNovelStudioContent() {
 
   const registerPendingSave = React.useCallback((handler: PendingSaveHandler | null) => {
     pendingSaveHandlerRef.current = handler;
+  }, []);
+
+  const registerReaderFocusToggle = React.useCallback((handler: (() => void) | null) => {
+    readerFocusToggleHandlerRef.current = handler;
   }, []);
 
   const setEditorDirty = React.useCallback((dirty: boolean) => {
@@ -1247,11 +1254,20 @@ function PrivateNovelStudioContent() {
 
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
         event.preventDefault();
-        void changeFocusMode(activePage === "reader" ? "reading" : "writing");
+        if (activePage === "reader" && readerFocusToggleHandlerRef.current) {
+          readerFocusToggleHandlerRef.current();
+        } else {
+          void changeFocusMode("writing");
+        }
       }
 
       if (event.key === "Escape") {
-        if (focusMode !== "none") void changeFocusMode("none");
+        if (readerFocusOverlayOpen) return;
+        if (focusMode === "reading" && readerFocusToggleHandlerRef.current) {
+          readerFocusToggleHandlerRef.current();
+        } else if (focusMode !== "none") {
+          void changeFocusMode("none");
+        }
         setMobileDrawerOpen(false);
         setDialog(null);
       }
@@ -1259,7 +1275,7 @@ function PrivateNovelStudioContent() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePage, changeFocusMode, cycleSidebar, flushPendingChanges, focusMode]);
+  }, [activePage, changeFocusMode, cycleSidebar, flushPendingChanges, focusMode, readerFocusOverlayOpen]);
 
   const novels = studioData.novels;
   const { characters, locations, relationships } = scopedStudioData;
@@ -1373,63 +1389,58 @@ function PrivateNovelStudioContent() {
     );
   }
 
-  if (focusMode === "reading") {
-    return (
-      <StudioDataContext.Provider value={scopedStudioData}>
-        <ReadingFocusMode
-          readerFontSize={readerFontSize}
-          readerWidth={readerWidth}
-          onExit={() => void changeFocusMode("none")}
-        />
-      </StudioDataContext.Provider>
-    );
-  }
-
   return (
     <StudioDataContext.Provider value={scopedStudioData}>
-      <main className="min-h-screen bg-background text-foreground">
+      <main
+        className="min-h-screen bg-background text-foreground"
+        data-reading-focus={focusMode === "reading" ? "active" : undefined}
+      >
         <div className="flex min-h-screen">
-          <Sidebar
-            activePage={activePage}
-            sidebarState={sidebarState}
-            labels={pageLabelsByLanguage[language]}
-            copy={{
-              appSubtitle: uiCopy[language].appSubtitle,
-              expandedSidebar: uiCopy[language].expandedSidebar,
-              compactSidebar: uiCopy[language].compactSidebar,
-              hideSidebar: uiCopy[language].hideSidebar
-            }}
-            hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
-            onSelectPage={selectPage}
-            onSidebarStateChange={updateSidebarState}
-          />
+          <div className={cn(focusMode === "reading" ? "hidden" : "contents")} aria-hidden={focusMode === "reading" ? true : undefined}>
+            <Sidebar
+              activePage={activePage}
+              sidebarState={sidebarState}
+              labels={pageLabelsByLanguage[language]}
+              copy={{
+                appSubtitle: uiCopy[language].appSubtitle,
+                expandedSidebar: uiCopy[language].expandedSidebar,
+                compactSidebar: uiCopy[language].compactSidebar,
+                hideSidebar: uiCopy[language].hideSidebar
+              }}
+              hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
+              onSelectPage={selectPage}
+              onSidebarStateChange={updateSidebarState}
+            />
+          </div>
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <TopBar
-              pageLabel={pageLabelsByLanguage[language][activePage]}
-              subtitle={`${currentNovel.title} - ${uiCopy[language].localStudio}`}
-              sidebarState={sidebarState}
-              mobileNavigationOpen={mobileDrawerOpen}
-              novels={studioData.novels}
-              activeNovelId={currentNovel.id}
-              dataStatusLabel={dataSourceLabel(dataStatus, language)}
-              copy={{
-                openNavigation: uiCopy[language].openNavigation,
-                toggleSidebar: uiCopy[language].toggleSidebar,
-                localStatus: uiCopy[language].localStatus
-              }}
-              onOpenMobileNav={() => setMobileDrawerOpen(true)}
-              onCycleSidebar={cycleSidebar}
-              onActiveNovelChange={(novelId) =>
-                void setActiveNovel(
-                  novelId,
-                  activeRoute?.novelId ? activePage : "overview"
-                )
-              }
-            />
+            <div className={cn(focusMode === "reading" ? "hidden" : "contents")} aria-hidden={focusMode === "reading" ? true : undefined}>
+              <TopBar
+                pageLabel={pageLabelsByLanguage[language][activePage]}
+                subtitle={`${currentNovel.title} - ${uiCopy[language].localStudio}`}
+                sidebarState={sidebarState}
+                mobileNavigationOpen={mobileDrawerOpen}
+                novels={studioData.novels}
+                activeNovelId={currentNovel.id}
+                dataStatusLabel={dataSourceLabel(dataStatus, language)}
+                copy={{
+                  openNavigation: uiCopy[language].openNavigation,
+                  toggleSidebar: uiCopy[language].toggleSidebar,
+                  localStatus: uiCopy[language].localStatus
+                }}
+                onOpenMobileNav={() => setMobileDrawerOpen(true)}
+                onCycleSidebar={cycleSidebar}
+                onActiveNovelChange={(novelId) =>
+                  void setActiveNovel(
+                    novelId,
+                    activeRoute?.novelId ? activePage : "overview"
+                  )
+                }
+              />
+            </div>
 
-          <div className="flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
-            <div className="mx-auto max-w-[1480px] pb-8">
+          <div className={cn("min-w-0 flex-1", focusMode !== "reading" && "overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-7")}>
+            <div className={cn(focusMode !== "reading" && "mx-auto max-w-[1480px] pb-8")}>
               {activePage === "dashboard" ? (
                 <DashboardScreen
                   data={scopedStudioData}
@@ -1510,10 +1521,14 @@ function PrivateNovelStudioContent() {
                   readerTheme={readerTheme}
                   readerFontSize={readerFontSize}
                   readerWidth={readerWidth}
+                  isFocusMode={focusMode === "reading"}
                   onReaderThemeChange={setReaderTheme}
                   onReaderFontSizeChange={setReaderFontSize}
                   onReaderWidthChange={setReaderWidth}
                   onFocus={() => void changeFocusMode("reading")}
+                  onExitFocus={() => void changeFocusMode("none")}
+                  onFocusOverlayChange={setReaderFocusOverlayOpen}
+                  onRegisterFocusToggle={registerReaderFocusToggle}
                   onOpenToc={() => setDialog("toc")}
                 />
               ) : null}
@@ -2297,19 +2312,27 @@ function ReaderScreen({
   readerTheme,
   readerFontSize,
   readerWidth,
+  isFocusMode,
   onReaderThemeChange,
   onReaderFontSizeChange,
   onReaderWidthChange,
   onFocus,
+  onExitFocus,
+  onFocusOverlayChange,
+  onRegisterFocusToggle,
   onOpenToc
 }: {
   readerTheme: string;
   readerFontSize: number;
   readerWidth: number;
+  isFocusMode: boolean;
   onReaderThemeChange: (value: string) => void;
   onReaderFontSizeChange: (value: number) => void;
   onReaderWidthChange: (value: number) => void;
   onFocus: () => void;
+  onExitFocus: () => void;
+  onFocusOverlayChange: (open: boolean) => void;
+  onRegisterFocusToggle: (handler: (() => void) | null) => void;
   onOpenToc: () => void;
 }) {
   const data = useStudioData();
@@ -2322,8 +2345,14 @@ function ReaderScreen({
   const [savedProgress, setSavedProgress] = React.useState<ResolvedReadingProgress | null>(null);
   const [currentReaderSceneId, setCurrentReaderSceneId] = React.useState(activeScene.id);
   const [readingRatio, setReadingRatio] = React.useState(0);
+  const [readerLoadError, setReaderLoadError] = React.useState("");
+  const [focusPanel, setFocusPanel] = React.useState<null | "toc" | "preferences">(null);
   const [restoreRequest, setRestoreRequest] = React.useState<{ sceneId: string; ratio: number; nonce: number } | null>(null);
+  const readerRootRef = React.useRef<HTMLDivElement | null>(null);
   const readerSectionRefs = React.useRef(new Map<string, HTMLElement>());
+  const readerPositionRef = React.useRef({ sceneId: activeScene.id, ratio: 0 });
+  const pendingFocusPositionRef = React.useRef<{ sceneId: string; ratio: number } | null>(null);
+  const previousFocusModeRef = React.useRef(isFocusMode);
   const pendingProgressRef = React.useRef<{ novelId: string; preferredScope: typeof readerScope; sceneId: string; positionRatio: number } | null>(null);
   const progressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReaderScrollIntentRef = React.useRef(0);
@@ -2334,6 +2363,71 @@ function ReaderScreen({
   const scopeUnits = React.useMemo(() => getReaderScopeUnits(readerScope, data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerScope]);
   const adjacentUnits = getReaderAdjacentUnits(scopeUnits, readerTargetId);
   const currentReaderScene = readerScenes.find((scene) => scene.id === currentReaderSceneId) ?? readerScenes[0];
+  readerPositionRef.current = { sceneId: currentReaderSceneId, ratio: readingRatio };
+
+  React.useLayoutEffect(() => {
+    const sections = readerRootRef.current?.querySelectorAll<HTMLElement>("[data-reader-scene-id]") ?? [];
+    readerSectionRefs.current = new Map(
+      Array.from(sections, (section) => [section.dataset.readerSceneId ?? "", section])
+        .filter(([sceneId]) => Boolean(sceneId)) as Array<[string, HTMLElement]>
+    );
+  }, [readerScenes]);
+
+  const captureCurrentReaderPosition = React.useCallback(() => {
+    const marker = Math.min(window.innerHeight * 0.35, 260);
+    const visibleSections = Array.from(
+      readerRootRef.current?.querySelectorAll<HTMLElement>("[data-reader-scene-id]") ?? []
+    ).map((element) => ({ sceneId: element.dataset.readerSceneId ?? "", element }));
+    if (visibleSections.length === 0) return readerPositionRef.current;
+    const activeEntry = visibleSections.reduce((closest, entry) =>
+      entry.element.getBoundingClientRect().top <= marker ? entry : closest
+    , visibleSections[0]);
+    const rect = activeEntry.element.getBoundingClientRect();
+    return {
+      sceneId: activeEntry.sceneId,
+      ratio: clampReadingRatio((marker - rect.top) / Math.max(rect.height, 1))
+    };
+  }, []);
+
+  const toggleReadingFocus = React.useCallback(() => {
+    const position = captureCurrentReaderPosition();
+    pendingFocusPositionRef.current = position;
+    if (isFocusMode) onExitFocus();
+    else onFocus();
+  }, [captureCurrentReaderPosition, isFocusMode, onExitFocus, onFocus]);
+
+  React.useEffect(() => {
+    onRegisterFocusToggle(toggleReadingFocus);
+    return () => onRegisterFocusToggle(null);
+  }, [onRegisterFocusToggle, toggleReadingFocus]);
+
+  React.useEffect(() => {
+    onFocusOverlayChange(isFocusMode && focusPanel !== null);
+  }, [focusPanel, isFocusMode, onFocusOverlayChange]);
+
+  React.useEffect(
+    () => () => onFocusOverlayChange(false),
+    [onFocusOverlayChange]
+  );
+
+  React.useEffect(() => {
+    if (!isFocusMode) setFocusPanel(null);
+  }, [isFocusMode]);
+
+  React.useLayoutEffect(() => {
+    if (previousFocusModeRef.current === isFocusMode) return;
+    previousFocusModeRef.current = isFocusMode;
+    const position = pendingFocusPositionRef.current ?? readerPositionRef.current;
+    pendingFocusPositionRef.current = null;
+    const section = readerSectionRefs.current.get(position.sceneId);
+    if (!section) return;
+    const marker = Math.min(window.innerHeight * 0.35, 260);
+    section.scrollIntoView({ block: "start" });
+    window.scrollBy({
+      top: section.getBoundingClientRect().height * clampReadingRatio(position.ratio) - marker,
+      behavior: "instant"
+    });
+  }, [isFocusMode]);
 
   const flushReadingProgress = React.useCallback(() => {
     if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
@@ -2393,10 +2487,15 @@ function ReaderScreen({
     const controller = new AbortController();
     const targetId = readerTargetId;
     if (!targetId || !data.settings.activeNovelId) return () => controller.abort();
+    setReaderLoadError("");
     void fetch(`/api/reader?novelId=${encodeURIComponent(data.settings.activeNovelId)}&scope=${readerScope}&targetId=${encodeURIComponent(targetId)}`, { signal: controller.signal })
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then(setReaderDocument)
-      .catch(() => setReaderDocument(null));
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setReaderDocument(null);
+        setReaderLoadError("The selected reading document could not be loaded. The active scene remains visible.");
+      });
     return () => controller.abort();
   }, [data.settings.activeNovelId, readerScope, readerTargetId]);
 
@@ -2406,21 +2505,11 @@ function ReaderScreen({
       if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) markScrollIntent();
     };
     const onScroll = () => {
-      const marker = Math.min(window.innerHeight * 0.35, 260);
-      const visibleSections = readerScenes
-        .map((scene) => ({ scene, element: readerSectionRefs.current.get(scene.id) }))
-        .filter((entry): entry is { scene: (typeof readerScenes)[number]; element: HTMLElement } => Boolean(entry.element));
-      if (visibleSections.length === 0) return;
-      const activeEntry = visibleSections.reduce((closest, entry) => {
-        const top = entry.element.getBoundingClientRect().top;
-        return top <= marker ? entry : closest;
-      }, visibleSections[0]);
-      const rect = activeEntry.element.getBoundingClientRect();
-      const ratio = clampReadingRatio((marker - rect.top) / Math.max(rect.height, 1));
-      setCurrentReaderSceneId(activeEntry.scene.id);
-      setReadingRatio(ratio);
+      const position = captureCurrentReaderPosition();
+      setCurrentReaderSceneId(position.sceneId);
+      setReadingRatio(position.ratio);
       if (Date.now() - lastReaderScrollIntentRef.current < 500) {
-        scheduleReadingProgress(activeEntry.scene.id, ratio);
+        scheduleReadingProgress(position.sceneId, position.ratio);
       }
     };
     window.addEventListener("wheel", markScrollIntent, { passive: true });
@@ -2433,7 +2522,7 @@ function ReaderScreen({
       window.removeEventListener("keydown", markKeyboardScrollIntent);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [readerScenes, scheduleReadingProgress]);
+  }, [captureCurrentReaderPosition, scheduleReadingProgress]);
 
   React.useEffect(() => {
     if (!restoreRequest) return;
@@ -2470,86 +2559,135 @@ function ReaderScreen({
     });
   };
 
+  const openReaderSceneFromFocus = (sceneId: string) => {
+    setReaderScope("scene");
+    setReaderTargetId(sceneId);
+    setCurrentReaderSceneId(sceneId);
+    setReadingRatio(0);
+    setRestoreRequest({ sceneId, ratio: 0, nonce: Date.now() });
+    setFocusPanel(null);
+  };
+
   return (
-    <div className="grid gap-6">
-      <SectionHeader
-        eyebrow="Reader"
-        title="Private ebook reader"
-        description="Preview the complete novel, a volume, a chapter, or a single scene with local reading controls."
-        action={
-          <>
-            <Button onClick={onFocus}>
-              <Eye className="size-4" />
-              Reading focus
-            </Button>
-            <Button variant="outline" onClick={onOpenToc}>
-              <ListTree className="size-4" />
-              Table of contents
-            </Button>
-          </>
-        }
-      />
-
-      <Card>
-        <CardContent className="grid gap-3 p-4 lg:grid-cols-[220px_150px_1fr_1fr_auto] lg:items-end">
-          <div>
-            <Label>Scope</Label>
-            <Select value={readerScope} onValueChange={(value) => changeReaderScope(value as typeof readerScope)}>
-              <SelectTrigger className="mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {readerScopes.map((scope, index) => (
-                  <SelectItem key={scope} value={["novel", "volume", "chapter", "scene"][index]}>
-                    {scope}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Theme</Label>
-            <Select value={readerTheme} onValueChange={onReaderThemeChange}>
-              <SelectTrigger className="mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Light">Light</SelectItem>
-                <SelectItem value="Dark">Dark</SelectItem>
-                <SelectItem value="Sepia">Sepia</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <ControlSlider
-            label="Font size"
-            value={readerFontSize}
-            min={15}
-            max={24}
-            suffix="px"
-            onChange={onReaderFontSizeChange}
+    <div
+      ref={readerRootRef}
+      className={cn(
+        "grid gap-6",
+        isFocusMode && "min-h-screen gap-0",
+        isFocusMode && readerTheme === "Dark" && "bg-[#0E0F11] text-[#E7D8B5]",
+        isFocusMode && readerTheme === "Light" && "bg-[#F7F2E8] text-[#2B2118]",
+        isFocusMode && readerTheme === "Sepia" && "bg-[#efe3c8] text-[#2B2118]"
+      )}
+    >
+      <div className="contents">
+        {isFocusMode ? (
+          <header
+            className="sticky top-0 z-30 border-b border-current/10 bg-inherit/95 backdrop-blur motion-reduce:backdrop-blur-none"
+            aria-label="Reading focus controls"
+          >
+            <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-serif text-base font-semibold sm:text-lg">
+                  {currentReaderScene?.title || activeChapter.title}
+                </p>
+                <p className="text-xs opacity-70" aria-live="polite">
+                  {Math.round(readingRatio * 100)}% of scene · saved locally
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)} className="motion-reduce:transition-none">
+                <ChevronLeft className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => adjacentUnits.nextId && setReaderTargetId(adjacentUnits.nextId)} className="motion-reduce:transition-none">
+                <ChevronRight className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" aria-label="Open table of contents" onClick={() => setFocusPanel("toc")} className="motion-reduce:transition-none">
+                <ListTree className="size-4" />
+              </Button>
+              <Button variant="ghost" size="icon" aria-label="Open reading preferences" onClick={() => setFocusPanel("preferences")} className="motion-reduce:transition-none">
+                <SlidersHorizontal className="size-4" />
+              </Button>
+              <Button variant="outline" onClick={toggleReadingFocus} aria-label="Exit reading focus" className="motion-reduce:transition-none">
+                <X className="size-4" />
+                <span className="hidden sm:inline">Exit focus</span>
+              </Button>
+            </div>
+            <ProgressBar value={Math.round(readingRatio * 100)} />
+          </header>
+        ) : (
+          <SectionHeader
+            eyebrow="Reader"
+            title="Private ebook reader"
+            description="Preview the complete novel, a volume, a chapter, or a single scene with local reading controls."
+            action={
+              <>
+                <Button onClick={toggleReadingFocus}>
+                  <Eye className="size-4" />
+                  Reading focus
+                </Button>
+                <Button variant="outline" onClick={onOpenToc}>
+                  <ListTree className="size-4" />
+                  Table of contents
+                </Button>
+              </>
+            }
           />
-          <ControlSlider
-            label="Reading width"
-            value={readerWidth}
-            min={560}
-            max={900}
-            suffix="px"
-            onChange={onReaderWidthChange}
-          />
-          <Button variant="outline" disabled={!savedProgress} onClick={continueReading}>
-            <BookOpen className="size-4" />
-            Continue reading
-          </Button>
-          <p className="text-xs text-muted-foreground lg:col-span-5">
-            {savedProgress
-              ? `Saved locally · ${Math.round(savedProgress.positionRatio * 100)}% in ${savedProgress.usedFallback ? "the nearest readable scene" : "the current scene"}`
-              : "Scroll to create a local reading position for this novel."}
-          </p>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b">
+      <div className={cn(isFocusMode && "hidden")}>
+        <Card>
+          <CardContent className="grid gap-3 p-4 lg:grid-cols-[220px_150px_1fr_1fr_auto] lg:items-end">
+            <div>
+              <Label>Scope</Label>
+              <Select value={readerScope} onValueChange={(value) => changeReaderScope(value as typeof readerScope)}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {readerScopes.map((scope, index) => (
+                    <SelectItem key={scope} value={["novel", "volume", "chapter", "scene"][index]}>
+                      {scope}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Theme</Label>
+              <Select value={readerTheme} onValueChange={onReaderThemeChange}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Light">Light</SelectItem>
+                  <SelectItem value="Dark">Dark</SelectItem>
+                  <SelectItem value="Sepia">Sepia</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <ControlSlider label="Font size" value={readerFontSize} min={15} max={24} suffix="px" onChange={onReaderFontSizeChange} />
+            <ControlSlider label="Reading width" value={readerWidth} min={560} max={900} suffix="px" onChange={onReaderWidthChange} />
+            <Button variant="outline" disabled={!savedProgress} onClick={continueReading}>
+              <BookOpen className="size-4" />
+              Continue reading
+            </Button>
+            <p className="text-xs text-muted-foreground lg:col-span-5">
+              {savedProgress
+                ? `Saved locally · ${Math.round(savedProgress.positionRatio * 100)}% in ${savedProgress.usedFallback ? "the nearest readable scene" : "the current scene"}`
+                : "Scroll to create a local reading position for this novel."}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {readerLoadError ? (
+        <p role="alert" className={cn("rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm", isFocusMode && "mx-auto mt-6 w-[calc(100%-2rem)] max-w-3xl")}>
+          {readerLoadError}
+        </p>
+      ) : null}
+
+      <Card className={cn("overflow-hidden", isFocusMode && "rounded-none border-0 bg-transparent shadow-none")}>
+        <CardHeader className={cn("border-b", isFocusMode && "hidden")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>{currentReaderScene?.title || activeChapter.title}</CardTitle>
@@ -2569,6 +2707,7 @@ function ReaderScreen({
         <CardContent
           className={cn(
             "mx-auto my-6 rounded-lg border p-6 shadow-inner sm:p-10",
+            isFocusMode && "my-0 min-h-[calc(100vh-4.25rem)] rounded-none border-0 px-5 py-12 shadow-none sm:px-10 sm:py-16",
             readerTheme === "Dark" && "bg-[#0E0F11] text-[#E7D8B5]",
             readerTheme === "Light" && "bg-[#F7F2E8] text-[#2B2118]",
             readerTheme === "Sepia" && "bg-[#efe3c8] text-[#2B2118]"
@@ -2579,10 +2718,10 @@ function ReaderScreen({
             <h2 className="font-serif text-3xl font-semibold tracking-normal">
               {readerScenes[0]?.title}
             </h2>
-            {readerScenes.map((scene) => <section key={scene.id} ref={(element) => { if (element) readerSectionRefs.current.set(scene.id, element); else readerSectionRefs.current.delete(scene.id); }} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
+            {readerScenes.map((scene) => <section key={scene.id} data-reader-scene-id={scene.id} ref={(element) => { if (element) readerSectionRefs.current.set(scene.id, element); else readerSectionRefs.current.delete(scene.id); }} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
           </article>
         </CardContent>
-        <CardFooter className="flex flex-wrap justify-between gap-2 border-t p-4">
+        <CardFooter className={cn("flex flex-wrap justify-between gap-2 border-t p-4", isFocusMode && "mx-auto w-full border-current/10 bg-inherit px-5 sm:px-10")} style={isFocusMode ? { maxWidth: `${readerWidth}px` } : undefined}>
           <Button variant="outline" disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)}>
             <ChevronLeft className="size-4" />
             Previous
@@ -2593,6 +2732,75 @@ function ReaderScreen({
           </Button>
         </CardFooter>
       </Card>
+
+      <Dialog open={isFocusMode && focusPanel !== null} onOpenChange={(open) => { if (!open) setFocusPanel(null); }}>
+        <DialogContent className="max-w-xl motion-reduce:duration-0">
+          {focusPanel === "toc" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Table of contents</DialogTitle>
+                <DialogDescription>Jump to a scene without leaving Reading Focus.</DialogDescription>
+              </DialogHeader>
+              <div role="tree" aria-label="Reading focus table of contents" className="max-h-[60vh] overflow-y-auto rounded-md border bg-background p-3">
+                {data.volumes.filter((volume) => volume.novelId === data.settings.activeNovelId && !volume.archived).map((volume) => (
+                  <div key={volume.id} role="treeitem" aria-expanded="true" aria-selected="false" className="mb-3">
+                    <p className="font-semibold">{volume.title}</p>
+                    <div role="group" className="mt-2 space-y-2 pl-3">
+                      {data.chapters.filter((chapter) => chapter.volumeId === volume.id && !chapter.archived).map((chapter) => (
+                        <div key={chapter.id} role="treeitem" aria-expanded="true" aria-selected="false">
+                          <p className="px-2 py-1 text-sm font-medium">{chapter.title}</p>
+                          <div role="group" className="space-y-1 pl-3">
+                            {data.scenes.filter((scene) => scene.chapterId === chapter.id && !scene.archived).map((scene) => (
+                              <button
+                                key={scene.id}
+                                type="button"
+                                role="treeitem"
+                                aria-selected={scene.id === currentReaderSceneId}
+                                aria-current={scene.id === currentReaderSceneId ? "page" : undefined}
+                                className={cn("block w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none", scene.id === currentReaderSceneId && "bg-secondary font-medium")}
+                                onClick={() => openReaderSceneFromFocus(scene.id)}
+                              >
+                                {scene.title}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : focusPanel === "preferences" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Reading preferences</DialogTitle>
+                <DialogDescription>Adjust the book surface without leaving Reading Focus.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-5">
+                <div>
+                  <Label>Theme</Label>
+                  <Select value={readerTheme} onValueChange={onReaderThemeChange}>
+                    <SelectTrigger className="mt-2" aria-label="Reading theme">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Light">Light</SelectItem>
+                      <SelectItem value="Dark">Dark</SelectItem>
+                      <SelectItem value="Sepia">Sepia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <ControlSlider label="Font size" value={readerFontSize} min={15} max={24} suffix="px" onChange={onReaderFontSizeChange} />
+                <ControlSlider label="Reading width" value={readerWidth} min={560} max={900} suffix="px" onChange={onReaderWidthChange} />
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setFocusPanel(null)}>Return to reading</Button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -2630,56 +2838,6 @@ function ControlSlider({
         className="h-10 w-full accent-primary"
       />
     </div>
-  );
-}
-
-function ReadingFocusMode({
-  readerFontSize,
-  readerWidth,
-  onExit
-}: {
-  readerFontSize: number;
-  readerWidth: number;
-  onExit: () => void;
-}) {
-  const data = useStudioData();
-  const activeChapter = getActiveChapter(data);
-  const activeScene = getActiveScene(data);
-
-  return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b bg-background/88 backdrop-blur">
-        <div className="mx-auto flex min-h-14 max-w-5xl items-center gap-3 px-4">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{activeChapter.title}</p>
-          </div>
-          <Badge variant="outline">38% read</Badge>
-          <Button variant="ghost" size="icon" aria-label="Previous">
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Next">
-            <ChevronRight className="size-4" />
-          </Button>
-          <Button variant="outline" onClick={onExit}>
-            <X className="size-4" />
-            Exit focus
-          </Button>
-        </div>
-      </header>
-      <section className="px-4 py-8">
-        <article
-          className="mx-auto space-y-6 rounded-lg border bg-editor p-6 leading-9 text-editor-foreground shadow-paper sm:p-10"
-          style={{ maxWidth: `${readerWidth}px`, fontSize: `${readerFontSize}px` }}
-        >
-          <h1 className="font-serif text-3xl font-semibold tracking-normal">
-            {activeScene.title}
-          </h1>
-          {activeScene.content.split("\n\n").map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
-        </article>
-      </section>
-    </main>
   );
 }
 
