@@ -1720,6 +1720,7 @@ function EditorScreen({
     content !== activeScene.content;
   dirtyRef.current = dirty;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
+  const estimatedReadingMinutes = Math.max(1, Math.ceil(draftWordCount / 200));
 
   const markDirty = React.useCallback(() => {
     revisionRef.current += 1;
@@ -1981,6 +1982,7 @@ function EditorScreen({
               </div>
               <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
                 <Textarea
+                  aria-label="Scene manuscript"
                   value={content}
                   onChange={(event) => {
                     const nextContent = event.target.value;
@@ -1998,7 +2000,7 @@ function EditorScreen({
             <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
               <Badge variant="outline">{formatNumber(draftWordCount)} words</Badge>
               <Badge variant="outline">{formatNumber(content.length)} characters</Badge>
-              <Badge variant="outline">3 min read</Badge>
+              <Badge variant="outline">{estimatedReadingMinutes} min read</Badge>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Circle
