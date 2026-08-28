@@ -55,6 +55,7 @@ export const ModelName = {
   Volume: 'Volume',
   Chapter: 'Chapter',
   Scene: 'Scene',
+  SceneVersion: 'SceneVersion',
   WritingActivity: 'WritingActivity',
   Character: 'Character',
   SceneCharacter: 'SceneCharacter',
@@ -140,6 +141,20 @@ export const SceneScalarFieldEnum = {
 } as const
 
 export type SceneScalarFieldEnum = (typeof SceneScalarFieldEnum)[keyof typeof SceneScalarFieldEnum]
+
+
+export const SceneVersionScalarFieldEnum = {
+  id: 'id',
+  sceneId: 'sceneId',
+  content: 'content',
+  title: 'title',
+  wordCount: 'wordCount',
+  label: 'label',
+  origin: 'origin',
+  createdAt: 'createdAt'
+} as const
+
+export type SceneVersionScalarFieldEnum = (typeof SceneVersionScalarFieldEnum)[keyof typeof SceneVersionScalarFieldEnum]
 
 
 export const WritingActivityScalarFieldEnum = {

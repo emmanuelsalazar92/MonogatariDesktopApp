@@ -388,6 +388,7 @@ export const ModelName = {
   Volume: 'Volume',
   Chapter: 'Chapter',
   Scene: 'Scene',
+  SceneVersion: 'SceneVersion',
   WritingActivity: 'WritingActivity',
   Character: 'Character',
   SceneCharacter: 'SceneCharacter',
@@ -415,7 +416,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "volume" | "chapter" | "scene" | "writingActivity" | "character" | "sceneCharacter" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "volume" | "chapter" | "scene" | "sceneVersion" | "writingActivity" | "character" | "sceneCharacter" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -712,6 +713,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SceneCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SceneCountAggregateOutputType> | number
+        }
+      }
+    }
+    SceneVersion: {
+      payload: Prisma.$SceneVersionPayload<ExtArgs>
+      fields: Prisma.SceneVersionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SceneVersionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SceneVersionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>
+        }
+        findFirst: {
+          args: Prisma.SceneVersionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SceneVersionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>
+        }
+        findMany: {
+          args: Prisma.SceneVersionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>[]
+        }
+        create: {
+          args: Prisma.SceneVersionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>
+        }
+        createMany: {
+          args: Prisma.SceneVersionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SceneVersionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>[]
+        }
+        delete: {
+          args: Prisma.SceneVersionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>
+        }
+        update: {
+          args: Prisma.SceneVersionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>
+        }
+        deleteMany: {
+          args: Prisma.SceneVersionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SceneVersionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SceneVersionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>[]
+        }
+        upsert: {
+          args: Prisma.SceneVersionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SceneVersionPayload>
+        }
+        aggregate: {
+          args: Prisma.SceneVersionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSceneVersion>
+        }
+        groupBy: {
+          args: Prisma.SceneVersionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SceneVersionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SceneVersionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SceneVersionCountAggregateOutputType> | number
         }
       }
     }
@@ -1699,6 +1774,20 @@ export const SceneScalarFieldEnum = {
 export type SceneScalarFieldEnum = (typeof SceneScalarFieldEnum)[keyof typeof SceneScalarFieldEnum]
 
 
+export const SceneVersionScalarFieldEnum = {
+  id: 'id',
+  sceneId: 'sceneId',
+  content: 'content',
+  title: 'title',
+  wordCount: 'wordCount',
+  label: 'label',
+  origin: 'origin',
+  createdAt: 'createdAt'
+} as const
+
+export type SceneVersionScalarFieldEnum = (typeof SceneVersionScalarFieldEnum)[keyof typeof SceneVersionScalarFieldEnum]
+
+
 export const WritingActivityScalarFieldEnum = {
   id: 'id',
   novelId: 'novelId',
@@ -2034,6 +2123,7 @@ export type GlobalOmitConfig = {
   volume?: Prisma.VolumeOmit
   chapter?: Prisma.ChapterOmit
   scene?: Prisma.SceneOmit
+  sceneVersion?: Prisma.SceneVersionOmit
   writingActivity?: Prisma.WritingActivityOmit
   character?: Prisma.CharacterOmit
   sceneCharacter?: Prisma.SceneCharacterOmit

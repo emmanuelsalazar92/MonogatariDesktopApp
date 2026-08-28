@@ -161,6 +161,16 @@ test("scene persistence uses an atomic revision guard against stale writes", asy
   assert.match(routeSource, /status: 409/);
 });
 
+test("scene restore creates a safeguard checkpoint without autosave snapshots", async () => {
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const restoreRoute = await readFile(resolve(process.cwd(), "app/api/scenes/[sceneId]/versions/[versionId]/restore/route.ts"), "utf8");
+
+  assert.match(studioSource, /origin: "before restore"/);
+  assert.match(studioSource, /where: \{ id: versionId, sceneId \}/);
+  assert.match(studioSource, /prisma\.sceneVersion\.findMany/);
+  assert.match(restoreRoute, /restoreSceneVersion/);
+});
+
 test("scene inspector persists continuity metadata without submitting manuscript content", async () => {
   const inspectorSource = await readFile(resolve(process.cwd(), "app/api/scenes/[sceneId]/inspector/route.ts"), "utf8");
   const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
