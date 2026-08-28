@@ -609,10 +609,6 @@ export type SceneUncheckedUpdateManyWithoutChapterNestedInput = {
   deleteMany?: Prisma.SceneScalarWhereInput | Prisma.SceneScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type SceneCreateNestedOneWithoutVersionsInput = {
   create?: Prisma.XOR<Prisma.SceneCreateWithoutVersionsInput, Prisma.SceneUncheckedCreateWithoutVersionsInput>
   connectOrCreate?: Prisma.SceneCreateOrConnectWithoutVersionsInput

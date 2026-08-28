@@ -47,6 +47,11 @@ export { Prisma }
  */
 export type Novel = Prisma.NovelModel
 /**
+ * Model ReadingProgress
+ *
+ */
+export type ReadingProgress = Prisma.ReadingProgressModel
+/**
  * Model Volume
  * 
  */

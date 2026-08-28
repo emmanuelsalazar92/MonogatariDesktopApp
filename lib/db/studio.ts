@@ -3,6 +3,11 @@ import type { Prisma } from "@/lib/generated/prisma/client";
 import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-preview";
 import { assembleReaderDocument, type ReaderScope } from "@/lib/reader-document";
 import {
+  clampReadingRatio,
+  resolveReadingProgress,
+  type StoredReadingProgress
+} from "@/lib/reader-progress";
+import {
   applyStudioSettings,
   parseStudioSettings,
   STUDIO_CONFIGURATION_ID,
@@ -922,7 +927,7 @@ export async function getReaderDocument(novelId: string, scope: ReaderScope, tar
           chapters: {
             select: {
               id: true, volumeId: true, title: true, sortOrder: true, archived: true,
-              scenes: { select: { id: true, chapterId: true, title: true, content: true, sortOrder: true, archived: true } }
+              scenes: { select: { id: true, chapterId: true, title: true, content: true, sortOrder: true, archived: true, revision: true } }
             }
           }
         }
@@ -937,5 +942,115 @@ export async function getReaderDocument(novelId: string, scope: ReaderScope, tar
   const validTarget = scope === "novel" ? targetId === novel.id : scope === "volume" ? document.volumes.some((item) => item.id === targetId) : scope === "chapter" ? document.chapters.some((item) => item.id === targetId) : document.scenes.some((item) => item.id === targetId);
   if (!validTarget) return null;
   return { novel: { id: novel.id, title: novel.title }, scope, targetId, ...document };
+}
+
+export class ReadingProgressValidationError extends Error {
+  constructor() { super("reading progress target is not available"); }
+}
+
+function serializeReadingProgress(progress: {
+  novelId: string;
+  preferredScope: string;
+  volumeId: string | null;
+  chapterId: string | null;
+  sceneId: string | null;
+  positionRatio: number;
+  contentRevision: number | null;
+  lastReadAt: Date;
+}): StoredReadingProgress {
+  return {
+    ...progress,
+    preferredScope: progress.preferredScope as ReaderScope,
+    lastReadAt: progress.lastReadAt.toISOString()
+  };
+}
+
+async function getReadingHierarchy(novelId: string) {
+  return prisma.novel.findUnique({
+    where: { id: novelId },
+    select: {
+      id: true,
+      volumes: {
+        select: {
+          id: true,
+          novelId: true,
+          title: true,
+          sortOrder: true,
+          archived: true,
+          chapters: {
+            select: {
+              id: true,
+              volumeId: true,
+              title: true,
+              sortOrder: true,
+              archived: true,
+              scenes: {
+                select: {
+                  id: true,
+                  chapterId: true,
+                  title: true,
+                  content: true,
+                  sortOrder: true,
+                  archived: true,
+                  revision: true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+export async function getReadingProgress(novelId: string) {
+  const [stored, novel] = await Promise.all([
+    prisma.readingProgress.findUnique({ where: { novelId } }),
+    getReadingHierarchy(novelId)
+  ]);
+  if (!stored || !novel) return null;
+  const volumes = novel.volumes;
+  const chapters = volumes.flatMap((volume) => volume.chapters);
+  const scenes = chapters.flatMap((chapter) => chapter.scenes);
+  return resolveReadingProgress(serializeReadingProgress(stored), novelId, volumes, chapters, scenes);
+}
+
+export async function saveReadingProgress(
+  novelId: string,
+  input: { preferredScope: ReaderScope; sceneId: string; positionRatio: number }
+) {
+  const novel = await getReadingHierarchy(novelId);
+  if (!novel) throw new ReadingProgressValidationError();
+  const volumes = novel.volumes.filter((volume) => !volume.archived);
+  const chapters = volumes.flatMap((volume) => volume.chapters).filter((chapter) => !chapter.archived);
+  const scene = chapters.flatMap((chapter) => chapter.scenes).find((item) => item.id === input.sceneId && !item.archived);
+  const chapter = scene ? chapters.find((item) => item.id === scene.chapterId) : null;
+  const volume = chapter ? volumes.find((item) => item.id === chapter.volumeId) : null;
+  if (!scene || !chapter || !volume) throw new ReadingProgressValidationError();
+
+  const lastReadAt = new Date();
+  await prisma.readingProgress.upsert({
+    where: { novelId },
+    update: {
+      preferredScope: input.preferredScope,
+      volumeId: volume.id,
+      chapterId: chapter.id,
+      sceneId: scene.id,
+      positionRatio: clampReadingRatio(input.positionRatio),
+      contentRevision: scene.revision,
+      lastReadAt
+    },
+    create: {
+      novelId,
+      preferredScope: input.preferredScope,
+      volumeId: volume.id,
+      chapterId: chapter.id,
+      sceneId: scene.id,
+      positionRatio: clampReadingRatio(input.positionRatio),
+      contentRevision: scene.revision,
+      lastReadAt
+    }
+  });
+  return getReadingProgress(novelId);
 }
 

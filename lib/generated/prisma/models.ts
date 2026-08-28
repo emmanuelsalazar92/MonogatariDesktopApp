@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/Novel'
+export type * from './models/ReadingProgress'
 export type * from './models/Volume'
 export type * from './models/Chapter'
 export type * from './models/Scene'

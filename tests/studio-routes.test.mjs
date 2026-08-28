@@ -159,9 +159,74 @@ test("reader scope navigation has deterministic adjacent units and safe limits",
   assert.deepEqual(reader.getReaderAdjacentUnits(["n"], "n"), { previousId: null, nextId: null });
 });
 
+test("reading progress resumes the exact scene with a clamped relative position", async () => {
+  const progress = await loadTypeScriptModule("lib/reader-progress.ts");
+  const volumes = [{ id: "v1", novelId: "n", sortOrder: 1, archived: false }];
+  const chapters = [{ id: "c1", volumeId: "v1", sortOrder: 1, archived: false }];
+  const scenes = [{ id: "s1", chapterId: "c1", sortOrder: 1, archived: false }];
+  const resolved = progress.resolveReadingProgress({
+    novelId: "n",
+    preferredScope: "chapter",
+    volumeId: "v1",
+    chapterId: "c1",
+    sceneId: "s1",
+    positionRatio: 1.4,
+    contentRevision: 2,
+    lastReadAt: "2026-08-28T00:00:00.000Z"
+  }, "n", volumes, chapters, scenes);
+
+  assert.equal(resolved.targetId, "c1");
+  assert.equal(resolved.resolvedSceneId, "s1");
+  assert.equal(resolved.positionRatio, 1);
+  assert.equal(resolved.usedFallback, false);
+});
+
+test("reading progress falls back through active hierarchy without leaking across novels", async () => {
+  const progress = await loadTypeScriptModule("lib/reader-progress.ts");
+  const volumes = [{ id: "v1", novelId: "n", sortOrder: 1, archived: false }];
+  const chapters = [{ id: "c1", volumeId: "v1", sortOrder: 1, archived: false }];
+  const scenes = [
+    { id: "archived", chapterId: "c1", sortOrder: 1, archived: true },
+    { id: "readable", chapterId: "c1", sortOrder: 2, archived: false }
+  ];
+  const stored = {
+    novelId: "n",
+    preferredScope: "scene",
+    volumeId: "v1",
+    chapterId: "c1",
+    sceneId: "archived",
+    positionRatio: 0.38,
+    contentRevision: 1,
+    lastReadAt: "2026-08-28T00:00:00.000Z"
+  };
+
+  assert.deepEqual(
+    progress.resolveReadingProgress(stored, "n", volumes, chapters, scenes),
+    { ...stored, positionRatio: 0, scope: "scene", targetId: "readable", resolvedSceneId: "readable", usedFallback: true }
+  );
+  assert.equal(progress.resolveReadingProgress(stored, "another-novel", volumes, chapters, scenes), null);
+});
+
+test("reading progress uses a separate current-state table and debounced writes", async () => {
+  const schema = await readFile(resolve(process.cwd(), "prisma/schema.prisma"), "utf8");
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const routeSource = await readFile(resolve(process.cwd(), "app/api/reader/progress/route.ts"), "utf8");
+  const saveProgressSource = studioSource.slice(studioSource.indexOf("export async function saveReadingProgress"));
+
+  assert.match(schema, /model ReadingProgress/);
+  assert.match(schema, /novelId\s+String\s+@id/);
+  assert.match(pageSource, /setTimeout\(flushReadingProgress, 750\)/);
+  assert.match(pageSource, /Date\.now\(\) - lastReaderScrollIntentRef\.current < 500/);
+  assert.match(routeSource, /Number\.isFinite\(body\.positionRatio\)/);
+  assert.match(saveProgressSource, /prisma\.readingProgress\.upsert/);
+  assert.doesNotMatch(saveProgressSource, /markNotionDirty/);
+});
+
 test("reader keeps the active scene content visible while a read document is unavailable", async () => {
   const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
   assert.match(pageSource, /readerDocument\?\.scenes\?\.length \? readerDocument\.scenes : \[\{ id: activeScene\.id, title: activeScene\.title, content: activeScene\.content \}\]/);
+  assert.match(pageSource, /const readerScenes = React\.useMemo/);
   assert.match(pageSource, /readerScenes\.map/);
 });
 

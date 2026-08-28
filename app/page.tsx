@@ -64,6 +64,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { getReaderAdjacentUnits, getReaderScopeUnits } from "@/lib/reader-document";
+import { clampReadingRatio, type ResolvedReadingProgress } from "@/lib/reader-progress";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
@@ -2317,24 +2318,157 @@ function ReaderScreen({
   const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
   const [readerScope, setReaderScope] = React.useState<"scene" | "chapter" | "volume" | "novel">("chapter");
   const [readerTargetId, setReaderTargetId] = React.useState(activeChapter.id);
-  const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; title: string; content: string }> } | null>(null);
-  const readerScenes = readerDocument?.scenes?.length ? readerDocument.scenes : [{ id: activeScene.id, title: activeScene.title, content: activeScene.content }];
+  const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; chapterId?: string; title: string; content: string; revision?: number }> } | null>(null);
+  const [savedProgress, setSavedProgress] = React.useState<ResolvedReadingProgress | null>(null);
+  const [currentReaderSceneId, setCurrentReaderSceneId] = React.useState(activeScene.id);
+  const [readingRatio, setReadingRatio] = React.useState(0);
+  const [restoreRequest, setRestoreRequest] = React.useState<{ sceneId: string; ratio: number; nonce: number } | null>(null);
+  const readerSectionRefs = React.useRef(new Map<string, HTMLElement>());
+  const pendingProgressRef = React.useRef<{ novelId: string; preferredScope: typeof readerScope; sceneId: string; positionRatio: number } | null>(null);
+  const progressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReaderScrollIntentRef = React.useRef(0);
+  const readerScenes = React.useMemo(
+    () => readerDocument?.scenes?.length ? readerDocument.scenes : [{ id: activeScene.id, title: activeScene.title, content: activeScene.content }],
+    [activeScene.content, activeScene.id, activeScene.title, readerDocument]
+  );
   const scopeUnits = React.useMemo(() => getReaderScopeUnits(readerScope, data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerScope]);
   const adjacentUnits = getReaderAdjacentUnits(scopeUnits, readerTargetId);
+  const currentReaderScene = readerScenes.find((scene) => scene.id === currentReaderSceneId) ?? readerScenes[0];
+
+  const flushReadingProgress = React.useCallback(() => {
+    if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+    progressTimerRef.current = null;
+    const pending = pendingProgressRef.current;
+    pendingProgressRef.current = null;
+    if (!pending) return;
+    void fetch("/api/reader/progress", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pending),
+      keepalive: true
+    })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((progress: ResolvedReadingProgress | null) => progress && setSavedProgress(progress))
+      .catch(() => undefined);
+  }, []);
+
+  const scheduleReadingProgress = React.useCallback((sceneId: string, positionRatio: number) => {
+    if (!sceneId || !data.settings.activeNovelId) return;
+    pendingProgressRef.current = {
+      novelId: data.settings.activeNovelId,
+      preferredScope: readerScope,
+      sceneId,
+      positionRatio: clampReadingRatio(positionRatio)
+    };
+    if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+    progressTimerRef.current = setTimeout(flushReadingProgress, 750);
+  }, [data.settings.activeNovelId, flushReadingProgress, readerScope]);
 
   const changeReaderScope = (scope: "scene" | "chapter" | "volume" | "novel") => {
     setReaderScope(scope);
     setReaderTargetId(scope === "scene" ? activeScene.id : scope === "chapter" ? activeChapter.id : scope === "volume" ? activeVolume?.id || "" : data.settings.activeNovelId);
+    setReadingRatio(0);
   };
 
   React.useEffect(() => {
+    setReaderScope("chapter");
+    setReaderTargetId(activeChapter.id);
+    setCurrentReaderSceneId(activeScene.id);
+    setReadingRatio(0);
+    setRestoreRequest(null);
+  }, [activeChapter.id, activeScene.id, data.settings.activeNovelId]);
+
+  React.useEffect(() => {
+    const controller = new AbortController();
+    setSavedProgress(null);
+    if (!data.settings.activeNovelId) return () => controller.abort();
+    void fetch(`/api/reader/progress?novelId=${encodeURIComponent(data.settings.activeNovelId)}`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((progress: ResolvedReadingProgress | null) => setSavedProgress(progress))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [data.settings.activeNovelId]);
+
+  React.useEffect(() => {
+    const controller = new AbortController();
     const targetId = readerTargetId;
-    if (!targetId || !data.settings.activeNovelId) return;
-    void fetch(`/api/reader?novelId=${encodeURIComponent(data.settings.activeNovelId)}&scope=${readerScope}&targetId=${encodeURIComponent(targetId)}`)
+    if (!targetId || !data.settings.activeNovelId) return () => controller.abort();
+    void fetch(`/api/reader?novelId=${encodeURIComponent(data.settings.activeNovelId)}&scope=${readerScope}&targetId=${encodeURIComponent(targetId)}`, { signal: controller.signal })
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then(setReaderDocument)
       .catch(() => setReaderDocument(null));
+    return () => controller.abort();
   }, [data.settings.activeNovelId, readerScope, readerTargetId]);
+
+  React.useEffect(() => {
+    const markScrollIntent = () => { lastReaderScrollIntentRef.current = Date.now(); };
+    const markKeyboardScrollIntent = (event: KeyboardEvent) => {
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "].includes(event.key)) markScrollIntent();
+    };
+    const onScroll = () => {
+      const marker = Math.min(window.innerHeight * 0.35, 260);
+      const visibleSections = readerScenes
+        .map((scene) => ({ scene, element: readerSectionRefs.current.get(scene.id) }))
+        .filter((entry): entry is { scene: (typeof readerScenes)[number]; element: HTMLElement } => Boolean(entry.element));
+      if (visibleSections.length === 0) return;
+      const activeEntry = visibleSections.reduce((closest, entry) => {
+        const top = entry.element.getBoundingClientRect().top;
+        return top <= marker ? entry : closest;
+      }, visibleSections[0]);
+      const rect = activeEntry.element.getBoundingClientRect();
+      const ratio = clampReadingRatio((marker - rect.top) / Math.max(rect.height, 1));
+      setCurrentReaderSceneId(activeEntry.scene.id);
+      setReadingRatio(ratio);
+      if (Date.now() - lastReaderScrollIntentRef.current < 500) {
+        scheduleReadingProgress(activeEntry.scene.id, ratio);
+      }
+    };
+    window.addEventListener("wheel", markScrollIntent, { passive: true });
+    window.addEventListener("touchmove", markScrollIntent, { passive: true });
+    window.addEventListener("keydown", markKeyboardScrollIntent);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("wheel", markScrollIntent);
+      window.removeEventListener("touchmove", markScrollIntent);
+      window.removeEventListener("keydown", markKeyboardScrollIntent);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [readerScenes, scheduleReadingProgress]);
+
+  React.useEffect(() => {
+    if (!restoreRequest) return;
+    const frame = window.requestAnimationFrame(() => {
+      const section = readerSectionRefs.current.get(restoreRequest.sceneId);
+      if (!section) return;
+      const marker = Math.min(window.innerHeight * 0.35, 260);
+      section.scrollIntoView({ block: "start" });
+      window.scrollBy({ top: section.getBoundingClientRect().height * clampReadingRatio(restoreRequest.ratio) - marker, behavior: "instant" });
+      setCurrentReaderSceneId(restoreRequest.sceneId);
+      setReadingRatio(clampReadingRatio(restoreRequest.ratio));
+      setRestoreRequest(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [readerDocument, restoreRequest]);
+
+  React.useEffect(() => {
+    const onBeforeUnload = () => flushReadingProgress();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      flushReadingProgress();
+    };
+  }, [flushReadingProgress]);
+
+  const continueReading = () => {
+    if (!savedProgress) return;
+    setReaderScope(savedProgress.scope);
+    setReaderTargetId(savedProgress.targetId);
+    setRestoreRequest({
+      sceneId: savedProgress.resolvedSceneId,
+      ratio: savedProgress.positionRatio,
+      nonce: Date.now()
+    });
+  };
 
   return (
     <div className="grid gap-6">
@@ -2402,10 +2536,15 @@ function ReaderScreen({
             suffix="px"
             onChange={onReaderWidthChange}
           />
-          <Button variant="outline">
+          <Button variant="outline" disabled={!savedProgress} onClick={continueReading}>
             <BookOpen className="size-4" />
             Continue reading
           </Button>
+          <p className="text-xs text-muted-foreground lg:col-span-5">
+            {savedProgress
+              ? `Saved locally · ${Math.round(savedProgress.positionRatio * 100)}% in ${savedProgress.usedFallback ? "the nearest readable scene" : "the current scene"}`
+              : "Scroll to create a local reading position for this novel."}
+          </p>
         </CardContent>
       </Card>
 
@@ -2413,8 +2552,8 @@ function ReaderScreen({
         <CardHeader className="border-b">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>{activeChapter.title}</CardTitle>
-              <CardDescription>Volume 1 Â· Scene preview Â· 38% read</CardDescription>
+              <CardTitle>{currentReaderScene?.title || activeChapter.title}</CardTitle>
+              <CardDescription>Local reading progress · {Math.round(readingRatio * 100)}% of scene</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)}>
@@ -2425,7 +2564,7 @@ function ReaderScreen({
               </Button>
             </div>
           </div>
-          <ProgressBar value={38} />
+          <ProgressBar value={Math.round(readingRatio * 100)} />
         </CardHeader>
         <CardContent
           className={cn(
@@ -2440,7 +2579,7 @@ function ReaderScreen({
             <h2 className="font-serif text-3xl font-semibold tracking-normal">
               {readerScenes[0]?.title}
             </h2>
-            {readerScenes.map((scene) => <section key={scene.id} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
+            {readerScenes.map((scene) => <section key={scene.id} ref={(element) => { if (element) readerSectionRefs.current.set(scene.id, element); else readerSectionRefs.current.delete(scene.id); }} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
           </article>
         </CardContent>
         <CardFooter className="flex flex-wrap justify-between gap-2 border-t p-4">

@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   Novel: 'Novel',
+  ReadingProgress: 'ReadingProgress',
   Volume: 'Volume',
   Chapter: 'Chapter',
   Scene: 'Scene',
@@ -97,6 +98,20 @@ export const NovelScalarFieldEnum = {
 } as const
 
 export type NovelScalarFieldEnum = (typeof NovelScalarFieldEnum)[keyof typeof NovelScalarFieldEnum]
+
+
+export const ReadingProgressScalarFieldEnum = {
+  novelId: 'novelId',
+  preferredScope: 'preferredScope',
+  volumeId: 'volumeId',
+  chapterId: 'chapterId',
+  sceneId: 'sceneId',
+  positionRatio: 'positionRatio',
+  contentRevision: 'contentRevision',
+  lastReadAt: 'lastReadAt'
+} as const
+
+export type ReadingProgressScalarFieldEnum = (typeof ReadingProgressScalarFieldEnum)[keyof typeof ReadingProgressScalarFieldEnum]
 
 
 export const VolumeScalarFieldEnum = {

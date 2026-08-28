@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   Novel: 'Novel',
+  ReadingProgress: 'ReadingProgress',
   Volume: 'Volume',
   Chapter: 'Chapter',
   Scene: 'Scene',
@@ -416,7 +417,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "volume" | "chapter" | "scene" | "sceneVersion" | "writingActivity" | "character" | "sceneCharacter" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "writingActivity" | "character" | "sceneCharacter" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -491,6 +492,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.NovelCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.NovelCountAggregateOutputType> | number
+        }
+      }
+    }
+    ReadingProgress: {
+      payload: Prisma.$ReadingProgressPayload<ExtArgs>
+      fields: Prisma.ReadingProgressFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ReadingProgressFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ReadingProgressFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>
+        }
+        findFirst: {
+          args: Prisma.ReadingProgressFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ReadingProgressFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>
+        }
+        findMany: {
+          args: Prisma.ReadingProgressFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>[]
+        }
+        create: {
+          args: Prisma.ReadingProgressCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>
+        }
+        createMany: {
+          args: Prisma.ReadingProgressCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ReadingProgressCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>[]
+        }
+        delete: {
+          args: Prisma.ReadingProgressDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>
+        }
+        update: {
+          args: Prisma.ReadingProgressUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>
+        }
+        deleteMany: {
+          args: Prisma.ReadingProgressDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ReadingProgressUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ReadingProgressUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>[]
+        }
+        upsert: {
+          args: Prisma.ReadingProgressUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReadingProgressPayload>
+        }
+        aggregate: {
+          args: Prisma.ReadingProgressAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReadingProgress>
+        }
+        groupBy: {
+          args: Prisma.ReadingProgressGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReadingProgressGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ReadingProgressCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReadingProgressCountAggregateOutputType> | number
         }
       }
     }
@@ -1730,6 +1805,20 @@ export const NovelScalarFieldEnum = {
 export type NovelScalarFieldEnum = (typeof NovelScalarFieldEnum)[keyof typeof NovelScalarFieldEnum]
 
 
+export const ReadingProgressScalarFieldEnum = {
+  novelId: 'novelId',
+  preferredScope: 'preferredScope',
+  volumeId: 'volumeId',
+  chapterId: 'chapterId',
+  sceneId: 'sceneId',
+  positionRatio: 'positionRatio',
+  contentRevision: 'contentRevision',
+  lastReadAt: 'lastReadAt'
+} as const
+
+export type ReadingProgressScalarFieldEnum = (typeof ReadingProgressScalarFieldEnum)[keyof typeof ReadingProgressScalarFieldEnum]
+
+
 export const VolumeScalarFieldEnum = {
   id: 'id',
   novelId: 'novelId',
@@ -1997,16 +2086,16 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 
 
 /**
- * Reference to a field of type 'Boolean'
+ * Reference to a field of type 'Float'
  */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
     
 
 
 /**
- * Reference to a field of type 'Float'
+ * Reference to a field of type 'Boolean'
  */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 /**
@@ -2120,6 +2209,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   novel?: Prisma.NovelOmit
+  readingProgress?: Prisma.ReadingProgressOmit
   volume?: Prisma.VolumeOmit
   chapter?: Prisma.ChapterOmit
   scene?: Prisma.SceneOmit
