@@ -80,9 +80,7 @@ import {
   FieldLine,
   MapIcon,
   ProgressBar,
-  SectionHeader,
-  StatusBadge,
-  TagList
+  SectionHeader
 } from "@/components/studio/shared";
 import { Sidebar } from "@/components/studio/sidebar";
 import { TopBar } from "@/components/studio/top-bar";
@@ -149,10 +147,7 @@ import {
 type SceneSaveInput = {
   title: string;
   content: string;
-  summary: string;
   status: ChapterStatus;
-  objective: string;
-  locationId: string;
 };
 
 type SaveStatus = AutosaveStatus;
@@ -1494,6 +1489,7 @@ function PrivateNovelStudioContent() {
                   onFocus={() => void changeFocusMode("writing")}
                   onReader={() => void selectPage("reader")}
                   onNavigateScene={(sceneId) => void openSceneInEditor(sceneId)}
+                  onRefreshMetadata={() => void refreshStudioData(false)}
                   inspectorOpen={inspectorOpen}
                   setInspectorOpen={setInspectorOpen}
                   setSaveStatus={setSaveStatus}
@@ -1659,6 +1655,7 @@ function EditorScreen({
   onFocus,
   onReader,
   onNavigateScene,
+  onRefreshMetadata,
   setInspectorOpen,
   setSaveStatus
 }: {
@@ -1673,6 +1670,7 @@ function EditorScreen({
   onFocus: () => void;
   onReader: () => void;
   onNavigateScene: (sceneId: string) => void;
+  onRefreshMetadata: () => void;
   setInspectorOpen: (open: boolean) => void;
   setSaveStatus: (status: SaveStatus) => void;
 }) {
@@ -1727,10 +1725,7 @@ function EditorScreen({
     const savedScene = await onSaveScene(scene.id, {
       title: draft.title,
       status: draft.status,
-      content: draft.content,
-      summary: scene.summary,
-      objective: scene.objective,
-      locationId: scene.locationId
+      content: draft.content
     }, scene.revision);
     if (!savedScene) return false;
 
@@ -2017,7 +2012,7 @@ function EditorScreen({
           </DialogContent>
         </Dialog>
 
-        {inspectorOpen ? <EditorInspector /> : null}
+        {inspectorOpen ? <EditorInspector onRefresh={onRefreshMetadata} /> : null}
       </div>
 
       <ShortcutPanel />
@@ -2029,9 +2024,60 @@ function MaximizeIcon() {
   return <ChevronsRight className="size-4 rotate-45" />;
 }
 
-function EditorInspector() {
+function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
   const data = useStudioData();
   const activeScene = getActiveScene(data);
+  const activeChapter = getActiveChapter(data);
+  const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
+  const novelId = activeVolume?.novelId ?? "";
+  const [summary, setSummary] = React.useState(activeScene.summary);
+  const [objective, setObjective] = React.useState(activeScene.objective);
+  const [notes, setNotes] = React.useState("");
+  const [characterIds, setCharacterIds] = React.useState<string[]>([]);
+  const [locationId, setLocationId] = React.useState(activeScene.locationId || "none");
+  const [timelineEventId, setTimelineEventId] = React.useState("none");
+  const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  const characters = data.characters.filter((character) => character.novelId === novelId);
+  const locations = data.locations.filter((location) => location.novelId === novelId);
+  const timelineEvents = data.timelineEvents.filter((event) => event.novelId === novelId);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setSummary(activeScene.summary);
+    setObjective(activeScene.objective);
+    setLocationId(activeScene.locationId || "none");
+    setSaveState("idle");
+    void fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/inspector`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not load scene metadata");
+        return response.json() as Promise<{ characterIds: string[]; timelineEventId: string | null; notes: string }>;
+      })
+      .then((inspector) => {
+        if (cancelled) return;
+        setCharacterIds(inspector.characterIds);
+        setTimelineEventId(inspector.timelineEventId ?? "none");
+        setNotes(inspector.notes);
+      })
+      .catch(() => !cancelled && setSaveState("error"));
+    return () => { cancelled = true; };
+  }, [activeScene.id, activeScene.locationId, activeScene.objective, activeScene.summary]);
+
+  const saveMetadata = async () => {
+    setSaveState("saving");
+    try {
+      const response = await fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/inspector`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ summary, objective, notes, characterIds, locationId: locationId === "none" ? null : locationId, timelineEventId: timelineEventId === "none" ? null : timelineEventId })
+      });
+      if (!response.ok) throw new Error("Could not save scene metadata");
+      setSaveState("saved");
+      onRefresh();
+    } catch {
+      setSaveState("error");
+    }
+  };
 
   return (
     <Card className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
@@ -2039,32 +2085,15 @@ function EditorInspector() {
         <CardTitle>Scene inspector</CardTitle>
         <CardDescription>Local story metadata for continuity</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <FieldLine label="Scene summary" value={activeScene.summary} />
-        <FieldLine
-          label="Linked characters"
-          value={
-            <div className="flex flex-wrap gap-2">
-              {data.characters.slice(0, 3).map((character) => (
-                <Badge key={character.id} variant="outline">
-                  {character.name}
-                </Badge>
-              ))}
-            </div>
-          }
-        />
-        <FieldLine label="Linked place" value={placeName(activeScene.locationId, data)} />
-        <FieldLine label="Timeline moment" value="Day 1 Â· after evening bell" />
-        <FieldLine
-          label="Notes"
-          value="Reina should sound scared without losing control. Akira jokes once, then gets serious."
-        />
-        <FieldLine label="Objective" value={activeScene.objective} />
-        <FieldLine label="Status" value={<StatusBadge status={activeScene.status} />} />
-        <FieldLine
-          label="Tags"
-          value={<TagList tags={["mystery", "door", "romance", "chapter-1"]} />}
-        />
+      <CardContent className="space-y-4">
+        <div className="grid gap-2"><Label htmlFor="scene-summary">Scene summary</Label><Textarea id="scene-summary" value={summary} onChange={(event) => setSummary(event.target.value)} /></div>
+        <div className="grid gap-2"><Label>Linked characters</Label><div className="flex flex-wrap gap-2">{characterIds.map((id) => { const character = characters.find((item) => item.id === id); return character ? <Badge key={id} variant="outline" className="gap-1">{character.name}<button type="button" aria-label={`Remove ${character.name}`} onClick={() => setCharacterIds((ids) => ids.filter((item) => item !== id))}><X className="size-3" /></button></Badge> : null; })}</div><Select value="" onValueChange={(id) => setCharacterIds((ids) => ids.includes(id) ? ids : [...ids, id])}><SelectTrigger aria-label="Add linked character"><SelectValue placeholder="Add character" /></SelectTrigger><SelectContent>{characters.filter((character) => !characterIds.includes(character.id)).map((character) => <SelectItem key={character.id} value={character.id}>{character.name}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2"><Label htmlFor="scene-place">Linked place</Label><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="scene-place"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No linked place</SelectItem>{locations.map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2"><Label htmlFor="scene-timeline">Timeline moment</Label><Select value={timelineEventId} onValueChange={setTimelineEventId}><SelectTrigger id="scene-timeline"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No timeline moment</SelectItem>{timelineEvents.map((event) => <SelectItem key={event.id} value={event.id}>{event.internalDate ? `${event.internalDate} · ` : ""}{event.title}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2"><Label htmlFor="scene-objective">Objective</Label><Textarea id="scene-objective" value={objective} onChange={(event) => setObjective(event.target.value)} /></div>
+        <div className="grid gap-2"><Label htmlFor="scene-notes">Notes</Label><Textarea id="scene-notes" value={notes} onChange={(event) => setNotes(event.target.value)} /></div>
+        {saveState === "error" ? <p role="alert" className="text-sm text-destructive">Metadata could not be saved. Your changes remain here; retry when ready.</p> : null}
+        <Button className="w-full" onClick={() => void saveMetadata()} disabled={saveState === "saving"}>{saveState === "saving" ? "Saving metadata…" : saveState === "saved" ? "Saved metadata" : "Save metadata"}</Button>
       </CardContent>
     </Card>
   );
@@ -2126,10 +2155,7 @@ function WritingFocusMode({
     const savedScene = await onSaveScene(scene.id, {
       title: scene.title,
       status: scene.status,
-      content: latestContent,
-      summary: scene.summary,
-      objective: scene.objective,
-      locationId: scene.locationId
+      content: latestContent
     }, scene.revision);
     if (!savedScene) return false;
     activeSceneRef.current = { ...scene, content: latestContent, revision: savedScene.revision };

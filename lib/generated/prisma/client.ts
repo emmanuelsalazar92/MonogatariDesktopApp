@@ -72,6 +72,11 @@ export type WritingActivity = Prisma.WritingActivityModel
  */
 export type Character = Prisma.CharacterModel
 /**
+ * Model SceneCharacter
+ * 
+ */
+export type SceneCharacter = Prisma.SceneCharacterModel
+/**
  * Model Location
  * 
  */

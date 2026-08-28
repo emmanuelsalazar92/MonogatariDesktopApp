@@ -8,23 +8,23 @@ datasource db {
 }
 
 model Novel {
-  id             String          @id
-  title          String
-  synopsis       String          @default("")
-  status         String          @default("Idea")
-  coverImage     String          @default("")
-  genre          String          @default("")
-  tags           String          @default("[]")
-  wordCount      Int             @default(0)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  volumes        Volume[]
-  characters     Character[]
-  locations      Location[]
-  relationships  Relationship[]
-  timelineEvents TimelineEvent[]
-  notes          Note[]
-  backups        Backup[]
+  id                String            @id
+  title             String
+  synopsis          String            @default("")
+  status            String            @default("Idea")
+  coverImage        String            @default("")
+  genre             String            @default("")
+  tags              String            @default("[]")
+  wordCount         Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  volumes           Volume[]
+  characters        Character[]
+  locations         Location[]
+  relationships     Relationship[]
+  timelineEvents    TimelineEvent[]
+  notes             Note[]
+  backups           Backup[]
   writingActivities WritingActivity[]
 }
 
@@ -58,22 +58,23 @@ model Chapter {
 }
 
 model Scene {
-  id             String          @id
-  chapterId      String
-  title          String
-  content        String          @default("")
-  summary        String          @default("")
-  status         String          @default("Idea")
-  locationId     String?
-  sortOrder      Int             @default(0)
-  wordCount      Int             @default(0)
-  objective      String          @default("")
-  revision       Int             @default(0)
-  archived       Boolean         @default(false)
-  chapter        Chapter         @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  location       Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  timelineEvents TimelineEvent[]
+  id                String            @id
+  chapterId         String
+  title             String
+  content           String            @default("")
+  summary           String            @default("")
+  status            String            @default("Idea")
+  locationId        String?
+  sortOrder         Int               @default(0)
+  wordCount         Int               @default(0)
+  objective         String            @default("")
+  revision          Int               @default(0)
+  archived          Boolean           @default(false)
+  chapter           Chapter           @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  location          Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  timelineEvents    TimelineEvent[]
   writingActivities WritingActivity[]
+  sceneCharacters   SceneCharacter[]
 
   @@index([chapterId, sortOrder])
   @@index([locationId])
@@ -93,28 +94,39 @@ model WritingActivity {
 }
 
 model Character {
-  id                    String         @id
+  id                    String           @id
   novelId               String
   name                  String
-  alias                 String         @default("")
-  age                   String         @default("")
-  role                  String         @default("")
-  appearance            String         @default("")
-  personality           String         @default("")
-  wayOfSpeaking         String         @default("")
-  goal                  String         @default("")
-  fear                  String         @default("")
-  secret                String         @default("")
-  notes                 String         @default("")
-  firstAppearance       String         @default("")
-  status                String         @default("Active")
-  image                 String         @default("")
-  scenesCount           Int            @default(0)
-  novel                 Novel          @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  outgoingRelationships Relationship[] @relation("RelationshipFrom")
-  incomingRelationships Relationship[] @relation("RelationshipTo")
+  alias                 String           @default("")
+  age                   String           @default("")
+  role                  String           @default("")
+  appearance            String           @default("")
+  personality           String           @default("")
+  wayOfSpeaking         String           @default("")
+  goal                  String           @default("")
+  fear                  String           @default("")
+  secret                String           @default("")
+  notes                 String           @default("")
+  firstAppearance       String           @default("")
+  status                String           @default("Active")
+  image                 String           @default("")
+  scenesCount           Int              @default(0)
+  novel                 Novel            @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  outgoingRelationships Relationship[]   @relation("RelationshipFrom")
+  incomingRelationships Relationship[]   @relation("RelationshipTo")
+  sceneLinks            SceneCharacter[]
 
   @@index([novelId, name])
+}
+
+model SceneCharacter {
+  sceneId     String
+  characterId String
+  scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@id([sceneId, characterId])
+  @@index([characterId])
 }
 
 model Location {
@@ -234,11 +246,11 @@ model NotionMapping {
 }
 
 model NotionSyncState {
-  novelId        String   @id
-  isDirty        Boolean  @default(true)
-  revision       Int      @default(0)
-  lastSyncedRevision Int  @default(0)
-  lastNotionSync DateTime?
-  lastKnownContent String @default("{}")
-  updatedAt      DateTime @updatedAt
+  novelId            String    @id
+  isDirty            Boolean   @default(true)
+  revision           Int       @default(0)
+  lastSyncedRevision Int       @default(0)
+  lastNotionSync     DateTime?
+  lastKnownContent   String    @default("{}")
+  updatedAt          DateTime  @updatedAt
 }

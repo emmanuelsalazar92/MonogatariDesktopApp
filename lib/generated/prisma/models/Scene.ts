@@ -284,6 +284,7 @@ export type SceneWhereInput = {
   location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
   timelineEvents?: Prisma.TimelineEventListRelationFilter
   writingActivities?: Prisma.WritingActivityListRelationFilter
+  sceneCharacters?: Prisma.SceneCharacterListRelationFilter
 }
 
 export type SceneOrderByWithRelationInput = {
@@ -303,6 +304,7 @@ export type SceneOrderByWithRelationInput = {
   location?: Prisma.LocationOrderByWithRelationInput
   timelineEvents?: Prisma.TimelineEventOrderByRelationAggregateInput
   writingActivities?: Prisma.WritingActivityOrderByRelationAggregateInput
+  sceneCharacters?: Prisma.SceneCharacterOrderByRelationAggregateInput
 }
 
 export type SceneWhereUniqueInput = Prisma.AtLeast<{
@@ -325,6 +327,7 @@ export type SceneWhereUniqueInput = Prisma.AtLeast<{
   location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
   timelineEvents?: Prisma.TimelineEventListRelationFilter
   writingActivities?: Prisma.WritingActivityListRelationFilter
+  sceneCharacters?: Prisma.SceneCharacterListRelationFilter
 }, "id">
 
 export type SceneOrderByWithAggregationInput = {
@@ -380,6 +383,7 @@ export type SceneCreateInput = {
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterCreateNestedManyWithoutSceneInput
 }
 
 export type SceneUncheckedCreateInput = {
@@ -397,6 +401,7 @@ export type SceneUncheckedCreateInput = {
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutSceneInput
 }
 
 export type SceneUpdateInput = {
@@ -414,6 +419,7 @@ export type SceneUpdateInput = {
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateInput = {
@@ -431,6 +437,7 @@ export type SceneUncheckedUpdateInput = {
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneCreateManyInput = {
@@ -613,6 +620,20 @@ export type SceneUpdateOneRequiredWithoutWritingActivitiesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SceneUpdateToOneWithWhereWithoutWritingActivitiesInput, Prisma.SceneUpdateWithoutWritingActivitiesInput>, Prisma.SceneUncheckedUpdateWithoutWritingActivitiesInput>
 }
 
+export type SceneCreateNestedOneWithoutSceneCharactersInput = {
+  create?: Prisma.XOR<Prisma.SceneCreateWithoutSceneCharactersInput, Prisma.SceneUncheckedCreateWithoutSceneCharactersInput>
+  connectOrCreate?: Prisma.SceneCreateOrConnectWithoutSceneCharactersInput
+  connect?: Prisma.SceneWhereUniqueInput
+}
+
+export type SceneUpdateOneRequiredWithoutSceneCharactersNestedInput = {
+  create?: Prisma.XOR<Prisma.SceneCreateWithoutSceneCharactersInput, Prisma.SceneUncheckedCreateWithoutSceneCharactersInput>
+  connectOrCreate?: Prisma.SceneCreateOrConnectWithoutSceneCharactersInput
+  upsert?: Prisma.SceneUpsertWithoutSceneCharactersInput
+  connect?: Prisma.SceneWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SceneUpdateToOneWithWhereWithoutSceneCharactersInput, Prisma.SceneUpdateWithoutSceneCharactersInput>, Prisma.SceneUncheckedUpdateWithoutSceneCharactersInput>
+}
+
 export type SceneCreateNestedManyWithoutLocationInput = {
   create?: Prisma.XOR<Prisma.SceneCreateWithoutLocationInput, Prisma.SceneUncheckedCreateWithoutLocationInput> | Prisma.SceneCreateWithoutLocationInput[] | Prisma.SceneUncheckedCreateWithoutLocationInput[]
   connectOrCreate?: Prisma.SceneCreateOrConnectWithoutLocationInput | Prisma.SceneCreateOrConnectWithoutLocationInput[]
@@ -685,6 +706,7 @@ export type SceneCreateWithoutChapterInput = {
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterCreateNestedManyWithoutSceneInput
 }
 
 export type SceneUncheckedCreateWithoutChapterInput = {
@@ -701,6 +723,7 @@ export type SceneUncheckedCreateWithoutChapterInput = {
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutSceneInput
 }
 
 export type SceneCreateOrConnectWithoutChapterInput = {
@@ -760,6 +783,7 @@ export type SceneCreateWithoutWritingActivitiesInput = {
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterCreateNestedManyWithoutSceneInput
 }
 
 export type SceneUncheckedCreateWithoutWritingActivitiesInput = {
@@ -776,6 +800,7 @@ export type SceneUncheckedCreateWithoutWritingActivitiesInput = {
   revision?: number
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutSceneInput
 }
 
 export type SceneCreateOrConnectWithoutWritingActivitiesInput = {
@@ -808,6 +833,7 @@ export type SceneUpdateWithoutWritingActivitiesInput = {
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateWithoutWritingActivitiesInput = {
@@ -824,6 +850,91 @@ export type SceneUncheckedUpdateWithoutWritingActivitiesInput = {
   revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedUpdateManyWithoutSceneNestedInput
+}
+
+export type SceneCreateWithoutSceneCharactersInput = {
+  id: string
+  title: string
+  content?: string
+  summary?: string
+  status?: string
+  sortOrder?: number
+  wordCount?: number
+  objective?: string
+  revision?: number
+  archived?: boolean
+  chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
+  location?: Prisma.LocationCreateNestedOneWithoutScenesInput
+  timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutSceneInput
+}
+
+export type SceneUncheckedCreateWithoutSceneCharactersInput = {
+  id: string
+  chapterId: string
+  title: string
+  content?: string
+  summary?: string
+  status?: string
+  locationId?: string | null
+  sortOrder?: number
+  wordCount?: number
+  objective?: string
+  revision?: number
+  archived?: boolean
+  timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
+}
+
+export type SceneCreateOrConnectWithoutSceneCharactersInput = {
+  where: Prisma.SceneWhereUniqueInput
+  create: Prisma.XOR<Prisma.SceneCreateWithoutSceneCharactersInput, Prisma.SceneUncheckedCreateWithoutSceneCharactersInput>
+}
+
+export type SceneUpsertWithoutSceneCharactersInput = {
+  update: Prisma.XOR<Prisma.SceneUpdateWithoutSceneCharactersInput, Prisma.SceneUncheckedUpdateWithoutSceneCharactersInput>
+  create: Prisma.XOR<Prisma.SceneCreateWithoutSceneCharactersInput, Prisma.SceneUncheckedCreateWithoutSceneCharactersInput>
+  where?: Prisma.SceneWhereInput
+}
+
+export type SceneUpdateToOneWithWhereWithoutSceneCharactersInput = {
+  where?: Prisma.SceneWhereInput
+  data: Prisma.XOR<Prisma.SceneUpdateWithoutSceneCharactersInput, Prisma.SceneUncheckedUpdateWithoutSceneCharactersInput>
+}
+
+export type SceneUpdateWithoutSceneCharactersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  summary?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
+  location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
+  timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutSceneNestedInput
+}
+
+export type SceneUncheckedUpdateWithoutSceneCharactersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  chapterId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  summary?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  objective?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneCreateWithoutLocationInput = {
@@ -840,6 +951,7 @@ export type SceneCreateWithoutLocationInput = {
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterCreateNestedManyWithoutSceneInput
 }
 
 export type SceneUncheckedCreateWithoutLocationInput = {
@@ -856,6 +968,7 @@ export type SceneUncheckedCreateWithoutLocationInput = {
   archived?: boolean
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutSceneInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutSceneInput
 }
 
 export type SceneCreateOrConnectWithoutLocationInput = {
@@ -897,6 +1010,7 @@ export type SceneCreateWithoutTimelineEventsInput = {
   chapter: Prisma.ChapterCreateNestedOneWithoutScenesInput
   location?: Prisma.LocationCreateNestedOneWithoutScenesInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterCreateNestedManyWithoutSceneInput
 }
 
 export type SceneUncheckedCreateWithoutTimelineEventsInput = {
@@ -913,6 +1027,7 @@ export type SceneUncheckedCreateWithoutTimelineEventsInput = {
   revision?: number
   archived?: boolean
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutSceneInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutSceneInput
 }
 
 export type SceneCreateOrConnectWithoutTimelineEventsInput = {
@@ -945,6 +1060,7 @@ export type SceneUpdateWithoutTimelineEventsInput = {
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateWithoutTimelineEventsInput = {
@@ -961,6 +1077,7 @@ export type SceneUncheckedUpdateWithoutTimelineEventsInput = {
   revision?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneCreateManyChapterInput = {
@@ -991,6 +1108,7 @@ export type SceneUpdateWithoutChapterInput = {
   location?: Prisma.LocationUpdateOneWithoutScenesNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateWithoutChapterInput = {
@@ -1007,6 +1125,7 @@ export type SceneUncheckedUpdateWithoutChapterInput = {
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateManyWithoutChapterInput = {
@@ -1051,6 +1170,7 @@ export type SceneUpdateWithoutLocationInput = {
   chapter?: Prisma.ChapterUpdateOneRequiredWithoutScenesNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateWithoutLocationInput = {
@@ -1067,6 +1187,7 @@ export type SceneUncheckedUpdateWithoutLocationInput = {
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutSceneNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutSceneNestedInput
+  sceneCharacters?: Prisma.SceneCharacterUncheckedUpdateManyWithoutSceneNestedInput
 }
 
 export type SceneUncheckedUpdateManyWithoutLocationInput = {
@@ -1091,11 +1212,13 @@ export type SceneUncheckedUpdateManyWithoutLocationInput = {
 export type SceneCountOutputType = {
   timelineEvents: number
   writingActivities: number
+  sceneCharacters: number
 }
 
 export type SceneCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   timelineEvents?: boolean | SceneCountOutputTypeCountTimelineEventsArgs
   writingActivities?: boolean | SceneCountOutputTypeCountWritingActivitiesArgs
+  sceneCharacters?: boolean | SceneCountOutputTypeCountSceneCharactersArgs
 }
 
 /**
@@ -1122,6 +1245,13 @@ export type SceneCountOutputTypeCountWritingActivitiesArgs<ExtArgs extends runti
   where?: Prisma.WritingActivityWhereInput
 }
 
+/**
+ * SceneCountOutputType without action
+ */
+export type SceneCountOutputTypeCountSceneCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SceneCharacterWhereInput
+}
+
 
 export type SceneSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1140,6 +1270,7 @@ export type SceneSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   location?: boolean | Prisma.Scene$locationArgs<ExtArgs>
   timelineEvents?: boolean | Prisma.Scene$timelineEventsArgs<ExtArgs>
   writingActivities?: boolean | Prisma.Scene$writingActivitiesArgs<ExtArgs>
+  sceneCharacters?: boolean | Prisma.Scene$sceneCharactersArgs<ExtArgs>
   _count?: boolean | Prisma.SceneCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["scene"]>
 
@@ -1198,6 +1329,7 @@ export type SceneInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   location?: boolean | Prisma.Scene$locationArgs<ExtArgs>
   timelineEvents?: boolean | Prisma.Scene$timelineEventsArgs<ExtArgs>
   writingActivities?: boolean | Prisma.Scene$writingActivitiesArgs<ExtArgs>
+  sceneCharacters?: boolean | Prisma.Scene$sceneCharactersArgs<ExtArgs>
   _count?: boolean | Prisma.SceneCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SceneIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1216,6 +1348,7 @@ export type $ScenePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     location: Prisma.$LocationPayload<ExtArgs> | null
     timelineEvents: Prisma.$TimelineEventPayload<ExtArgs>[]
     writingActivities: Prisma.$WritingActivityPayload<ExtArgs>[]
+    sceneCharacters: Prisma.$SceneCharacterPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1628,6 +1761,7 @@ export interface Prisma__SceneClient<T, Null = never, ExtArgs extends runtime.Ty
   location<T extends Prisma.Scene$locationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Scene$locationArgs<ExtArgs>>): Prisma.Prisma__LocationClient<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   timelineEvents<T extends Prisma.Scene$timelineEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Scene$timelineEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TimelineEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   writingActivities<T extends Prisma.Scene$writingActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Scene$writingActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WritingActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sceneCharacters<T extends Prisma.Scene$sceneCharactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Scene$sceneCharactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SceneCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2132,6 +2266,30 @@ export type Scene$writingActivitiesArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.WritingActivityScalarFieldEnum | Prisma.WritingActivityScalarFieldEnum[]
+}
+
+/**
+ * Scene.sceneCharacters
+ */
+export type Scene$sceneCharactersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SceneCharacter
+   */
+  select?: Prisma.SceneCharacterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SceneCharacter
+   */
+  omit?: Prisma.SceneCharacterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SceneCharacterInclude<ExtArgs> | null
+  where?: Prisma.SceneCharacterWhereInput
+  orderBy?: Prisma.SceneCharacterOrderByWithRelationInput | Prisma.SceneCharacterOrderByWithRelationInput[]
+  cursor?: Prisma.SceneCharacterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SceneCharacterScalarFieldEnum | Prisma.SceneCharacterScalarFieldEnum[]
 }
 
 /**
