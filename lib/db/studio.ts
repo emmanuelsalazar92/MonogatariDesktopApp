@@ -847,6 +847,42 @@ export class SceneRevisionConflictError extends Error {
   }
 }
 
+export class SceneVersionValidationError extends Error {
+  constructor() { super("scene version is not available"); }
+}
+
+function serializeSceneVersion(version: { id: string; sceneId: string; title: string; content: string; wordCount: number; label: string; origin: string; createdAt: Date }) {
+  return { ...version, createdAt: version.createdAt.toISOString() };
+}
+
+export async function listSceneVersions(sceneId: string) {
+  const versions = await prisma.sceneVersion.findMany({ where: { sceneId }, orderBy: { createdAt: "desc" }, take: 100 });
+  return versions.map(serializeSceneVersion);
+}
+
+export async function createSceneVersion(sceneId: string, label = "") {
+  const version = await prisma.$transaction(async (tx) => {
+    const scene = await tx.scene.findUniqueOrThrow({ where: { id: sceneId }, include: { chapter: { include: { volume: true } } } });
+    const created = await tx.sceneVersion.create({ data: { id: `scene-version-${crypto.randomUUID()}`, sceneId, title: scene.title, content: scene.content, wordCount: scene.wordCount, label: label.trim().slice(0, 120), origin: "manual" } });
+    await markNotionDirty(tx, scene.chapter.volume.novelId);
+    return created;
+  });
+  return serializeSceneVersion(version);
+}
+
+export async function restoreSceneVersion(sceneId: string, versionId: string) {
+  const scene = await prisma.$transaction(async (tx) => {
+    const current = await tx.scene.findUniqueOrThrow({ where: { id: sceneId }, include: { chapter: { include: { volume: true } } } });
+    const version = await tx.sceneVersion.findFirst({ where: { id: versionId, sceneId } });
+    if (!version) throw new SceneVersionValidationError();
+    await tx.sceneVersion.create({ data: { id: `scene-version-${crypto.randomUUID()}`, sceneId, title: current.title, content: current.content, wordCount: current.wordCount, label: "", origin: "before restore" } });
+    const restored = await tx.scene.update({ where: { id: sceneId }, data: { title: version.title, content: version.content, wordCount: version.wordCount, revision: { increment: 1 } } });
+    await markNotionDirty(tx, current.chapter.volume.novelId);
+    return restored;
+  });
+  return serializeScene(scene);
+}
+
 export async function getScene(sceneId: string) {
   const scene = await prisma.scene.findUniqueOrThrow({ where: { id: sceneId } });
   return serializeScene(scene);

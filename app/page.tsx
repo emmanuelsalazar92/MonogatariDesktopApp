@@ -1696,6 +1696,11 @@ function EditorScreen({
   } | null>(null);
   const [chapterPreviewError, setChapterPreviewError] = React.useState<string | null>(null);
   const [chapterPreviewLoading, setChapterPreviewLoading] = React.useState(false);
+  const [versionsOpen, setVersionsOpen] = React.useState(false);
+  const [versions, setVersions] = React.useState<Array<{ id: string; title: string; content: string; wordCount: number; label: string; origin: string; createdAt: string }>>([]);
+  const [versionLabel, setVersionLabel] = React.useState("");
+  const [selectedVersion, setSelectedVersion] = React.useState<string | null>(null);
+  const [versionError, setVersionError] = React.useState("");
   const [title, setTitle] = React.useState(activeScene.title);
   const [status, setStatus] = React.useState<ChapterStatus>(activeScene.status);
   const [content, setContent] = React.useState(activeScene.content);
@@ -1774,6 +1779,26 @@ function EditorScreen({
       setChapterPreviewLoading(false);
     }
   }, [activeChapter.id]);
+
+  const loadVersions = React.useCallback(async () => {
+    const response = await fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/versions`);
+    if (!response.ok) throw new Error("Could not load version history");
+    setVersions(await response.json());
+  }, [activeScene.id]);
+
+  const openVersions = async () => {
+    setVersionsOpen(true); setVersionError(""); setSelectedVersion(null);
+    try { await loadVersions(); } catch { setVersionError("Could not load version history."); }
+  };
+  const createCheckpoint = async () => {
+    try { const response = await fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/versions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label: versionLabel }) }); if (!response.ok) throw new Error(); setVersionLabel(""); await loadVersions(); }
+    catch { setVersionError("Could not create checkpoint. Your scene remains unchanged."); }
+  };
+  const restoreSelectedVersion = async () => {
+    if (!selectedVersion) return;
+    try { const response = await fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/versions/${encodeURIComponent(selectedVersion)}/restore`, { method: "POST" }); if (!response.ok) throw new Error(); setVersionsOpen(false); onRefreshMetadata(); }
+    catch { setVersionError("Could not restore this version. Your current scene remains unchanged."); }
+  };
 
   React.useEffect(() => {
     if (loadedSceneIdRef.current === activeScene.id) return;
@@ -1918,7 +1943,7 @@ function EditorScreen({
                   <Save className="size-4" />
                   {saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => void openVersions()}>
                   <Download className="size-4" />
                   Export chapter
                 </Button>
@@ -2019,6 +2044,17 @@ function EditorScreen({
             <DialogFooter>
               <Button variant="outline" onClick={() => setChapterPreviewOpen(false)}>Close</Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={versionsOpen} onOpenChange={setVersionsOpen}>
+          <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+            <DialogHeader><DialogTitle>Version history</DialogTitle><DialogDescription>Checkpoints are deliberate snapshots; autosave does not create versions.</DialogDescription></DialogHeader>
+            <div className="flex gap-2"><Input value={versionLabel} maxLength={120} onChange={(event) => setVersionLabel(event.target.value)} placeholder="Optional checkpoint label" aria-label="Checkpoint label" /><Button onClick={() => void createCheckpoint()}>Create checkpoint</Button></div>
+            {versionError ? <p role="alert" className="text-sm text-destructive">{versionError}</p> : null}
+            <div className="grid gap-2">{versions.length ? versions.map((version) => <button key={version.id} type="button" className={cn("rounded-lg border p-3 text-left", selectedVersion === version.id && "border-primary bg-accent/30")} onClick={() => setSelectedVersion(version.id)}><span className="font-medium">{version.label || version.origin}</span><span className="ml-2 text-sm text-muted-foreground">{new Date(version.createdAt).toLocaleString()} · {version.wordCount} words</span></button>) : <p className="text-sm text-muted-foreground">No checkpoints yet.</p>}</div>
+            {selectedVersion ? <div className="rounded-lg border bg-muted/30 p-3"><p className="mb-2 text-sm font-medium">Preview — no changes have been made</p><p className="max-h-40 overflow-y-auto whitespace-pre-wrap text-sm">{versions.find((version) => version.id === selectedVersion)?.content}</p></div> : null}
+            <DialogFooter><Button variant="outline" onClick={() => setVersionsOpen(false)}>Cancel</Button><Button variant="destructive" disabled={!selectedVersion} onClick={() => void restoreSelectedVersion()}>Restore selected version</Button></DialogFooter>
           </DialogContent>
         </Dialog>
 

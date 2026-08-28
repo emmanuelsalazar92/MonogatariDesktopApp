@@ -38,6 +38,11 @@ export type Chapter = Prisma.ChapterModel
  */
 export type Scene = Prisma.SceneModel
 /**
+ * Model SceneVersion
+ * 
+ */
+export type SceneVersion = Prisma.SceneVersionModel
+/**
  * Model WritingActivity
  * 
  */

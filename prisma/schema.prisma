@@ -75,9 +75,24 @@ model Scene {
   timelineEvents    TimelineEvent[]
   writingActivities WritingActivity[]
   sceneCharacters   SceneCharacter[]
+  versions          SceneVersion[]
 
   @@index([chapterId, sortOrder])
   @@index([locationId])
+}
+
+model SceneVersion {
+  id        String   @id
+  sceneId   String
+  content   String
+  title     String
+  wordCount Int
+  label     String   @default("")
+  origin    String
+  createdAt DateTime @default(now())
+  scene     Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId, createdAt])
 }
 
 model WritingActivity {
