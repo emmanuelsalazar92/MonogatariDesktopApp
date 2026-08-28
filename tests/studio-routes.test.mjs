@@ -161,6 +161,13 @@ test("scene persistence uses an atomic revision guard against stale writes", asy
   assert.match(routeSource, /status: 409/);
 });
 
+test("editor navigation crosses chapters and stops at novel bounds", async () => {
+  const navigation = await loadTypeScriptModule("lib/editor-scene-navigation.ts");
+  const scenes = navigation.getNovelSceneNavigation("n", [{ id: "v", novelId: "n", sortOrder: 1 }], [{ id: "c1", volumeId: "v", sortOrder: 1 }, { id: "c2", volumeId: "v", sortOrder: 2 }], [{ id: "s2", chapterId: "c2", title: "Two", sortOrder: 1, archived: false }, { id: "s1", chapterId: "c1", title: "One", sortOrder: 1, archived: false }]);
+  assert.deepEqual(scenes.map((scene) => scene.id), ["s1", "s2"]);
+  assert.deepEqual(navigation.getAdjacentSceneIds("s2", ["s1", "s2"]), { previousId: "s1", nextId: null });
+});
+
 test("structure status allowlist excludes archival and rejects unknown values", async () => {
   const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
     if (moduleId === "lucide-react") return {};
