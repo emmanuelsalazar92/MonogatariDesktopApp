@@ -1,0 +1,16 @@
+MD-184 repository hygiene evidence
+Captured: 2026-08-28 America/Costa_Rica
+
+$ npm run test:repository-hygiene
+PASS runtime backups are ignored while synthetic fixtures remain versionable
+Tests: 1 passed, 0 failed
+
+$ git check-ignore -v prisma/backups/sqlite-snapshot-test.db
+.gitignore:13:prisma/backups/ prisma/backups/sqlite-snapshot-test.db
+
+$ git check-ignore -v --no-index tests/fixtures/backups/synthetic-snapshot.db
+No ignore match (expected); synthetic fixtures remain versionable.
+
+$ git status --short
+Only the deliberate MD-184 code, documentation, test, and evidence changes are listed.
+The existing files below prisma/backups/ are absent from status.

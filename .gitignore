@@ -9,3 +9,5 @@ tsconfig.tsbuildinfo
 !.env.example
 prisma/*.db
 prisma/*.db-journal
+# Runtime snapshots can contain private manuscript data and are never versioned.
+prisma/backups/
