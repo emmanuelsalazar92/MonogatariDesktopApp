@@ -315,6 +315,7 @@ export type CharacterWhereInput = {
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   outgoingRelationships?: Prisma.RelationshipListRelationFilter
   incomingRelationships?: Prisma.RelationshipListRelationFilter
+  sceneLinks?: Prisma.SceneCharacterListRelationFilter
 }
 
 export type CharacterOrderByWithRelationInput = {
@@ -338,6 +339,7 @@ export type CharacterOrderByWithRelationInput = {
   novel?: Prisma.NovelOrderByWithRelationInput
   outgoingRelationships?: Prisma.RelationshipOrderByRelationAggregateInput
   incomingRelationships?: Prisma.RelationshipOrderByRelationAggregateInput
+  sceneLinks?: Prisma.SceneCharacterOrderByRelationAggregateInput
 }
 
 export type CharacterWhereUniqueInput = Prisma.AtLeast<{
@@ -364,6 +366,7 @@ export type CharacterWhereUniqueInput = Prisma.AtLeast<{
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   outgoingRelationships?: Prisma.RelationshipListRelationFilter
   incomingRelationships?: Prisma.RelationshipListRelationFilter
+  sceneLinks?: Prisma.SceneCharacterListRelationFilter
 }, "id">
 
 export type CharacterOrderByWithAggregationInput = {
@@ -434,6 +437,7 @@ export type CharacterCreateInput = {
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateInput = {
@@ -456,6 +460,7 @@ export type CharacterUncheckedCreateInput = {
   scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUpdateInput = {
@@ -478,6 +483,7 @@ export type CharacterUpdateInput = {
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateInput = {
@@ -500,6 +506,7 @@ export type CharacterUncheckedUpdateInput = {
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterCreateManyInput = {
@@ -686,6 +693,20 @@ export type CharacterUncheckedUpdateManyWithoutNovelNestedInput = {
   deleteMany?: Prisma.CharacterScalarWhereInput | Prisma.CharacterScalarWhereInput[]
 }
 
+export type CharacterCreateNestedOneWithoutSceneLinksInput = {
+  create?: Prisma.XOR<Prisma.CharacterCreateWithoutSceneLinksInput, Prisma.CharacterUncheckedCreateWithoutSceneLinksInput>
+  connectOrCreate?: Prisma.CharacterCreateOrConnectWithoutSceneLinksInput
+  connect?: Prisma.CharacterWhereUniqueInput
+}
+
+export type CharacterUpdateOneRequiredWithoutSceneLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterCreateWithoutSceneLinksInput, Prisma.CharacterUncheckedCreateWithoutSceneLinksInput>
+  connectOrCreate?: Prisma.CharacterCreateOrConnectWithoutSceneLinksInput
+  upsert?: Prisma.CharacterUpsertWithoutSceneLinksInput
+  connect?: Prisma.CharacterWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterUpdateToOneWithWhereWithoutSceneLinksInput, Prisma.CharacterUpdateWithoutSceneLinksInput>, Prisma.CharacterUncheckedUpdateWithoutSceneLinksInput>
+}
+
 export type CharacterCreateNestedOneWithoutOutgoingRelationshipsInput = {
   create?: Prisma.XOR<Prisma.CharacterCreateWithoutOutgoingRelationshipsInput, Prisma.CharacterUncheckedCreateWithoutOutgoingRelationshipsInput>
   connectOrCreate?: Prisma.CharacterCreateOrConnectWithoutOutgoingRelationshipsInput
@@ -733,6 +754,7 @@ export type CharacterCreateWithoutNovelInput = {
   scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutNovelInput = {
@@ -754,6 +776,7 @@ export type CharacterUncheckedCreateWithoutNovelInput = {
   scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutNovelInput = {
@@ -804,6 +827,110 @@ export type CharacterScalarWhereInput = {
   scenesCount?: Prisma.IntFilter<"Character"> | number
 }
 
+export type CharacterCreateWithoutSceneLinksInput = {
+  id: string
+  name: string
+  alias?: string
+  age?: string
+  role?: string
+  appearance?: string
+  personality?: string
+  wayOfSpeaking?: string
+  goal?: string
+  fear?: string
+  secret?: string
+  notes?: string
+  firstAppearance?: string
+  status?: string
+  image?: string
+  scenesCount?: number
+  novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
+  outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
+  incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
+}
+
+export type CharacterUncheckedCreateWithoutSceneLinksInput = {
+  id: string
+  novelId: string
+  name: string
+  alias?: string
+  age?: string
+  role?: string
+  appearance?: string
+  personality?: string
+  wayOfSpeaking?: string
+  goal?: string
+  fear?: string
+  secret?: string
+  notes?: string
+  firstAppearance?: string
+  status?: string
+  image?: string
+  scenesCount?: number
+  outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
+  incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
+}
+
+export type CharacterCreateOrConnectWithoutSceneLinksInput = {
+  where: Prisma.CharacterWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterCreateWithoutSceneLinksInput, Prisma.CharacterUncheckedCreateWithoutSceneLinksInput>
+}
+
+export type CharacterUpsertWithoutSceneLinksInput = {
+  update: Prisma.XOR<Prisma.CharacterUpdateWithoutSceneLinksInput, Prisma.CharacterUncheckedUpdateWithoutSceneLinksInput>
+  create: Prisma.XOR<Prisma.CharacterCreateWithoutSceneLinksInput, Prisma.CharacterUncheckedCreateWithoutSceneLinksInput>
+  where?: Prisma.CharacterWhereInput
+}
+
+export type CharacterUpdateToOneWithWhereWithoutSceneLinksInput = {
+  where?: Prisma.CharacterWhereInput
+  data: Prisma.XOR<Prisma.CharacterUpdateWithoutSceneLinksInput, Prisma.CharacterUncheckedUpdateWithoutSceneLinksInput>
+}
+
+export type CharacterUpdateWithoutSceneLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  alias?: Prisma.StringFieldUpdateOperationsInput | string
+  age?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  appearance?: Prisma.StringFieldUpdateOperationsInput | string
+  personality?: Prisma.StringFieldUpdateOperationsInput | string
+  wayOfSpeaking?: Prisma.StringFieldUpdateOperationsInput | string
+  goal?: Prisma.StringFieldUpdateOperationsInput | string
+  fear?: Prisma.StringFieldUpdateOperationsInput | string
+  secret?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.StringFieldUpdateOperationsInput | string
+  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
+  novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
+  outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
+  incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
+}
+
+export type CharacterUncheckedUpdateWithoutSceneLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  alias?: Prisma.StringFieldUpdateOperationsInput | string
+  age?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  appearance?: Prisma.StringFieldUpdateOperationsInput | string
+  personality?: Prisma.StringFieldUpdateOperationsInput | string
+  wayOfSpeaking?: Prisma.StringFieldUpdateOperationsInput | string
+  goal?: Prisma.StringFieldUpdateOperationsInput | string
+  fear?: Prisma.StringFieldUpdateOperationsInput | string
+  secret?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.StringFieldUpdateOperationsInput | string
+  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
+  outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
+  incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
+}
+
 export type CharacterCreateWithoutOutgoingRelationshipsInput = {
   id: string
   name: string
@@ -823,6 +950,7 @@ export type CharacterCreateWithoutOutgoingRelationshipsInput = {
   scenesCount?: number
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutOutgoingRelationshipsInput = {
@@ -844,6 +972,7 @@ export type CharacterUncheckedCreateWithoutOutgoingRelationshipsInput = {
   image?: string
   scenesCount?: number
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutOutgoingRelationshipsInput = {
@@ -870,6 +999,7 @@ export type CharacterCreateWithoutIncomingRelationshipsInput = {
   scenesCount?: number
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
+  sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutIncomingRelationshipsInput = {
@@ -891,6 +1021,7 @@ export type CharacterUncheckedCreateWithoutIncomingRelationshipsInput = {
   image?: string
   scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutIncomingRelationshipsInput = {
@@ -928,6 +1059,7 @@ export type CharacterUpdateWithoutOutgoingRelationshipsInput = {
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutOutgoingRelationshipsInput = {
@@ -949,6 +1081,7 @@ export type CharacterUncheckedUpdateWithoutOutgoingRelationshipsInput = {
   image?: Prisma.StringFieldUpdateOperationsInput | string
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUpsertWithoutIncomingRelationshipsInput = {
@@ -981,6 +1114,7 @@ export type CharacterUpdateWithoutIncomingRelationshipsInput = {
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutIncomingRelationshipsInput = {
@@ -1002,6 +1136,7 @@ export type CharacterUncheckedUpdateWithoutIncomingRelationshipsInput = {
   image?: Prisma.StringFieldUpdateOperationsInput | string
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterCreateManyNovelInput = {
@@ -1042,6 +1177,7 @@ export type CharacterUpdateWithoutNovelInput = {
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutNovelInput = {
@@ -1063,6 +1199,7 @@ export type CharacterUncheckedUpdateWithoutNovelInput = {
   scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateManyWithoutNovelInput = {
@@ -1092,11 +1229,13 @@ export type CharacterUncheckedUpdateManyWithoutNovelInput = {
 export type CharacterCountOutputType = {
   outgoingRelationships: number
   incomingRelationships: number
+  sceneLinks: number
 }
 
 export type CharacterCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   outgoingRelationships?: boolean | CharacterCountOutputTypeCountOutgoingRelationshipsArgs
   incomingRelationships?: boolean | CharacterCountOutputTypeCountIncomingRelationshipsArgs
+  sceneLinks?: boolean | CharacterCountOutputTypeCountSceneLinksArgs
 }
 
 /**
@@ -1123,6 +1262,13 @@ export type CharacterCountOutputTypeCountIncomingRelationshipsArgs<ExtArgs exten
   where?: Prisma.RelationshipWhereInput
 }
 
+/**
+ * CharacterCountOutputType without action
+ */
+export type CharacterCountOutputTypeCountSceneLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SceneCharacterWhereInput
+}
+
 
 export type CharacterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1145,6 +1291,7 @@ export type CharacterSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   outgoingRelationships?: boolean | Prisma.Character$outgoingRelationshipsArgs<ExtArgs>
   incomingRelationships?: boolean | Prisma.Character$incomingRelationshipsArgs<ExtArgs>
+  sceneLinks?: boolean | Prisma.Character$sceneLinksArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["character"]>
 
@@ -1215,6 +1362,7 @@ export type CharacterInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   outgoingRelationships?: boolean | Prisma.Character$outgoingRelationshipsArgs<ExtArgs>
   incomingRelationships?: boolean | Prisma.Character$incomingRelationshipsArgs<ExtArgs>
+  sceneLinks?: boolean | Prisma.Character$sceneLinksArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CharacterIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1230,6 +1378,7 @@ export type $CharacterPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     novel: Prisma.$NovelPayload<ExtArgs>
     outgoingRelationships: Prisma.$RelationshipPayload<ExtArgs>[]
     incomingRelationships: Prisma.$RelationshipPayload<ExtArgs>[]
+    sceneLinks: Prisma.$SceneCharacterPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1646,6 +1795,7 @@ export interface Prisma__CharacterClient<T, Null = never, ExtArgs extends runtim
   novel<T extends Prisma.NovelDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NovelDefaultArgs<ExtArgs>>): Prisma.Prisma__NovelClient<runtime.Types.Result.GetResult<Prisma.$NovelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   outgoingRelationships<T extends Prisma.Character$outgoingRelationshipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$outgoingRelationshipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   incomingRelationships<T extends Prisma.Character$incomingRelationshipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$incomingRelationshipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sceneLinks<T extends Prisma.Character$sceneLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$sceneLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SceneCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2136,6 +2286,30 @@ export type Character$incomingRelationshipsArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.RelationshipScalarFieldEnum | Prisma.RelationshipScalarFieldEnum[]
+}
+
+/**
+ * Character.sceneLinks
+ */
+export type Character$sceneLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SceneCharacter
+   */
+  select?: Prisma.SceneCharacterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SceneCharacter
+   */
+  omit?: Prisma.SceneCharacterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SceneCharacterInclude<ExtArgs> | null
+  where?: Prisma.SceneCharacterWhereInput
+  orderBy?: Prisma.SceneCharacterOrderByWithRelationInput | Prisma.SceneCharacterOrderByWithRelationInput[]
+  cursor?: Prisma.SceneCharacterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SceneCharacterScalarFieldEnum | Prisma.SceneCharacterScalarFieldEnum[]
 }
 
 /**

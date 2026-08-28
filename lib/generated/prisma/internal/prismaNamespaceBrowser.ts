@@ -57,6 +57,7 @@ export const ModelName = {
   Scene: 'Scene',
   WritingActivity: 'WritingActivity',
   Character: 'Character',
+  SceneCharacter: 'SceneCharacter',
   Location: 'Location',
   Relationship: 'Relationship',
   TimelineEvent: 'TimelineEvent',
@@ -173,6 +174,14 @@ export const CharacterScalarFieldEnum = {
 } as const
 
 export type CharacterScalarFieldEnum = (typeof CharacterScalarFieldEnum)[keyof typeof CharacterScalarFieldEnum]
+
+
+export const SceneCharacterScalarFieldEnum = {
+  sceneId: 'sceneId',
+  characterId: 'characterId'
+} as const
+
+export type SceneCharacterScalarFieldEnum = (typeof SceneCharacterScalarFieldEnum)[keyof typeof SceneCharacterScalarFieldEnum]
 
 
 export const LocationScalarFieldEnum = {

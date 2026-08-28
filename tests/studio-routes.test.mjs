@@ -161,6 +161,16 @@ test("scene persistence uses an atomic revision guard against stale writes", asy
   assert.match(routeSource, /status: 409/);
 });
 
+test("scene inspector persists continuity metadata without submitting manuscript content", async () => {
+  const inspectorSource = await readFile(resolve(process.cwd(), "app/api/scenes/[sceneId]/inspector/route.ts"), "utf8");
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+
+  assert.match(inspectorSource, /scene metadata references are not available in this novel/);
+  assert.match(studioSource, /tx\.sceneCharacter\.deleteMany/);
+  assert.match(studioSource, /tx\.timelineEvent\.updateMany\(\{ where: \{ sceneId \}/);
+  assert.doesNotMatch(inspectorSource, /content:/);
+});
+
 test("editor navigation crosses chapters and stops at novel bounds", async () => {
   const navigation = await loadTypeScriptModule("lib/editor-scene-navigation.ts");
   const scenes = navigation.getNovelSceneNavigation("n", [{ id: "v", novelId: "n", sortOrder: 1 }], [{ id: "c1", volumeId: "v", sortOrder: 1 }, { id: "c2", volumeId: "v", sortOrder: 2 }], [{ id: "s2", chapterId: "c2", title: "Two", sortOrder: 1, archived: false }, { id: "s1", chapterId: "c1", title: "One", sortOrder: 1, archived: false }]);

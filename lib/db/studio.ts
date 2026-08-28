@@ -775,6 +775,72 @@ export async function updateScene(
   return serializeScene(updatedScene);
 }
 
+export class SceneInspectorValidationError extends Error {
+  constructor() {
+    super("scene inspector references are invalid");
+  }
+}
+
+export async function getSceneInspector(sceneId: string) {
+  const scene = await prisma.scene.findUniqueOrThrow({
+    where: { id: sceneId },
+    include: {
+      sceneCharacters: { select: { characterId: true } },
+      timelineEvents: { select: { id: true }, take: 1 },
+      chapter: { include: { volume: { select: { novelId: true } } } }
+    }
+  });
+  const note = await prisma.note.findFirst({
+    where: { novelId: scene.chapter.volume.novelId, linkedType: "Scene", linkedId: sceneId },
+    select: { content: true }
+  });
+  return {
+    characterIds: scene.sceneCharacters.map((link) => link.characterId),
+    timelineEventId: scene.timelineEvents[0]?.id ?? null,
+    notes: note?.content ?? ""
+  };
+}
+
+export async function updateSceneInspector(
+  sceneId: string,
+  input: { summary: string; objective: string; notes: string; characterIds: string[]; locationId: string | null; timelineEventId: string | null }
+) {
+  const characterIds = [...new Set(input.characterIds)].slice(0, 50);
+  return prisma.$transaction(async (tx) => {
+    const scene = await tx.scene.findUniqueOrThrow({
+      where: { id: sceneId },
+      include: { chapter: { include: { volume: { select: { novelId: true } } } } }
+    });
+    const novelId = scene.chapter.volume.novelId;
+    const [characterCount, location, timeline] = await Promise.all([
+      tx.character.count({ where: { id: { in: characterIds }, novelId } }),
+      input.locationId ? tx.location.findFirst({ where: { id: input.locationId, novelId }, select: { id: true } }) : Promise.resolve(null),
+      input.timelineEventId ? tx.timelineEvent.findFirst({ where: { id: input.timelineEventId, novelId }, select: { id: true } }) : Promise.resolve(null)
+    ]);
+    if (characterCount !== characterIds.length || (input.locationId && !location) || (input.timelineEventId && !timeline)) {
+      throw new SceneInspectorValidationError();
+    }
+    await tx.scene.update({
+      where: { id: sceneId },
+      data: { summary: input.summary.trim(), objective: input.objective.trim(), locationId: input.locationId }
+    });
+    await tx.sceneCharacter.deleteMany({ where: { sceneId } });
+    if (characterIds.length) await tx.sceneCharacter.createMany({ data: characterIds.map((characterId) => ({ sceneId, characterId })) });
+    await tx.timelineEvent.updateMany({ where: { sceneId }, data: { sceneId: null } });
+    if (input.timelineEventId) await tx.timelineEvent.update({ where: { id: input.timelineEventId }, data: { sceneId } });
+    const note = await tx.note.findFirst({ where: { novelId, linkedType: "Scene", linkedId: sceneId }, select: { id: true } });
+    if (note) await tx.note.update({ where: { id: note.id }, data: { content: input.notes } });
+    else if (input.notes) await tx.note.create({ data: { id: `note-${crypto.randomUUID()}`, novelId, linkedType: "Scene", linkedId: sceneId, title: "Scene notes", content: input.notes, tags: "[]" } });
+    await tx.novel.update({ where: { id: novelId }, data: { updatedAt: new Date() } });
+    await markNotionDirty(tx, novelId);
+    return {
+      characterIds,
+      timelineEventId: input.timelineEventId,
+      notes: input.notes
+    };
+  });
+}
+
 export class SceneRevisionConflictError extends Error {
   constructor() {
     super("scene revision is stale");
