@@ -2318,6 +2318,7 @@ function ReaderScreen({
   const [readerScope, setReaderScope] = React.useState<"scene" | "chapter" | "volume" | "novel">("chapter");
   const [readerTargetId, setReaderTargetId] = React.useState(activeChapter.id);
   const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; title: string; content: string }> } | null>(null);
+  const readerScenes = readerDocument?.scenes?.length ? readerDocument.scenes : [{ id: activeScene.id, title: activeScene.title, content: activeScene.content }];
   const scopeUnits = React.useMemo(() => getReaderScopeUnits(readerScope, data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerScope]);
   const adjacentUnits = getReaderAdjacentUnits(scopeUnits, readerTargetId);
 
@@ -2437,9 +2438,9 @@ function ReaderScreen({
         >
           <article className="space-y-6 leading-9">
             <h2 className="font-serif text-3xl font-semibold tracking-normal">
-              {readerDocument?.scenes[0]?.title || activeScene.title}
+              {readerScenes[0]?.title}
             </h2>
-            {(readerDocument?.scenes || []).map((scene) => <section key={scene.id} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
+            {readerScenes.map((scene) => <section key={scene.id} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
           </article>
         </CardContent>
         <CardFooter className="flex flex-wrap justify-between gap-2 border-t p-4">

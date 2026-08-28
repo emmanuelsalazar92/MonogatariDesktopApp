@@ -159,6 +159,12 @@ test("reader scope navigation has deterministic adjacent units and safe limits",
   assert.deepEqual(reader.getReaderAdjacentUnits(["n"], "n"), { previousId: null, nextId: null });
 });
 
+test("reader keeps the active scene content visible while a read document is unavailable", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  assert.match(pageSource, /readerDocument\?\.scenes\?\.length \? readerDocument\.scenes : \[\{ id: activeScene\.id, title: activeScene\.title, content: activeScene\.content \}\]/);
+  assert.match(pageSource, /readerScenes\.map/);
+});
+
 test("dialog surface uses opaque theme tokens while preserving the blurred backdrop", async () => {
   const dialogSource = await readFile(resolve(process.cwd(), "components/ui/dialog.tsx"), "utf8");
 
