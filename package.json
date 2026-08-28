@@ -8,6 +8,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test:routes": "node --test tests/studio-routes.test.mjs",
+    "test:repository-hygiene": "node --test tests/repository-hygiene.test.mjs",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
