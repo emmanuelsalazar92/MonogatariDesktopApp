@@ -1889,11 +1889,11 @@ function EditorScreen({
 
       <div
         className={cn(
-          "grid gap-4",
-          inspectorOpen ? "xl:grid-cols-[minmax(0,1fr)_360px]" : "xl:grid-cols-1"
+          "grid min-w-0 gap-4",
+          inspectorOpen ? "xl:grid-cols-[minmax(0,1fr)_minmax(18rem,360px)]" : "xl:grid-cols-1"
         )}
       >
-        <Card className="overflow-hidden">
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader className="border-b bg-card/70">
             <div className="grid gap-3 xl:grid-cols-[1fr_auto] xl:items-center">
               <div className="grid gap-3 sm:grid-cols-[1fr_190px]">
@@ -2002,7 +2002,7 @@ function EditorScreen({
               <Badge variant="outline">{formatNumber(content.length)} characters</Badge>
               <Badge variant="outline">{estimatedReadingMinutes} min read</Badge>
             </div>
-            <div className="flex items-center gap-2 text-sm">
+            <div aria-live="polite" className="flex items-center gap-2 text-sm">
               <Circle
                 className={cn(
                   "size-2 fill-current",
@@ -2087,6 +2087,7 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
   const [locationId, setLocationId] = React.useState(activeScene.locationId || "none");
   const [timelineEventId, setTimelineEventId] = React.useState("none");
   const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [metadataLoading, setMetadataLoading] = React.useState(true);
 
   const characters = data.characters.filter((character) => character.novelId === novelId);
   const locations = data.locations.filter((location) => location.novelId === novelId);
@@ -2097,7 +2098,11 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
     setSummary(activeScene.summary);
     setObjective(activeScene.objective);
     setLocationId(activeScene.locationId || "none");
+    setCharacterIds([]);
+    setTimelineEventId("none");
+    setNotes("");
     setSaveState("idle");
+    setMetadataLoading(true);
     void fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/inspector`)
       .then(async (response) => {
         if (!response.ok) throw new Error("Could not load scene metadata");
@@ -2108,8 +2113,13 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
         setCharacterIds(inspector.characterIds);
         setTimelineEventId(inspector.timelineEventId ?? "none");
         setNotes(inspector.notes);
+        setMetadataLoading(false);
       })
-      .catch(() => !cancelled && setSaveState("error"));
+      .catch(() => {
+        if (cancelled) return;
+        setMetadataLoading(false);
+        setSaveState("error");
+      });
     return () => { cancelled = true; };
   }, [activeScene.id, activeScene.locationId, activeScene.objective, activeScene.summary]);
 
@@ -2130,7 +2140,7 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
   };
 
   return (
-    <Card className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+    <Card className="min-w-0 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
       <CardHeader>
         <CardTitle>Scene inspector</CardTitle>
         <CardDescription>Local story metadata for continuity</CardDescription>
@@ -2143,7 +2153,7 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
         <div className="grid gap-2"><Label htmlFor="scene-objective">Objective</Label><Textarea id="scene-objective" value={objective} onChange={(event) => setObjective(event.target.value)} /></div>
         <div className="grid gap-2"><Label htmlFor="scene-notes">Notes</Label><Textarea id="scene-notes" value={notes} onChange={(event) => setNotes(event.target.value)} /></div>
         {saveState === "error" ? <p role="alert" className="text-sm text-destructive">Metadata could not be saved. Your changes remain here; retry when ready.</p> : null}
-        <Button className="w-full" onClick={() => void saveMetadata()} disabled={saveState === "saving"}>{saveState === "saving" ? "Saving metadata…" : saveState === "saved" ? "Saved metadata" : "Save metadata"}</Button>
+        <Button className="w-full" onClick={() => void saveMetadata()} disabled={metadataLoading || saveState === "saving"}>{metadataLoading ? "Loading metadata…" : saveState === "saving" ? "Saving metadata…" : saveState === "saved" ? "Saved metadata" : "Save metadata"}</Button>
       </CardContent>
     </Card>
   );
