@@ -149,6 +149,16 @@ test("reader assembly is deterministic, read-only, and excludes archived hierarc
   assert.deepEqual(scenes.map((scene) => scene.id), ["s2", "s1", "s3"]);
 });
 
+test("reader scope navigation has deterministic adjacent units and safe limits", async () => {
+  const reader = await loadTypeScriptModule("lib/reader-document.ts");
+  const volumes = [{ id: "v1", novelId: "n", sortOrder: 1, archived: false }];
+  const chapters = [{ id: "c1", volumeId: "v1", sortOrder: 1, archived: false }, { id: "c2", volumeId: "v1", sortOrder: 2, archived: false }];
+  const scenes = [{ id: "s1", chapterId: "c1", sortOrder: 1, archived: false }, { id: "s2", chapterId: "c2", sortOrder: 1, archived: false }];
+  assert.deepEqual(reader.getReaderScopeUnits("scene", "n", volumes, chapters, scenes), ["s1", "s2"]);
+  assert.deepEqual(reader.getReaderAdjacentUnits(["c1", "c2"], "c1"), { previousId: null, nextId: "c2" });
+  assert.deepEqual(reader.getReaderAdjacentUnits(["n"], "n"), { previousId: null, nextId: null });
+});
+
 test("dialog surface uses opaque theme tokens while preserving the blurred backdrop", async () => {
   const dialogSource = await readFile(resolve(process.cwd(), "components/ui/dialog.tsx"), "utf8");
 

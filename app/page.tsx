@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { getReaderAdjacentUnits, getReaderScopeUnits } from "@/lib/reader-document";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
@@ -2315,16 +2316,24 @@ function ReaderScreen({
   const activeScene = getActiveScene(data);
   const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
   const [readerScope, setReaderScope] = React.useState<"scene" | "chapter" | "volume" | "novel">("chapter");
+  const [readerTargetId, setReaderTargetId] = React.useState(activeChapter.id);
   const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; title: string; content: string }> } | null>(null);
+  const scopeUnits = React.useMemo(() => getReaderScopeUnits(readerScope, data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerScope]);
+  const adjacentUnits = getReaderAdjacentUnits(scopeUnits, readerTargetId);
+
+  const changeReaderScope = (scope: "scene" | "chapter" | "volume" | "novel") => {
+    setReaderScope(scope);
+    setReaderTargetId(scope === "scene" ? activeScene.id : scope === "chapter" ? activeChapter.id : scope === "volume" ? activeVolume?.id || "" : data.settings.activeNovelId);
+  };
 
   React.useEffect(() => {
-    const targetId = readerScope === "scene" ? activeScene.id : readerScope === "chapter" ? activeChapter.id : readerScope === "volume" ? activeVolume?.id : data.settings.activeNovelId;
+    const targetId = readerTargetId;
     if (!targetId || !data.settings.activeNovelId) return;
     void fetch(`/api/reader?novelId=${encodeURIComponent(data.settings.activeNovelId)}&scope=${readerScope}&targetId=${encodeURIComponent(targetId)}`)
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then(setReaderDocument)
       .catch(() => setReaderDocument(null));
-  }, [activeChapter.id, activeScene.id, activeVolume?.id, data.settings.activeNovelId, readerScope]);
+  }, [data.settings.activeNovelId, readerScope, readerTargetId]);
 
   return (
     <div className="grid gap-6">
@@ -2350,7 +2359,7 @@ function ReaderScreen({
         <CardContent className="grid gap-3 p-4 lg:grid-cols-[220px_150px_1fr_1fr_auto] lg:items-end">
           <div>
             <Label>Scope</Label>
-            <Select value={readerScope} onValueChange={(value) => setReaderScope(value as typeof readerScope)}>
+            <Select value={readerScope} onValueChange={(value) => changeReaderScope(value as typeof readerScope)}>
               <SelectTrigger className="mt-2">
                 <SelectValue />
               </SelectTrigger>
@@ -2407,10 +2416,10 @@ function ReaderScreen({
               <CardDescription>Volume 1 Â· Scene preview Â· 38% read</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" aria-label="Previous">
+              <Button variant="outline" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)}>
                 <ArrowLeft className="size-4" />
               </Button>
-              <Button variant="outline" size="icon" aria-label="Next">
+              <Button variant="outline" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => adjacentUnits.nextId && setReaderTargetId(adjacentUnits.nextId)}>
                 <ArrowRight className="size-4" />
               </Button>
             </div>
@@ -2434,11 +2443,11 @@ function ReaderScreen({
           </article>
         </CardContent>
         <CardFooter className="flex flex-wrap justify-between gap-2 border-t p-4">
-          <Button variant="outline">
+          <Button variant="outline" disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)}>
             <ChevronLeft className="size-4" />
             Previous
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" disabled={!adjacentUnits.nextId} onClick={() => adjacentUnits.nextId && setReaderTargetId(adjacentUnits.nextId)}>
             Next
             <ChevronRight className="size-4" />
           </Button>
