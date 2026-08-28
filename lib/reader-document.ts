@@ -4,6 +4,21 @@ export type ReaderScene = { id: string; chapterId: string; title: string; conten
 export type ReaderChapter = { id: string; volumeId: string; title: string; sortOrder: number; archived: boolean };
 export type ReaderVolume = { id: string; novelId: string; title: string; sortOrder: number; archived: boolean };
 
+export function getReaderScopeUnits(scope: ReaderScope, novelId: string, volumes: ReaderVolume[], chapters: ReaderChapter[], scenes: ReaderScene[]) {
+  const activeVolumes = volumes.filter((item) => !item.archived).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+  const activeChapters = chapters.filter((item) => !item.archived && activeVolumes.some((volume) => volume.id === item.volumeId));
+  const activeScenes = scenes.filter((item) => !item.archived && activeChapters.some((chapter) => chapter.id === item.chapterId));
+  if (scope === "novel") return [novelId];
+  if (scope === "volume") return activeVolumes.map((item) => item.id);
+  if (scope === "chapter") return activeVolumes.flatMap((volume) => activeChapters.filter((chapter) => chapter.volumeId === volume.id).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id)).map((chapter) => chapter.id));
+  return activeVolumes.flatMap((volume) => activeChapters.filter((chapter) => chapter.volumeId === volume.id).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id)).flatMap((chapter) => activeScenes.filter((scene) => scene.chapterId === chapter.id).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id)).map((scene) => scene.id)));
+}
+
+export function getReaderAdjacentUnits(units: string[], targetId: string) {
+  const index = units.indexOf(targetId);
+  return { previousId: index > 0 ? units[index - 1] : null, nextId: index >= 0 && index < units.length - 1 ? units[index + 1] : null };
+}
+
 export function assembleReaderDocument(scope: ReaderScope, targetId: string, volumes: ReaderVolume[], chapters: ReaderChapter[], scenes: ReaderScene[]) {
   const activeVolumes = volumes.filter((volume) => !volume.archived).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
   const activeChapters = chapters.filter((chapter) => !chapter.archived && activeVolumes.some((volume) => volume.id === chapter.volumeId)).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
