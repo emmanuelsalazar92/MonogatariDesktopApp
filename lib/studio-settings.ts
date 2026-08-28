@@ -30,6 +30,7 @@ const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = 
   editorFontSize: ["16 px", "18 px", "20 px", "22 px"],
   readerFontSize: ["16 px", "18 px", "20 px", "22 px"],
   autosaveInterval: ["10 seconds", "30 seconds", "60 seconds", "Manual only"],
+  editorInspectorOpen: ["true", "false"],
   defaultFocusMode: ["Writing", "Reading", "Off"],
   defaultReadingMode: ["Light", "Dark", "Sepia"],
   backupRetention: backupRetentionPolicies,
@@ -112,7 +113,7 @@ export function applyStudioSettings(
       continue;
     }
     (next as Record<string, string | boolean>)[settingKey] =
-      settingKey === "typewriterFont" || settingKey === "notionAutosyncEnabled"
+      settingKey === "typewriterFont" || settingKey === "notionAutosyncEnabled" || settingKey === "editorInspectorOpen"
         ? normalized === "true"
         : normalized;
   }

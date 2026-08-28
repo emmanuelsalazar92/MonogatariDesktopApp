@@ -430,6 +430,8 @@ function PrivateNovelStudioContent() {
       setSidebarState(nextSettings.sidebarState);
     }
 
+    setInspectorOpen(nextSettings.editorInspectorOpen);
+
     const nextReaderFontSize = Number.parseInt(nextSettings.readerFontSize, 10);
     if (!Number.isNaN(nextReaderFontSize)) {
       setReaderFontSize(nextReaderFontSize);
@@ -600,6 +602,13 @@ function PrivateNovelStudioContent() {
   const updateSidebarState = React.useCallback(
     (value: SidebarState) => {
       void saveSettings({ sidebarState: value }, () => setSidebarState(value));
+    },
+    [saveSettings]
+  );
+
+  const updateInspectorOpen = React.useCallback(
+    (open: boolean) => {
+      void saveSettings({ editorInspectorOpen: String(open) }, () => setInspectorOpen(open));
     },
     [saveSettings]
   );
@@ -1241,7 +1250,7 @@ function PrivateNovelStudioContent() {
       }
 
       if (event.key === "Escape") {
-        void changeFocusMode("none");
+        if (focusMode !== "none") void changeFocusMode("none");
         setMobileDrawerOpen(false);
         setDialog(null);
       }
@@ -1249,7 +1258,7 @@ function PrivateNovelStudioContent() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activePage, changeFocusMode, cycleSidebar, flushPendingChanges]);
+  }, [activePage, changeFocusMode, cycleSidebar, flushPendingChanges, focusMode]);
 
   const novels = studioData.novels;
   const { characters, locations, relationships } = scopedStudioData;
@@ -1491,7 +1500,7 @@ function PrivateNovelStudioContent() {
                   onNavigateScene={(sceneId) => void openSceneInEditor(sceneId)}
                   onRefreshMetadata={() => void refreshStudioData(false)}
                   inspectorOpen={inspectorOpen}
-                  setInspectorOpen={setInspectorOpen}
+                  setInspectorOpen={updateInspectorOpen}
                   setSaveStatus={setSaveStatus}
                 />
               ) : null}
@@ -1924,6 +1933,7 @@ function EditorScreen({
                   variant="ghost"
                   size="icon"
                   aria-label={inspectorOpen ? "Close inspector" : "Open inspector"}
+                  aria-pressed={inspectorOpen}
                   onClick={() => setInspectorOpen(!inspectorOpen)}
                 >
                   {inspectorOpen ? (
@@ -2217,7 +2227,7 @@ function WritingFocusMode({
           >
             <Save className="size-4" />
           </Button>
-          <Button variant="outline" onClick={onExit}>
+          <Button variant="outline" onClick={onExit} aria-label="Exit focus mode">
             <X className="size-4" />
             Exit focus
           </Button>
