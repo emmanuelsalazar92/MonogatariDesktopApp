@@ -51,6 +51,7 @@ export type PersistedStudioSettings = {
   editorFontSize: string;
   readerFontSize: string;
   autosaveInterval: string;
+  editorInspectorOpen: boolean;
   defaultFocusMode: string;
   defaultReadingMode: string;
   backupRetention: string;
@@ -126,6 +127,7 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   editorFontSize: "18 px",
   readerFontSize: "18 px",
   autosaveInterval: "30 seconds",
+  editorInspectorOpen: true,
   defaultFocusMode: "Writing",
   defaultReadingMode: "Sepia",
   backupRetention: "30 daily backups",

@@ -171,6 +171,19 @@ test("scene inspector persists continuity metadata without submitting manuscript
   assert.doesNotMatch(inspectorSource, /content:/);
 });
 
+test("editor density persists only the inspector preference and exposes accessible mode controls", async () => {
+  const settings = await loadTypeScriptModule("lib/studio-settings.ts", (moduleId) => {
+    if (moduleId === "@/lib/studio-data") return { defaultPersistedStudioSettings: { editorInspectorOpen: true } };
+    if (moduleId === "@/lib/studio-domain") return { exportFormats: ["EPUB"], exportOptions: ["Include cover"] };
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+
+  assert.equal(settings.applyStudioSettings({ editorInspectorOpen: true }, { editorInspectorOpen: "false" }).editorInspectorOpen, false);
+  assert.match(pageSource, /aria-pressed=\{inspectorOpen\}/);
+  assert.match(pageSource, /aria-label="Exit focus mode"/);
+});
+
 test("editor navigation crosses chapters and stops at novel bounds", async () => {
   const navigation = await loadTypeScriptModule("lib/editor-scene-navigation.ts");
   const scenes = navigation.getNovelSceneNavigation("n", [{ id: "v", novelId: "n", sortOrder: 1 }], [{ id: "c1", volumeId: "v", sortOrder: 1 }, { id: "c2", volumeId: "v", sortOrder: 2 }], [{ id: "s2", chapterId: "c2", title: "Two", sortOrder: 1, archived: false }, { id: "s1", chapterId: "c1", title: "One", sortOrder: 1, archived: false }]);
