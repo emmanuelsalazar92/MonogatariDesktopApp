@@ -171,6 +171,13 @@ test("scene restore creates a safeguard checkpoint without autosave snapshots", 
   assert.match(restoreRoute, /restoreSceneVersion/);
 });
 
+test("editor lifecycle flushes before transitions and keeps unload prompts conditional", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  assert.match(pageSource, /if \(!\(await flushPendingChanges\(\)\)\)/);
+  assert.match(pageSource, /if \(!dirtyRef\.current\) return/);
+  assert.match(pageSource, /setContent\(activeScene\.content\)/);
+});
+
 test("scene inspector persists continuity metadata without submitting manuscript content", async () => {
   const inspectorSource = await readFile(resolve(process.cwd(), "app/api/scenes/[sceneId]/inspector/route.ts"), "utf8");
   const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
