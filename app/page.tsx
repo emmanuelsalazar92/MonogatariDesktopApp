@@ -1630,6 +1630,7 @@ function PrivateNovelStudioContent() {
         onCreateRelationship={createRelationshipFromDialog}
         onCreateEvent={createTimelineEventFromDialog}
         onCreateNote={createNoteFromDialog}
+        onNavigateReaderScene={(sceneId) => { void openSceneInEditor(sceneId); void selectPage("reader"); }}
         onClose={() => setDialog(null)}
       />
 
@@ -3458,6 +3459,7 @@ function PrototypeDialog({
   onCreateRelationship,
   onCreateEvent,
   onCreateNote,
+  onNavigateReaderScene,
   onClose
 }: {
   dialog:
@@ -3477,6 +3479,7 @@ function PrototypeDialog({
   onCreateRelationship: (input: CreateRelationshipInput) => Promise<void>;
   onCreateEvent: (input: CreateTimelineEventInput) => Promise<void>;
   onCreateNote: (input: CreateNoteInput) => Promise<void>;
+  onNavigateReaderScene: (sceneId: string) => void;
   onClose: () => void;
 }) {
   const data = useStudioData();
@@ -3674,21 +3677,20 @@ function PrototypeDialog({
               <DialogDescription>{copy.description}</DialogDescription>
             </DialogHeader>
             {dialog === "toc" ? (
-              <div className="max-h-96 overflow-y-auto rounded-md border bg-background/35 p-3">
-                {data.volumes.map((volume) => (
-                  <div key={volume.id} className="mb-3">
+              <div role="tree" aria-label="Reader table of contents" className="max-h-96 overflow-y-auto rounded-md border bg-background/35 p-3">
+                {data.volumes.filter((volume) => !volume.archived).map((volume) => (
+                  <div key={volume.id} role="treeitem" aria-expanded="true" aria-selected="false" className="mb-3">
                     <p className="font-semibold">{volume.title}</p>
-                    <div className="mt-2 space-y-2 pl-3">
+                    <div role="group" className="mt-2 space-y-2 pl-3">
                       {data.chapters
-                        .filter((chapter) => chapter.volumeId === volume.id)
+                        .filter((chapter) => chapter.volumeId === volume.id && !chapter.archived)
                         .map((chapter) => (
-                          <button
-                            key={chapter.id}
-                            type="button"
-                            className="block w-full rounded-md px-2 py-1 text-left text-sm hover:bg-secondary"
-                          >
-                            {chapter.title}
-                          </button>
+                          <div key={chapter.id} role="treeitem" aria-expanded="true" aria-selected="false">
+                            <p className="px-2 py-1 text-sm font-medium">{chapter.title}</p>
+                            <div role="group" className="space-y-1 pl-3">
+                              {data.scenes.filter((scene) => scene.chapterId === chapter.id && !scene.archived).map((scene) => <button key={scene.id} type="button" role="treeitem" aria-selected={scene.id === data.settings.activeSceneId} aria-current={scene.id === data.settings.activeSceneId ? "page" : undefined} className={cn("block w-full rounded-md px-2 py-1 text-left text-sm hover:bg-secondary", scene.id === data.settings.activeSceneId && "bg-secondary font-medium")} onClick={() => { onNavigateReaderScene(scene.id); onClose(); }}>{scene.title}</button>)}
+                            </div>
+                          </div>
                         ))}
                     </div>
                   </div>
