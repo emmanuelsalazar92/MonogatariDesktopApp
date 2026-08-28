@@ -131,7 +131,6 @@ import {
   narrativeStatuses,
   placeTypes,
   relationshipCategories,
-  shortcutHints,
   type ChapterStatus,
   type FocusMode,
   type Location,
@@ -1701,6 +1700,8 @@ function EditorScreen({
   const [versionLabel, setVersionLabel] = React.useState("");
   const [selectedVersion, setSelectedVersion] = React.useState<string | null>(null);
   const [versionError, setVersionError] = React.useState("");
+  const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
+  const [moreActionsOpen, setMoreActionsOpen] = React.useState(false);
   const [title, setTitle] = React.useState(activeScene.title);
   const [status, setStatus] = React.useState<ChapterStatus>(activeScene.status);
   const [content, setContent] = React.useState(activeScene.content);
@@ -1944,14 +1945,10 @@ function EditorScreen({
                   {saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
                 </Button>
                 <Button variant="outline" onClick={() => void openVersions()}>
-                  <Download className="size-4" />
-                  Export chapter
-                </Button>
-                <Button variant="outline">
                   <History className="size-4" />
                   Version history
                 </Button>
-                <Button variant="ghost" size="icon" aria-label="More editor options">
+                <Button variant="ghost" size="icon" aria-label="More editor options" onClick={() => setMoreActionsOpen(true)}>
                   <MoreHorizontal className="size-4" />
                 </Button>
                 <Button
@@ -2061,7 +2058,12 @@ function EditorScreen({
         {inspectorOpen ? <EditorInspector onRefresh={onRefreshMetadata} /> : null}
       </div>
 
-      <ShortcutPanel />
+      <Dialog open={moreActionsOpen} onOpenChange={setMoreActionsOpen}>
+        <DialogContent><DialogHeader><DialogTitle>More editor actions</DialogTitle><DialogDescription>Less frequent actions stay out of the writing toolbar.</DialogDescription></DialogHeader><Button variant="outline"><Download className="size-4" />Export chapter</Button><Button variant="outline" onClick={() => { setMoreActionsOpen(false); setShortcutsOpen(true); }}><Keyboard className="size-4" />Keyboard shortcuts</Button><DialogFooter><Button variant="outline" onClick={() => setMoreActionsOpen(false)}>Close</Button></DialogFooter></DialogContent>
+      </Dialog>
+      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <DialogContent><DialogHeader><DialogTitle>Keyboard shortcuts</DialogTitle><DialogDescription>Writing shortcuts remain local to Monogatari.</DialogDescription></DialogHeader><div className="grid gap-2 text-sm"><p><kbd>Ctrl / Cmd + S</kbd> Save scene</p><p><kbd>Ctrl / Cmd + Enter</kbd> Focus mode</p><p><kbd>Ctrl / Cmd + \\</kbd> Cycle sidebar</p><p><kbd>Escape</kbd> Exit focus or close dialogs</p></div><DialogFooter><Button onClick={() => setShortcutsOpen(false)}>Close shortcuts</Button></DialogFooter></DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -2140,21 +2142,6 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
         <div className="grid gap-2"><Label htmlFor="scene-notes">Notes</Label><Textarea id="scene-notes" value={notes} onChange={(event) => setNotes(event.target.value)} /></div>
         {saveState === "error" ? <p role="alert" className="text-sm text-destructive">Metadata could not be saved. Your changes remain here; retry when ready.</p> : null}
         <Button className="w-full" onClick={() => void saveMetadata()} disabled={saveState === "saving"}>{saveState === "saving" ? "Saving metadata…" : saveState === "saved" ? "Saved metadata" : "Save metadata"}</Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ShortcutPanel() {
-  return (
-    <Card>
-      <CardContent className="flex flex-wrap items-center gap-2 p-4 text-sm text-muted-foreground">
-        <Keyboard className="size-4 text-primary" />
-        {shortcutHints.map((hint) => (
-          <Badge key={hint} variant="outline" className="bg-background/45">
-            {hint}
-          </Badge>
-        ))}
       </CardContent>
     </Card>
   );
