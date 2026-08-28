@@ -201,6 +201,16 @@ test("editor density persists only the inspector preference and exposes accessib
   assert.match(pageSource, /aria-label="Exit focus mode"/);
 });
 
+test("editor remains accessible and avoids stale inspector metadata on narrow layouts", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+
+  assert.match(pageSource, /grid min-w-0 gap-4/);
+  assert.match(pageSource, /minmax\(18rem,360px\)/);
+  assert.match(pageSource, /aria-live="polite"/);
+  assert.match(pageSource, /setCharacterIds\(\[\]\);/);
+  assert.match(pageSource, /disabled=\{metadataLoading \|\| saveState === "saving"\}/);
+});
+
 test("editor navigation crosses chapters and stops at novel bounds", async () => {
   const navigation = await loadTypeScriptModule("lib/editor-scene-navigation.ts");
   const scenes = navigation.getNovelSceneNavigation("n", [{ id: "v", novelId: "n", sortOrder: 1 }], [{ id: "c1", volumeId: "v", sortOrder: 1 }, { id: "c2", volumeId: "v", sortOrder: 2 }], [{ id: "s2", chapterId: "c2", title: "Two", sortOrder: 1, archived: false }, { id: "s1", chapterId: "c1", title: "One", sortOrder: 1, archived: false }]);
