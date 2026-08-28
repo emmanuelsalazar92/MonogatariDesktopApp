@@ -124,6 +124,7 @@ import {
 } from "@/lib/studio-library-navigation";
 import { cn } from "@/lib/utils";
 import { statusAfterSaveConfirmation, type AutosaveStatus } from "@/lib/autosave-state";
+import { getAdjacentSceneIds, getNovelSceneNavigation } from "@/lib/editor-scene-navigation";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
   exportFormats,
@@ -1492,6 +1493,7 @@ function PrivateNovelStudioContent() {
                   onDirtyChange={setEditorDirty}
                   onFocus={() => void changeFocusMode("writing")}
                   onReader={() => void selectPage("reader")}
+                  onNavigateScene={(sceneId) => void openSceneInEditor(sceneId)}
                   inspectorOpen={inspectorOpen}
                   setInspectorOpen={setInspectorOpen}
                   setSaveStatus={setSaveStatus}
@@ -1656,6 +1658,7 @@ function EditorScreen({
   onDirtyChange,
   onFocus,
   onReader,
+  onNavigateScene,
   setInspectorOpen,
   setSaveStatus
 }: {
@@ -1669,12 +1672,16 @@ function EditorScreen({
   onDirtyChange: (dirty: boolean) => void;
   onFocus: () => void;
   onReader: () => void;
+  onNavigateScene: (sceneId: string) => void;
   setInspectorOpen: (open: boolean) => void;
   setSaveStatus: (status: SaveStatus) => void;
 }) {
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
+  const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
+  const navigationScenes = React.useMemo(() => getNovelSceneNavigation(data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes]);
+  const adjacentScenes = getAdjacentSceneIds(activeScene.id, navigationScenes.map((scene) => scene.id));
   const [chapterPreviewOpen, setChapterPreviewOpen] = React.useState(false);
   const [chapterPreview, setChapterPreview] = React.useState<{
     chapter: { id: string; title: string };
@@ -1831,6 +1838,8 @@ function EditorScreen({
         description="Draft scenes, inspect story links, and keep the assembled chapter close at hand."
         action={
           <>
+            <Button variant="outline" aria-label="Previous scene" disabled={!adjacentScenes.previousId} onClick={() => adjacentScenes.previousId && onNavigateScene(adjacentScenes.previousId)}><ChevronLeft className="size-4" />Previous</Button>
+            <Button variant="outline" aria-label="Next scene" disabled={!adjacentScenes.nextId} onClick={() => adjacentScenes.nextId && onNavigateScene(adjacentScenes.nextId)}>Next<ChevronRight className="size-4" /></Button>
             <Button onClick={onFocus}>
               <MaximizeIcon />
               Focus mode
@@ -1934,7 +1943,14 @@ function EditorScreen({
           <CardContent className="p-0">
             <div className="p-4">
               <div className="mx-auto mb-3 max-w-4xl text-sm text-muted-foreground">
-                Editing scene: <span className="font-medium text-foreground">{activeScene.title}</span>
+                {activeVolume?.title} / {activeChapter.title} / <span className="font-medium text-foreground">{activeScene.title}</span>
+              </div>
+              <div className="mx-auto mb-3 max-w-4xl">
+                <Label htmlFor="editor-scene-selector">Scene</Label>
+                <Select value={activeScene.id} onValueChange={onNavigateScene}>
+                  <SelectTrigger id="editor-scene-selector" className="mt-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>{navigationScenes.map((scene) => { const chapter = data.chapters.find((item) => item.id === scene.chapterId); const volume = data.volumes.find((item) => item.id === chapter?.volumeId); return <SelectItem key={scene.id} value={scene.id}>{volume?.title} / {chapter?.title} / {scene.title}</SelectItem>; })}</SelectContent>
+                </Select>
               </div>
               <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
                 <Textarea
