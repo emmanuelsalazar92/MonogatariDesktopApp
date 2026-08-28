@@ -1,6 +1,7 @@
 ﻿import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-preview";
+import { assembleReaderDocument, type ReaderScope } from "@/lib/reader-document";
 import {
   applyStudioSettings,
   parseStudioSettings,
@@ -907,5 +908,34 @@ export async function getChapterPreview(chapterId: string) {
     scenes,
     content: composeChapterPreview(chapter.id, scenes)
   };
+}
+
+export async function getReaderDocument(novelId: string, scope: ReaderScope, targetId: string) {
+  const novel = await prisma.novel.findUnique({
+    where: { id: novelId },
+    select: {
+      id: true,
+      title: true,
+      volumes: {
+        select: {
+          id: true, novelId: true, title: true, sortOrder: true, archived: true,
+          chapters: {
+            select: {
+              id: true, volumeId: true, title: true, sortOrder: true, archived: true,
+              scenes: { select: { id: true, chapterId: true, title: true, content: true, sortOrder: true, archived: true } }
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!novel) return null;
+  const volumes = novel.volumes;
+  const chapters = volumes.flatMap((volume) => volume.chapters);
+  const scenes = chapters.flatMap((chapter) => chapter.scenes);
+  const document = assembleReaderDocument(scope, targetId, volumes, chapters, scenes);
+  const validTarget = scope === "novel" ? targetId === novel.id : scope === "volume" ? document.volumes.some((item) => item.id === targetId) : scope === "chapter" ? document.chapters.some((item) => item.id === targetId) : document.scenes.some((item) => item.id === targetId);
+  if (!validTarget) return null;
+  return { novel: { id: novel.id, title: novel.title }, scope, targetId, ...document };
 }
 

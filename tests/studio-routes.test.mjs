@@ -136,6 +136,19 @@ test("chapter preview composes only its ordered, non-archived scenes", async () 
   );
 });
 
+test("reader assembly is deterministic, read-only, and excludes archived hierarchy", async () => {
+  const reader = await loadTypeScriptModule("lib/reader-document.ts");
+  const volumes = [{ id: "v1", novelId: "n", title: "One", sortOrder: 1, archived: false }];
+  const chapters = [{ id: "c1", volumeId: "v1", title: "Chapter", sortOrder: 1, archived: false }];
+  const scenes = [
+    { id: "s2", chapterId: "c1", title: "Second", content: "B", sortOrder: 2, archived: false },
+    { id: "s1", chapterId: "c1", title: "First", content: "A", sortOrder: 1, archived: false },
+    { id: "s3", chapterId: "c1", title: "Archived", content: "X", sortOrder: 3, archived: true }
+  ];
+  assert.deepEqual(reader.assembleReaderDocument("chapter", "c1", volumes, chapters, scenes).scenes.map((scene) => scene.id), ["s1", "s2"]);
+  assert.deepEqual(scenes.map((scene) => scene.id), ["s2", "s1", "s3"]);
+});
+
 test("dialog surface uses opaque theme tokens while preserving the blurred backdrop", async () => {
   const dialogSource = await readFile(resolve(process.cwd(), "components/ui/dialog.tsx"), "utf8");
 

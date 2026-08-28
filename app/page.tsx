@@ -2312,6 +2312,18 @@ function ReaderScreen({
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
+  const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
+  const [readerScope, setReaderScope] = React.useState<"scene" | "chapter" | "volume" | "novel">("chapter");
+  const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; title: string; content: string }> } | null>(null);
+
+  React.useEffect(() => {
+    const targetId = readerScope === "scene" ? activeScene.id : readerScope === "chapter" ? activeChapter.id : readerScope === "volume" ? activeVolume?.id : data.settings.activeNovelId;
+    if (!targetId || !data.settings.activeNovelId) return;
+    void fetch(`/api/reader?novelId=${encodeURIComponent(data.settings.activeNovelId)}&scope=${readerScope}&targetId=${encodeURIComponent(targetId)}`)
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then(setReaderDocument)
+      .catch(() => setReaderDocument(null));
+  }, [activeChapter.id, activeScene.id, activeVolume?.id, data.settings.activeNovelId, readerScope]);
 
   return (
     <div className="grid gap-6">
@@ -2337,13 +2349,13 @@ function ReaderScreen({
         <CardContent className="grid gap-3 p-4 lg:grid-cols-[220px_150px_1fr_1fr_auto] lg:items-end">
           <div>
             <Label>Scope</Label>
-            <Select defaultValue={readerScopes[2]}>
+            <Select value={readerScope} onValueChange={(value) => setReaderScope(value as typeof readerScope)}>
               <SelectTrigger className="mt-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {readerScopes.map((scope) => (
-                  <SelectItem key={scope} value={scope}>
+                {readerScopes.map((scope, index) => (
+                  <SelectItem key={scope} value={["novel", "volume", "chapter", "scene"][index]}>
                     {scope}
                   </SelectItem>
                 ))}
@@ -2415,11 +2427,9 @@ function ReaderScreen({
         >
           <article className="space-y-6 leading-9">
             <h2 className="font-serif text-3xl font-semibold tracking-normal">
-              {activeScene.title}
+              {readerDocument?.scenes[0]?.title || activeScene.title}
             </h2>
-            {activeScene.content.split("\n\n").map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
+            {(readerDocument?.scenes || []).map((scene) => <section key={scene.id} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
           </article>
         </CardContent>
         <CardFooter className="flex flex-wrap justify-between gap-2 border-t p-4">
