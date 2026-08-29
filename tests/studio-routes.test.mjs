@@ -46,7 +46,8 @@ test("character metadata supports minimal creation and normalizes aliases", asyn
   const normalized = metadata.validateCharacterMetadata({
     name: "Ada",
     aliases: ["  The Cartographer ", "the cartographer", "Ada", "Ámbar"],
-    status: "Secondary"
+    role: "Support",
+    status: "Inactive"
   });
   assert.equal(normalized.ok, true);
   assert.deepEqual(normalized.data.aliases, ["The Cartographer", "Ámbar"]);
@@ -58,11 +59,34 @@ test("character metadata rejects invalid and derived fields", async () => {
   assert.equal(derived.ok, false);
   assert.match(derived.error, /not editable/);
 
-  const invalid = metadata.validateCharacterMetadata({ name: "", status: "Unknown", aliases: "Alias" });
+  const invalid = metadata.validateCharacterMetadata({ name: "", role: "SUPERHERO", status: "Unknown", aliases: "Alias" });
   assert.equal(invalid.ok, false);
   assert.ok(invalid.fieldErrors.name);
   assert.ok(invalid.fieldErrors.status);
+  assert.ok(invalid.fieldErrors.role);
   assert.ok(invalid.fieldErrors.aliases);
+});
+
+test("character classification migrates legacy values and filters canonical lifecycle", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+
+  assert.equal(metadata.normalizeStoredCharacterRole("Deuteragonist"), "Support");
+  assert.equal(metadata.normalizeStoredCharacterRole("Mentor / Suspect"), "Other");
+  assert.deepEqual(metadata.parseStoredCharacterStatus("Missing"), {
+    lifecycle: "Active",
+    narrative: "Missing"
+  });
+  const stored = metadata.serializeCharacterStatus("Archived", "Deceased");
+  assert.deepEqual(metadata.parseStoredCharacterStatus(stored), {
+    lifecycle: "Archived",
+    narrative: "Deceased"
+  });
+
+  const active = { role: "Support", status: "Active" };
+  const archived = { role: "Support", status: "Archived" };
+  assert.equal(metadata.matchesCharacterClassification(active, "Support", "Active"), true);
+  assert.equal(metadata.matchesCharacterClassification(archived, "Support", "Active"), false);
+  assert.equal(metadata.matchesCharacterClassification(archived, "All roles", "Archived"), true);
 });
 
 test("Library navigation accepts only allowlisted query parameters", async () => {

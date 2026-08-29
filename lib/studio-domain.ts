@@ -124,7 +124,7 @@ export interface Character {
   alias: string;
   aliases: string[];
   age: string;
-  role: string;
+  role: "Protagonist" | "Antagonist" | "Support" | "Minor" | "Cameo" | "Other";
   appearance: string;
   personality: string;
   wayOfSpeaking: string;
@@ -133,7 +133,8 @@ export interface Character {
   secret: string;
   notes: string;
   firstAppearance: string;
-  status: "Active" | "Secondary" | "Missing" | "Dead" | "Spoiler" | "Archived";
+  status: "Active" | "Inactive" | "Archived";
+  narrativeStatus: "Secondary" | "Missing" | "Deceased" | "Spoiler" | "";
   image: string;
   scenes: number;
 }

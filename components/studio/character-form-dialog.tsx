@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { characterStatuses, type CharacterFieldErrors, type CharacterMetadataInput } from "@/lib/character-metadata";
+import { characterRoles, characterStatuses, type CharacterFieldErrors, type CharacterMetadataInput } from "@/lib/character-metadata";
 import type { Character } from "@/lib/studio-domain";
 
 const emptyForm: CharacterMetadataInput = {
-  name: "", aliases: [], role: "", status: "Active", age: "", appearance: "", personality: "",
+  name: "", aliases: [], role: "Support", status: "Active", age: "", appearance: "", personality: "",
   wayOfSpeaking: "", goal: "", fear: "", secret: "", notes: ""
 };
 
@@ -81,7 +81,14 @@ export function CharacterFormDialog({ open, novelId, character, onOpenChange, on
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField id="character-name" label="Name" value={form.name} error={errors.name} required maxLength={120} onChange={(value) => update("name", value)} />
             <TextField id="character-age" label="Age" value={form.age} error={errors.age} maxLength={80} onChange={(value) => update("age", value)} />
-            <TextField id="character-role" label="Role" value={form.role} error={errors.role} maxLength={80} onChange={(value) => update("role", value)} />
+            <div className="grid gap-2">
+              <Label htmlFor="character-role">Role</Label>
+              <Select value={form.role} onValueChange={(value) => update("role", value)}>
+                <SelectTrigger id="character-role" aria-invalid={Boolean(errors.role)}><SelectValue /></SelectTrigger>
+                <SelectContent>{characterRoles.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
+              </Select>
+              <FieldError message={errors.role} />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="character-status">Status</Label>
               <Select value={form.status} onValueChange={(value) => update("status", value)}>

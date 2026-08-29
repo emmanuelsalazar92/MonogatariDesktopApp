@@ -81,6 +81,11 @@ import {
 } from "@/lib/reader-preferences";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { CharacterFormDialog } from "@/components/studio/character-form-dialog";
+import {
+  characterRoles as validCharacterRoles,
+  characterStatuses as validCharacterStatuses,
+  matchesCharacterClassification
+} from "@/lib/character-metadata";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
 import { MobileNavDialog } from "@/components/studio/mobile-nav-dialog";
@@ -240,8 +245,8 @@ const readerScopes = [
   "Read selected scene"
 ];
 
-const characterRoles = ["All roles", "Protagonist", "Deuteragonist", "Support", "Mentor / Suspect"];
-const characterStatuses = ["All statuses", "Active", "Secondary", "Missing", "Dead", "Spoiler", "Archived"];
+const characterRoles = ["All roles", ...validCharacterRoles];
+const characterStatuses = ["All statuses", ...validCharacterStatuses];
 
 function autosaveDelay(value: string) {
   if (value === "Manual only") return null;
@@ -1422,10 +1427,7 @@ function PrivateNovelStudioContent() {
     const queryMatch =
       character.name.toLowerCase().includes(characterQuery.toLowerCase()) ||
       character.aliases.some((alias) => alias.toLowerCase().includes(characterQuery.toLowerCase()));
-    const roleMatch = characterRole === "All roles" || character.role === characterRole;
-    const statusMatch =
-      characterStatus === "All statuses" || character.status === characterStatus;
-    return queryMatch && roleMatch && statusMatch;
+    return queryMatch && matchesCharacterClassification(character, characterRole, characterStatus);
   });
 
   const filteredPlaces = locations.filter((place) => {

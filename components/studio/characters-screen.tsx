@@ -362,6 +362,9 @@ function CharacterDetailPanel({
         <DetailSection title={translate("Identity")}>
           <div className="grid gap-3 sm:grid-cols-2">
             <FieldLine label={translate("Age")} value={valueOrFallback(character.age)} />
+            {character.narrativeStatus ? (
+              <FieldLine label={translate("Narrative state")} value={translate(character.narrativeStatus)} />
+            ) : null}
             <FieldLine
               label={translate("First appearance")}
               value={valueOrFallback(character.firstAppearance)}
