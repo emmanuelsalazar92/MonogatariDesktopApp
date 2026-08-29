@@ -151,12 +151,115 @@ test("reader assembly is deterministic, read-only, and excludes archived hierarc
 
 test("reader scope navigation has deterministic adjacent units and safe limits", async () => {
   const reader = await loadTypeScriptModule("lib/reader-document.ts");
-  const volumes = [{ id: "v1", novelId: "n", sortOrder: 1, archived: false }];
+  const volumes = [
+    { id: "v1", novelId: "n", sortOrder: 1, archived: false },
+    { id: "other-volume", novelId: "other", sortOrder: 1, archived: false }
+  ];
   const chapters = [{ id: "c1", volumeId: "v1", sortOrder: 1, archived: false }, { id: "c2", volumeId: "v1", sortOrder: 2, archived: false }];
   const scenes = [{ id: "s1", chapterId: "c1", sortOrder: 1, archived: false }, { id: "s2", chapterId: "c2", sortOrder: 1, archived: false }];
   assert.deepEqual(reader.getReaderScopeUnits("scene", "n", volumes, chapters, scenes), ["s1", "s2"]);
   assert.deepEqual(reader.getReaderAdjacentUnits(["c1", "c2"], "c1"), { previousId: null, nextId: "c2" });
   assert.deepEqual(reader.getReaderAdjacentUnits(["n"], "n"), { previousId: null, nextId: null });
+});
+
+test("reader deep links are canonical, history-friendly, and reject cross-novel targets", async () => {
+  const reader = await loadTypeScriptModule("lib/reader-document.ts");
+  const navigation = await loadTypeScriptModule("lib/studio-reader-navigation.ts", (moduleId) => {
+    if (moduleId === "@/lib/reader-document") return reader;
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+  const volumes = [
+    { id: "v1", novelId: "n", sortOrder: 1, archived: false },
+    { id: "v2", novelId: "other", sortOrder: 1, archived: false }
+  ];
+  const chapters = [
+    { id: "c1", volumeId: "v1", sortOrder: 1, archived: false },
+    { id: "c2", volumeId: "v2", sortOrder: 1, archived: false }
+  ];
+  const scenes = [
+    { id: "s1", chapterId: "c1", sortOrder: 1, archived: false },
+    { id: "s2", chapterId: "c2", sortOrder: 1, archived: false }
+  ];
+  const fallback = { scope: "chapter", targetId: "c1" };
+
+  assert.deepEqual(
+    navigation.parseReaderNavigationState(
+      new URLSearchParams("scope=scene&target=s1"),
+      "n",
+      fallback,
+      volumes,
+      chapters,
+      scenes
+    ),
+    { scope: "scene", targetId: "s1" }
+  );
+  assert.deepEqual(
+    navigation.parseReaderNavigationState(
+      new URLSearchParams("scope=scene&target=s2"),
+      "n",
+      fallback,
+      volumes,
+      chapters,
+      scenes
+    ),
+    fallback
+  );
+  assert.deepEqual(
+    navigation.parseReaderNavigationState(
+      new URLSearchParams("scope=secret&target=s1"),
+      "n",
+      fallback,
+      volumes,
+      chapters,
+      scenes
+    ),
+    fallback
+  );
+  assert.equal(
+    navigation.serializeReaderNavigationState({ scope: "chapter", targetId: "c1" }).toString(),
+    "scope=chapter&target=c1"
+  );
+});
+
+test("reader preferences validate persisted values and restore safe defaults", async () => {
+  const preferences = await loadTypeScriptModule("lib/reader-preferences.ts");
+  const defaults = {
+    readerFontSize: "18 px",
+    readerWidth: "720 px",
+    defaultReadingMode: "Sepia"
+  };
+  const settings = await loadTypeScriptModule("lib/studio-settings.ts", (moduleId) => {
+    if (moduleId === "@/lib/studio-data") return { defaultPersistedStudioSettings: defaults };
+    if (moduleId === "@/lib/studio-domain") return { exportFormats: ["EPUB"], exportOptions: ["Include cover"] };
+    if (moduleId === "@/lib/reader-preferences") return preferences;
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+
+  assert.equal(preferences.normalizeReaderFontSize("20 px"), "20 px");
+  assert.equal(preferences.normalizeReaderWidth("760 px"), "760 px");
+  assert.equal(preferences.normalizeReaderFontSize("200 px"), null);
+  assert.equal(preferences.normalizeReaderFontSize("18px-corrupt"), null);
+  assert.equal(preferences.normalizeReaderWidth("javascript:alert(1)"), null);
+  assert.deepEqual(
+    settings.parseStudioSettings('{"readerFontSize":"200 px","readerWidth":"9999 px"}'),
+    defaults
+  );
+  assert.equal(settings.validateStudioSettingsUpdate({ readerWidth: "901 px" }), null);
+});
+
+test("reader document preserves UTF-8 manuscript text without heuristic replacement", async () => {
+  const reader = await loadTypeScriptModule("lib/reader-document.ts");
+  const unicode = "Volume 1 · mañana llegaría con sus compañeros · 日本語の本文";
+  const document = reader.assembleReaderDocument(
+    "scene",
+    "s1",
+    [{ id: "v1", novelId: "n", title: "Volumen Ámbar", sortOrder: 1, archived: false }],
+    [{ id: "c1", volumeId: "v1", title: "Capítulo", sortOrder: 1, archived: false }],
+    [{ id: "s1", chapterId: "c1", title: "Señal · 青", content: unicode, sortOrder: 1, archived: false }]
+  );
+
+  assert.equal(document.scenes[0].title, "Señal · 青");
+  assert.equal(document.scenes[0].content, unicode);
 });
 
 test("reading progress resumes the exact scene with a clamped relative position", async () => {
@@ -283,9 +386,11 @@ test("scene inspector persists continuity metadata without submitting manuscript
 });
 
 test("editor density persists only the inspector preference and exposes accessible mode controls", async () => {
+  const readerPreferences = await loadTypeScriptModule("lib/reader-preferences.ts");
   const settings = await loadTypeScriptModule("lib/studio-settings.ts", (moduleId) => {
     if (moduleId === "@/lib/studio-data") return { defaultPersistedStudioSettings: { editorInspectorOpen: true } };
     if (moduleId === "@/lib/studio-domain") return { exportFormats: ["EPUB"], exportOptions: ["Include cover"] };
+    if (moduleId === "@/lib/reader-preferences") return readerPreferences;
     throw new Error(`Unexpected module: ${moduleId}`);
   });
   const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
@@ -330,6 +435,24 @@ test("reading focus keeps the live reader mounted and exposes reversible accessi
   assert.match(pageSource, /role="alert"[\s\S]*readerLoadError/);
   assert.match(pageSource, /const position = captureCurrentReaderPosition\(\)/);
   assert.match(pageSource, /scheduleReadingProgress\(position\.sceneId, position\.ratio\)/);
+});
+
+test("reader experience persists appearance, exposes canonical navigation, and avoids artificial whitespace", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const sharedSource = await readFile(resolve(process.cwd(), "components/studio/shared.tsx"), "utf8");
+  const readerRouteSource = await readFile(resolve(process.cwd(), "app/api/reader/route.ts"), "utf8");
+
+  assert.match(pageSource, /updateReaderPreferences\(defaultReaderPreferences\)/);
+  assert.match(pageSource, /readerSettingsTimerRef\.current = setTimeout/);
+  assert.match(pageSource, /serializeReaderNavigationState\(nextNavigation\)/);
+  assert.match(pageSource, /router\.push\(`\$\{routeForPage\("reader", currentNovel\.id\)\}\?\$\{query\}`\)/);
+  assert.match(pageSource, /readingProgressPercent/);
+  assert.match(pageSource, /label=\{`\$\{readerScope\} reading progress`\}/);
+  assert.doesNotMatch(pageSource, /min-h-\[calc\(100vh-4\.25rem\)\]/);
+  assert.doesNotMatch(pageSource, /Â·/);
+  assert.match(sharedSource, /role="progressbar"/);
+  assert.match(sharedSource, /aria-valuenow=\{normalizedValue\}/);
+  assert.match(readerRouteSource, /application\/json; charset=utf-8/);
 });
 
 test("structure status allowlist excludes archival and rejects unknown values", async () => {

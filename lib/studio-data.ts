@@ -50,6 +50,7 @@ export type PersistedStudioSettings = {
   sidebarState: "expanded" | "compact" | "hidden";
   editorFontSize: string;
   readerFontSize: string;
+  readerWidth: string;
   autosaveInterval: string;
   editorInspectorOpen: boolean;
   defaultFocusMode: string;
@@ -126,6 +127,7 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   sidebarState: "expanded",
   editorFontSize: "18 px",
   readerFontSize: "18 px",
+  readerWidth: "720 px",
   autosaveInterval: "30 seconds",
   editorInspectorOpen: true,
   defaultFocusMode: "Writing",

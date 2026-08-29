@@ -4,8 +4,6 @@ import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArchiveRestore,
-  ArrowLeft,
-  ArrowRight,
   BookOpen,
   Check,
   ChevronLeft,
@@ -66,6 +64,17 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { getReaderAdjacentUnits, getReaderScopeUnits } from "@/lib/reader-document";
 import { clampReadingRatio, type ResolvedReadingProgress } from "@/lib/reader-progress";
+import {
+  defaultReaderPreferences,
+  isReaderTheme,
+  normalizeReaderFontSize,
+  normalizeReaderWidth,
+  parseReaderFontSize,
+  parseReaderWidth,
+  readerPreferenceRanges,
+  readerThemes,
+  type ReaderTheme
+} from "@/lib/reader-preferences";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
@@ -123,6 +132,11 @@ import {
   serializeLibraryNavigationState,
   type LibraryNavigationState
 } from "@/lib/studio-library-navigation";
+import {
+  parseReaderNavigationState,
+  serializeReaderNavigationState,
+  type ReaderNavigationState
+} from "@/lib/studio-reader-navigation";
 import { cn } from "@/lib/utils";
 import { statusAfterSaveConfirmation, type AutosaveStatus } from "@/lib/autosave-state";
 import { getAdjacentSceneIds, getNovelSceneNavigation } from "@/lib/editor-scene-navigation";
@@ -293,9 +307,9 @@ function PrivateNovelStudioContent() {
   const [timelineChapter, setTimelineChapter] = React.useState("All chapters");
   const [timelineCharacter, setTimelineCharacter] = React.useState("All characters");
   const [timelinePlace, setTimelinePlace] = React.useState("All places");
-  const [readerTheme, setReaderTheme] = React.useState("Sepia");
-  const [readerFontSize, setReaderFontSize] = React.useState(18);
-  const [readerWidth, setReaderWidth] = React.useState(720);
+  const [readerTheme, setReaderTheme] = React.useState<ReaderTheme>(defaultReaderPreferences.theme);
+  const [readerFontSize, setReaderFontSize] = React.useState(defaultReaderPreferences.fontSize);
+  const [readerWidth, setReaderWidth] = React.useState(defaultReaderPreferences.width);
   const [exportScope, setExportScope] = React.useState("Full novel");
   const [exportFormat, setExportFormat] = React.useState("EPUB");
   const [studioData, setStudioData] = React.useState<StudioData>(emptyStudioData);
@@ -348,6 +362,26 @@ function PrivateNovelStudioContent() {
     [routeContextData]
   );
   const currentNovel = getCurrentNovel(routeContextData);
+  const readerFallbackChapter = getActiveChapter(scopedStudioData);
+  const readerNavigation = React.useMemo(
+    () =>
+      parseReaderNavigationState(
+        searchParams,
+        currentNovel.id,
+        { scope: "chapter", targetId: readerFallbackChapter.id },
+        scopedStudioData.volumes,
+        scopedStudioData.chapters,
+        scopedStudioData.scenes
+      ),
+    [
+      currentNovel.id,
+      readerFallbackChapter.id,
+      scopedStudioData.chapters,
+      scopedStudioData.scenes,
+      scopedStudioData.volumes,
+      searchParams
+    ]
+  );
   const currentNotionSyncState = studioData.notionSyncStates.find(
     (state) => state.novelId === currentNovel.id
   );
@@ -365,6 +399,9 @@ function PrivateNovelStudioContent() {
   const autosyncStatusTimerRef = React.useRef<number | null>(null);
   const exportDefaultsAppliedRef = React.useRef(false);
   const settingsSaveInFlightRef = React.useRef(false);
+  const readerSettingsSaveInFlightRef = React.useRef(false);
+  const pendingReaderSettingsRef = React.useRef<Record<string, string>>({});
+  const readerSettingsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const staleRouteRecoveryRef = React.useRef<string | null>(null);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
@@ -436,14 +473,13 @@ function PrivateNovelStudioContent() {
 
     setInspectorOpen(nextSettings.editorInspectorOpen);
 
-    const nextReaderFontSize = Number.parseInt(nextSettings.readerFontSize, 10);
-    if (!Number.isNaN(nextReaderFontSize)) {
-      setReaderFontSize(nextReaderFontSize);
-    }
-
-    if (nextSettings.defaultReadingMode) {
-      setReaderTheme(nextSettings.defaultReadingMode);
-    }
+    setReaderFontSize(parseReaderFontSize(nextSettings.readerFontSize));
+    setReaderWidth(parseReaderWidth(nextSettings.readerWidth));
+    setReaderTheme(
+      isReaderTheme(nextSettings.defaultReadingMode)
+        ? nextSettings.defaultReadingMode
+        : defaultReaderPreferences.theme
+    );
   }, [dataStatus, studioData.studioSettings]);
 
   React.useEffect(() => {
@@ -467,6 +503,21 @@ function PrivateNovelStudioContent() {
     showToast("This novel is no longer available. Returned to Library.");
     router.replace("/library");
   }, [activeRoute?.novelId, dataStatus, pathname, router, showToast, studioData.novels]);
+
+  React.useEffect(() => {
+    if (
+      activePage !== "reader" ||
+      dataStatus !== "ready" ||
+      !currentNovel.id ||
+      !readerNavigation.targetId
+    ) {
+      return;
+    }
+
+    const canonicalQuery = serializeReaderNavigationState(readerNavigation).toString();
+    if (searchParams.toString() === canonicalQuery) return;
+    router.replace(`${routeForPage("reader", currentNovel.id)}?${canonicalQuery}`);
+  }, [activePage, currentNovel.id, dataStatus, readerNavigation, router, searchParams]);
 
   React.useEffect(() => {
     const desktopMedia = window.matchMedia("(min-width: 768px)");
@@ -556,7 +607,8 @@ function PrivateNovelStudioContent() {
       const response = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nextSettings)
+        body: JSON.stringify(nextSettings),
+        keepalive: true
       });
 
       if (!response.ok) {
@@ -567,6 +619,97 @@ function PrivateNovelStudioContent() {
     },
     []
   );
+
+  const flushReaderSettings = React.useCallback(
+    async function flushReaderSettings() {
+      if (readerSettingsTimerRef.current) {
+        clearTimeout(readerSettingsTimerRef.current);
+        readerSettingsTimerRef.current = null;
+      }
+      if (readerSettingsSaveInFlightRef.current) return;
+
+      const changes = pendingReaderSettingsRef.current;
+      if (Object.keys(changes).length === 0) return;
+      pendingReaderSettingsRef.current = {};
+      readerSettingsSaveInFlightRef.current = true;
+      setSettingsSaveState("saving");
+      setSettingsSaveMessage("Saving reading preferences…");
+
+      try {
+        const savedSettings = await persistSettings(changes);
+        setStudioSettings({ ...savedSettings, ...pendingReaderSettingsRef.current });
+        setSettingsSaveState("saved");
+        setSettingsSaveMessage("Reading preferences saved.");
+      } catch {
+        setSettingsSaveState("error");
+        setSettingsSaveMessage("Reading preferences could not be saved and were restored.");
+        void refreshStudioData(false);
+      } finally {
+        readerSettingsSaveInFlightRef.current = false;
+        if (Object.keys(pendingReaderSettingsRef.current).length > 0) {
+          readerSettingsTimerRef.current = setTimeout(() => void flushReaderSettings(), 0);
+        }
+      }
+    },
+    [persistSettings, refreshStudioData]
+  );
+
+  const updateReaderPreferences = React.useCallback(
+    (changes: Partial<{ theme: ReaderTheme; fontSize: number; width: number }>) => {
+      const settingsChanges: Record<string, string> = {};
+
+      if (changes.theme !== undefined && isReaderTheme(changes.theme)) {
+        setReaderTheme(changes.theme);
+        settingsChanges.defaultReadingMode = changes.theme;
+      }
+
+      if (changes.fontSize !== undefined) {
+        const normalized = normalizeReaderFontSize(changes.fontSize);
+        if (normalized) {
+          setReaderFontSize(Number.parseInt(normalized, 10));
+          settingsChanges.readerFontSize = normalized;
+        }
+      }
+
+      if (changes.width !== undefined) {
+        const normalized = normalizeReaderWidth(changes.width);
+        if (normalized) {
+          setReaderWidth(Number.parseInt(normalized, 10));
+          settingsChanges.readerWidth = normalized;
+        }
+      }
+
+      if (Object.keys(settingsChanges).length === 0) return;
+      setStudioSettings((current) => ({ ...current, ...settingsChanges }));
+      pendingReaderSettingsRef.current = {
+        ...pendingReaderSettingsRef.current,
+        ...settingsChanges
+      };
+      if (readerSettingsTimerRef.current) clearTimeout(readerSettingsTimerRef.current);
+      readerSettingsTimerRef.current = setTimeout(() => void flushReaderSettings(), 300);
+    },
+    [flushReaderSettings]
+  );
+
+  React.useEffect(() => {
+    const persistPendingReaderSettings = () => {
+      const pending = pendingReaderSettingsRef.current;
+      if (Object.keys(pending).length === 0) return;
+      void fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pending),
+        keepalive: true
+      });
+    };
+
+    window.addEventListener("pagehide", persistPendingReaderSettings);
+    return () => {
+      window.removeEventListener("pagehide", persistPendingReaderSettings);
+      if (readerSettingsTimerRef.current) clearTimeout(readerSettingsTimerRef.current);
+      persistPendingReaderSettings();
+    };
+  }, []);
 
   const saveSettings = React.useCallback(
     async (nextSettings: Record<string, string>, afterSave?: () => void) => {
@@ -633,20 +776,22 @@ function PrivateNovelStudioContent() {
 
   const updateStudioSetting = React.useCallback(
     (key: keyof PersistedStudioSettings, value: string | boolean) => {
-      void saveSettings({ [key]: String(value) }, () => {
-        if (key === "readerFontSize") {
-          const nextValue = Number.parseInt(String(value), 10);
-          if (!Number.isNaN(nextValue)) {
-            setReaderFontSize(nextValue);
-          }
-        }
+      if (key === "readerFontSize") {
+        updateReaderPreferences({ fontSize: Number.parseInt(String(value), 10) });
+        return;
+      }
+      if (key === "readerWidth") {
+        updateReaderPreferences({ width: Number.parseInt(String(value), 10) });
+        return;
+      }
+      if (key === "defaultReadingMode" && isReaderTheme(value)) {
+        updateReaderPreferences({ theme: value });
+        return;
+      }
 
-        if (key === "defaultReadingMode") {
-          setReaderTheme(String(value));
-        }
-      });
+      void saveSettings({ [key]: String(value) });
     },
-    [saveSettings]
+    [saveSettings, updateReaderPreferences]
   );
 
   const applyVerifiedNotionConnection = React.useCallback((pageId: string, pageTitle: string) => {
@@ -1346,6 +1491,15 @@ function PrivateNovelStudioContent() {
     [studioData.chapters, studioData.novels, studioData.volumes]
   );
 
+  const updateReaderNavigation = React.useCallback(
+    (nextNavigation: ReaderNavigationState) => {
+      if (!currentNovel.id || !nextNavigation.targetId) return;
+      const query = serializeReaderNavigationState(nextNavigation).toString();
+      router.push(`${routeForPage("reader", currentNovel.id)}?${query}`);
+    },
+    [currentNovel.id, router]
+  );
+
   const selectPage = async (page: PageId) => {
     if (!(await flushPendingChanges())) {
       showToast("Save failed. Navigation was cancelled to protect your draft.");
@@ -1518,13 +1672,16 @@ function PrivateNovelStudioContent() {
               ) : null}
               {activePage === "reader" ? (
                 <ReaderScreen
+                  navigation={readerNavigation}
                   readerTheme={readerTheme}
                   readerFontSize={readerFontSize}
                   readerWidth={readerWidth}
                   isFocusMode={focusMode === "reading"}
-                  onReaderThemeChange={setReaderTheme}
-                  onReaderFontSizeChange={setReaderFontSize}
-                  onReaderWidthChange={setReaderWidth}
+                  onNavigationChange={updateReaderNavigation}
+                  onReaderThemeChange={(theme) => updateReaderPreferences({ theme })}
+                  onReaderFontSizeChange={(fontSize) => updateReaderPreferences({ fontSize })}
+                  onReaderWidthChange={(width) => updateReaderPreferences({ width })}
+                  onResetReaderPreferences={() => updateReaderPreferences(defaultReaderPreferences)}
                   onFocus={() => void changeFocusMode("reading")}
                   onExitFocus={() => void changeFocusMode("none")}
                   onFocusOverlayChange={setReaderFocusOverlayOpen}
@@ -1647,7 +1804,10 @@ function PrivateNovelStudioContent() {
         onCreateRelationship={createRelationshipFromDialog}
         onCreateEvent={createTimelineEventFromDialog}
         onCreateNote={createNoteFromDialog}
-        onNavigateReaderScene={(sceneId) => { void openSceneInEditor(sceneId); void selectPage("reader"); }}
+        onNavigateReaderScene={(sceneId) => {
+          updateReaderNavigation({ scope: "scene", targetId: sceneId });
+          setDialog(null);
+        }}
         onClose={() => setDialog(null)}
       />
 
@@ -2309,26 +2469,32 @@ function WritingFocusMode({
 }
 
 function ReaderScreen({
+  navigation,
   readerTheme,
   readerFontSize,
   readerWidth,
   isFocusMode,
+  onNavigationChange,
   onReaderThemeChange,
   onReaderFontSizeChange,
   onReaderWidthChange,
+  onResetReaderPreferences,
   onFocus,
   onExitFocus,
   onFocusOverlayChange,
   onRegisterFocusToggle,
   onOpenToc
 }: {
-  readerTheme: string;
+  navigation: ReaderNavigationState;
+  readerTheme: ReaderTheme;
   readerFontSize: number;
   readerWidth: number;
   isFocusMode: boolean;
-  onReaderThemeChange: (value: string) => void;
+  onNavigationChange: (navigation: ReaderNavigationState) => void;
+  onReaderThemeChange: (value: ReaderTheme) => void;
   onReaderFontSizeChange: (value: number) => void;
   onReaderWidthChange: (value: number) => void;
+  onResetReaderPreferences: () => void;
   onFocus: () => void;
   onExitFocus: () => void;
   onFocusOverlayChange: (open: boolean) => void;
@@ -2339,8 +2505,8 @@ function ReaderScreen({
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
   const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
-  const [readerScope, setReaderScope] = React.useState<"scene" | "chapter" | "volume" | "novel">("chapter");
-  const [readerTargetId, setReaderTargetId] = React.useState(activeChapter.id);
+  const readerScope = navigation.scope;
+  const readerTargetId = navigation.targetId;
   const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; chapterId?: string; title: string; content: string; revision?: number }> } | null>(null);
   const [savedProgress, setSavedProgress] = React.useState<ResolvedReadingProgress | null>(null);
   const [currentReaderSceneId, setCurrentReaderSceneId] = React.useState(activeScene.id);
@@ -2352,7 +2518,9 @@ function ReaderScreen({
   const readerSectionRefs = React.useRef(new Map<string, HTMLElement>());
   const readerPositionRef = React.useRef({ sceneId: activeScene.id, ratio: 0 });
   const pendingFocusPositionRef = React.useRef<{ sceneId: string; ratio: number } | null>(null);
+  const pendingAppearancePositionRef = React.useRef<{ sceneId: string; ratio: number } | null>(null);
   const previousFocusModeRef = React.useRef(isFocusMode);
+  const previousAppearanceRef = React.useRef({ fontSize: readerFontSize, width: readerWidth });
   const pendingProgressRef = React.useRef<{ novelId: string; preferredScope: typeof readerScope; sceneId: string; positionRatio: number } | null>(null);
   const progressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReaderScrollIntentRef = React.useRef(0);
@@ -2363,7 +2531,20 @@ function ReaderScreen({
   const scopeUnits = React.useMemo(() => getReaderScopeUnits(readerScope, data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerScope]);
   const adjacentUnits = getReaderAdjacentUnits(scopeUnits, readerTargetId);
   const currentReaderScene = readerScenes.find((scene) => scene.id === currentReaderSceneId) ?? readerScenes[0];
+  const currentReaderSceneIndex = Math.max(
+    0,
+    readerScenes.findIndex((scene) => scene.id === currentReaderScene?.id)
+  );
+  const readingProgressPercent = readerScenes.length
+    ? Math.round(((currentReaderSceneIndex + readingRatio) / readerScenes.length) * 100)
+    : 0;
   readerPositionRef.current = { sceneId: currentReaderSceneId, ratio: readingRatio };
+
+  const navigateToReaderTarget = (targetId: string | null) => {
+    if (!targetId) return;
+    onNavigationChange({ scope: readerScope, targetId });
+    setReadingRatio(0);
+  };
 
   React.useLayoutEffect(() => {
     const sections = readerRootRef.current?.querySelectorAll<HTMLElement>("[data-reader-scene-id]") ?? [];
@@ -2388,6 +2569,32 @@ function ReaderScreen({
       ratio: clampReadingRatio((marker - rect.top) / Math.max(rect.height, 1))
     };
   }, []);
+
+  const restoreReaderPosition = React.useCallback((position: { sceneId: string; ratio: number }) => {
+    const section = readerSectionRefs.current.get(position.sceneId);
+    if (!section) return;
+    const marker = Math.min(window.innerHeight * 0.35, 260);
+    section.scrollIntoView({ block: "start" });
+    window.scrollBy({
+      top: section.getBoundingClientRect().height * clampReadingRatio(position.ratio) - marker,
+      behavior: "instant"
+    });
+  }, []);
+
+  const changeReaderFontSize = (value: number) => {
+    pendingAppearancePositionRef.current = captureCurrentReaderPosition();
+    onReaderFontSizeChange(value);
+  };
+
+  const changeReaderWidth = (value: number) => {
+    pendingAppearancePositionRef.current = captureCurrentReaderPosition();
+    onReaderWidthChange(value);
+  };
+
+  const resetReaderPreferences = () => {
+    pendingAppearancePositionRef.current = captureCurrentReaderPosition();
+    onResetReaderPreferences();
+  };
 
   const toggleReadingFocus = React.useCallback(() => {
     const position = captureCurrentReaderPosition();
@@ -2419,15 +2626,17 @@ function ReaderScreen({
     previousFocusModeRef.current = isFocusMode;
     const position = pendingFocusPositionRef.current ?? readerPositionRef.current;
     pendingFocusPositionRef.current = null;
-    const section = readerSectionRefs.current.get(position.sceneId);
-    if (!section) return;
-    const marker = Math.min(window.innerHeight * 0.35, 260);
-    section.scrollIntoView({ block: "start" });
-    window.scrollBy({
-      top: section.getBoundingClientRect().height * clampReadingRatio(position.ratio) - marker,
-      behavior: "instant"
-    });
-  }, [isFocusMode]);
+    restoreReaderPosition(position);
+  }, [isFocusMode, restoreReaderPosition]);
+
+  React.useLayoutEffect(() => {
+    const previous = previousAppearanceRef.current;
+    if (previous.fontSize === readerFontSize && previous.width === readerWidth) return;
+    previousAppearanceRef.current = { fontSize: readerFontSize, width: readerWidth };
+    const position = pendingAppearancePositionRef.current;
+    pendingAppearancePositionRef.current = null;
+    if (position) restoreReaderPosition(position);
+  }, [readerFontSize, readerWidth, restoreReaderPosition]);
 
   const flushReadingProgress = React.useCallback(() => {
     if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
@@ -2459,18 +2668,19 @@ function ReaderScreen({
   }, [data.settings.activeNovelId, flushReadingProgress, readerScope]);
 
   const changeReaderScope = (scope: "scene" | "chapter" | "volume" | "novel") => {
-    setReaderScope(scope);
-    setReaderTargetId(scope === "scene" ? activeScene.id : scope === "chapter" ? activeChapter.id : scope === "volume" ? activeVolume?.id || "" : data.settings.activeNovelId);
+    onNavigationChange({
+      scope,
+      targetId:
+        scope === "scene"
+          ? activeScene.id
+          : scope === "chapter"
+            ? activeChapter.id
+            : scope === "volume"
+              ? activeVolume?.id || ""
+              : data.settings.activeNovelId
+    });
     setReadingRatio(0);
   };
-
-  React.useEffect(() => {
-    setReaderScope("chapter");
-    setReaderTargetId(activeChapter.id);
-    setCurrentReaderSceneId(activeScene.id);
-    setReadingRatio(0);
-    setRestoreRequest(null);
-  }, [activeChapter.id, activeScene.id, data.settings.activeNovelId]);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -2498,6 +2708,17 @@ function ReaderScreen({
       });
     return () => controller.abort();
   }, [data.settings.activeNovelId, readerScope, readerTargetId]);
+
+  React.useEffect(() => {
+    if (!readerDocument?.scenes.length) return;
+    const nextScene =
+      readerScope === "scene"
+        ? readerDocument.scenes.find((scene) => scene.id === readerTargetId)
+        : readerDocument.scenes[0];
+    if (!nextScene) return;
+    setCurrentReaderSceneId(nextScene.id);
+    setReadingRatio(0);
+  }, [readerDocument, readerScope, readerTargetId]);
 
   React.useEffect(() => {
     const markScrollIntent = () => { lastReaderScrollIntentRef.current = Date.now(); };
@@ -2550,8 +2771,7 @@ function ReaderScreen({
 
   const continueReading = () => {
     if (!savedProgress) return;
-    setReaderScope(savedProgress.scope);
-    setReaderTargetId(savedProgress.targetId);
+    onNavigationChange({ scope: savedProgress.scope, targetId: savedProgress.targetId });
     setRestoreRequest({
       sceneId: savedProgress.resolvedSceneId,
       ratio: savedProgress.positionRatio,
@@ -2560,8 +2780,7 @@ function ReaderScreen({
   };
 
   const openReaderSceneFromFocus = (sceneId: string) => {
-    setReaderScope("scene");
-    setReaderTargetId(sceneId);
+    onNavigationChange({ scope: "scene", targetId: sceneId });
     setCurrentReaderSceneId(sceneId);
     setReadingRatio(0);
     setRestoreRequest({ sceneId, ratio: 0, nonce: Date.now() });
@@ -2591,13 +2810,13 @@ function ReaderScreen({
                   {currentReaderScene?.title || activeChapter.title}
                 </p>
                 <p className="text-xs opacity-70" aria-live="polite">
-                  {Math.round(readingRatio * 100)}% of scene · saved locally
+                  {readingProgressPercent}% of {readerScope} · saved locally
                 </p>
               </div>
-              <Button variant="ghost" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)} className="motion-reduce:transition-none">
+              <Button variant="ghost" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => navigateToReaderTarget(adjacentUnits.previousId)} className="motion-reduce:transition-none">
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => adjacentUnits.nextId && setReaderTargetId(adjacentUnits.nextId)} className="motion-reduce:transition-none">
+              <Button variant="ghost" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => navigateToReaderTarget(adjacentUnits.nextId)} className="motion-reduce:transition-none">
                 <ChevronRight className="size-4" />
               </Button>
               <Button variant="ghost" size="icon" aria-label="Open table of contents" onClick={() => setFocusPanel("toc")} className="motion-reduce:transition-none">
@@ -2611,7 +2830,7 @@ function ReaderScreen({
                 <span className="hidden sm:inline">Exit focus</span>
               </Button>
             </div>
-            <ProgressBar value={Math.round(readingRatio * 100)} />
+            <ProgressBar value={readingProgressPercent} label={`${readerScope} reading progress`} />
           </header>
         ) : (
           <SectionHeader
@@ -2654,23 +2873,26 @@ function ReaderScreen({
             </div>
             <div>
               <Label>Theme</Label>
-              <Select value={readerTheme} onValueChange={onReaderThemeChange}>
+              <Select value={readerTheme} onValueChange={(value) => onReaderThemeChange(value as ReaderTheme)}>
                 <SelectTrigger className="mt-2">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Light">Light</SelectItem>
-                  <SelectItem value="Dark">Dark</SelectItem>
-                  <SelectItem value="Sepia">Sepia</SelectItem>
+                  {readerThemes.map((theme) => (
+                    <SelectItem key={theme} value={theme}>{theme}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            <ControlSlider label="Font size" value={readerFontSize} min={15} max={24} suffix="px" onChange={onReaderFontSizeChange} />
-            <ControlSlider label="Reading width" value={readerWidth} min={560} max={900} suffix="px" onChange={onReaderWidthChange} />
-            <Button variant="outline" disabled={!savedProgress} onClick={continueReading}>
-              <BookOpen className="size-4" />
-              Continue reading
-            </Button>
+            <ControlSlider label="Font size" value={readerFontSize} min={readerPreferenceRanges.fontSize.min} max={readerPreferenceRanges.fontSize.max} suffix="px" onChange={changeReaderFontSize} />
+            <ControlSlider label="Reading width" value={readerWidth} min={readerPreferenceRanges.width.min} max={readerPreferenceRanges.width.max} suffix="px" onChange={changeReaderWidth} />
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" disabled={!savedProgress} onClick={continueReading}>
+                <BookOpen className="size-4" />
+                Continue reading
+              </Button>
+              <Button variant="ghost" onClick={resetReaderPreferences}>Reset</Button>
+            </div>
             <p className="text-xs text-muted-foreground lg:col-span-5">
               {savedProgress
                 ? `Saved locally · ${Math.round(savedProgress.positionRatio * 100)}% in ${savedProgress.usedFallback ? "the nearest readable scene" : "the current scene"}`
@@ -2691,23 +2913,15 @@ function ReaderScreen({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>{currentReaderScene?.title || activeChapter.title}</CardTitle>
-              <CardDescription>Local reading progress · {Math.round(readingRatio * 100)}% of scene</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)}>
-                <ArrowLeft className="size-4" />
-              </Button>
-              <Button variant="outline" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => adjacentUnits.nextId && setReaderTargetId(adjacentUnits.nextId)}>
-                <ArrowRight className="size-4" />
-              </Button>
+              <CardDescription>Local reading progress · {readingProgressPercent}% of {readerScope}</CardDescription>
             </div>
           </div>
-          <ProgressBar value={Math.round(readingRatio * 100)} />
+          <ProgressBar value={readingProgressPercent} label={`${readerScope} reading progress`} />
         </CardHeader>
         <CardContent
           className={cn(
             "mx-auto my-6 rounded-lg border p-6 shadow-inner sm:p-10",
-            isFocusMode && "my-0 min-h-[calc(100vh-4.25rem)] rounded-none border-0 px-5 py-12 shadow-none sm:px-10 sm:py-16",
+            isFocusMode && "my-0 rounded-none border-0 px-5 py-12 shadow-none sm:px-10 sm:py-16",
             readerTheme === "Dark" && "bg-[#0E0F11] text-[#E7D8B5]",
             readerTheme === "Light" && "bg-[#F7F2E8] text-[#2B2118]",
             readerTheme === "Sepia" && "bg-[#efe3c8] text-[#2B2118]"
@@ -2715,18 +2929,30 @@ function ReaderScreen({
           style={{ maxWidth: `${readerWidth}px`, fontSize: `${readerFontSize}px` }}
         >
           <article className="space-y-6 leading-9">
-            <h2 className="font-serif text-3xl font-semibold tracking-normal">
-              {readerScenes[0]?.title}
-            </h2>
-            {readerScenes.map((scene) => <section key={scene.id} data-reader-scene-id={scene.id} ref={(element) => { if (element) readerSectionRefs.current.set(scene.id, element); else readerSectionRefs.current.delete(scene.id); }} className="space-y-4"><h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>{scene.content.split("\n\n").map((paragraph, index) => <p key={`${scene.id}-${index}`}>{paragraph}</p>)}</section>)}
+            {readerScenes.map((scene) => (
+              <section
+                key={scene.id}
+                data-reader-scene-id={scene.id}
+                ref={(element) => {
+                  if (element) readerSectionRefs.current.set(scene.id, element);
+                  else readerSectionRefs.current.delete(scene.id);
+                }}
+                className="space-y-4"
+              >
+                <h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>
+                {scene.content.split("\n\n").map((paragraph, index) => (
+                  <p key={`${scene.id}-${index}`}>{paragraph}</p>
+                ))}
+              </section>
+            ))}
           </article>
         </CardContent>
-        <CardFooter className={cn("flex flex-wrap justify-between gap-2 border-t p-4", isFocusMode && "mx-auto w-full border-current/10 bg-inherit px-5 sm:px-10")} style={isFocusMode ? { maxWidth: `${readerWidth}px` } : undefined}>
-          <Button variant="outline" disabled={!adjacentUnits.previousId} onClick={() => adjacentUnits.previousId && setReaderTargetId(adjacentUnits.previousId)}>
+        <CardFooter className={cn("mx-auto flex w-full flex-wrap justify-between gap-2 border-t p-4", isFocusMode && "border-current/10 bg-inherit px-5 sm:px-10")} style={{ maxWidth: `${readerWidth}px` }}>
+          <Button variant="outline" disabled={!adjacentUnits.previousId} onClick={() => navigateToReaderTarget(adjacentUnits.previousId)}>
             <ChevronLeft className="size-4" />
             Previous
           </Button>
-          <Button variant="outline" disabled={!adjacentUnits.nextId} onClick={() => adjacentUnits.nextId && setReaderTargetId(adjacentUnits.nextId)}>
+          <Button variant="outline" disabled={!adjacentUnits.nextId} onClick={() => navigateToReaderTarget(adjacentUnits.nextId)}>
             Next
             <ChevronRight className="size-4" />
           </Button>
@@ -2780,21 +3006,22 @@ function ReaderScreen({
               <div className="grid gap-5">
                 <div>
                   <Label>Theme</Label>
-                  <Select value={readerTheme} onValueChange={onReaderThemeChange}>
+                  <Select value={readerTheme} onValueChange={(value) => onReaderThemeChange(value as ReaderTheme)}>
                     <SelectTrigger className="mt-2" aria-label="Reading theme">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Light">Light</SelectItem>
-                      <SelectItem value="Dark">Dark</SelectItem>
-                      <SelectItem value="Sepia">Sepia</SelectItem>
+                      {readerThemes.map((theme) => (
+                        <SelectItem key={theme} value={theme}>{theme}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <ControlSlider label="Font size" value={readerFontSize} min={15} max={24} suffix="px" onChange={onReaderFontSizeChange} />
-                <ControlSlider label="Reading width" value={readerWidth} min={560} max={900} suffix="px" onChange={onReaderWidthChange} />
+                <ControlSlider label="Font size" value={readerFontSize} min={readerPreferenceRanges.fontSize.min} max={readerPreferenceRanges.fontSize.max} suffix="px" onChange={changeReaderFontSize} />
+                <ControlSlider label="Reading width" value={readerWidth} min={readerPreferenceRanges.width.min} max={readerPreferenceRanges.width.max} suffix="px" onChange={changeReaderWidth} />
               </div>
               <DialogFooter>
+                <Button variant="ghost" onClick={resetReaderPreferences}>Reset to defaults</Button>
                 <Button onClick={() => setFocusPanel(null)}>Return to reading</Button>
               </DialogFooter>
             </>
@@ -2820,20 +3047,25 @@ function ControlSlider({
   suffix: string;
   onChange: (value: number) => void;
 }) {
+  const inputId = React.useId();
+
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <Label>{label}</Label>
-        <span className="text-xs text-muted-foreground">
+        <Label htmlFor={inputId}>{label}</Label>
+        <output htmlFor={inputId} className="text-xs text-muted-foreground" aria-live="polite">
           {value}
           {suffix}
-        </span>
+        </output>
       </div>
       <input
+        id={inputId}
         type="range"
         min={min}
         max={max}
+        step={1}
         value={value}
+        aria-valuetext={`${value}${suffix}`}
         onChange={(event) => onChange(Number(event.target.value))}
         className="h-10 w-full accent-primary"
       />
@@ -2983,7 +3215,7 @@ function PlaceDetailPanel({ place }: { place: Location }) {
       <CardHeader>
         <CardTitle>{place.name}</CardTitle>
         <CardDescription>
-          {place.type} Â· {place.region}
+          {place.type} · {place.region}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -3732,7 +3964,7 @@ function BackupsScreen({
                   <Badge variant="outline">{backup.status}</Badge>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {backup.date} Â· {backup.size} Â· {backup.includedNovels} included novels
+                  {backup.date} · {backup.size} · {backup.includedNovels} included novels
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">

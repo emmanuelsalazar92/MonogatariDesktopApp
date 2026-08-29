@@ -5,7 +5,7 @@ export type ReaderChapter = { id: string; volumeId: string; title: string; sortO
 export type ReaderVolume = { id: string; novelId: string; title: string; sortOrder: number; archived: boolean };
 
 export function getReaderScopeUnits(scope: ReaderScope, novelId: string, volumes: ReaderVolume[], chapters: ReaderChapter[], scenes: ReaderScene[]) {
-  const activeVolumes = volumes.filter((item) => !item.archived).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+  const activeVolumes = volumes.filter((item) => item.novelId === novelId && !item.archived).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
   const activeChapters = chapters.filter((item) => !item.archived && activeVolumes.some((volume) => volume.id === item.volumeId));
   const activeScenes = scenes.filter((item) => !item.archived && activeChapters.some((chapter) => chapter.id === item.chapterId));
   if (scope === "novel") return [novelId];
