@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Pencil, Plus, Search, UserRound } from "lucide-react";
+import { Check, ExternalLink, Link2, Pencil, Plus, Search, Trash2, UserRound } from "lucide-react";
 
 import {
   EmptyState,
@@ -55,7 +55,9 @@ export function CharactersScreen({
   onRoleChange,
   onStatusChange,
   onAddCharacter,
-  onEditCharacter
+  onEditCharacter,
+  onOpenScene,
+  onSceneLinksChanged
 }: {
   data: StudioData;
   characters: Character[];
@@ -70,6 +72,8 @@ export function CharactersScreen({
   onStatusChange: (value: string) => void;
   onAddCharacter: () => void;
   onEditCharacter: (character: Character) => void;
+  onOpenScene: (sceneId: string) => void;
+  onSceneLinksChanged: () => Promise<unknown>;
 }) {
   const [selectedCharacterId, setSelectedCharacterId] = React.useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = React.useState(false);
@@ -187,6 +191,8 @@ export function CharactersScreen({
               data={data}
               translate={translate}
               onEdit={() => onEditCharacter(selectedCharacter)}
+              onOpenScene={onOpenScene}
+              onSceneLinksChanged={onSceneLinksChanged}
             />
           ) : (
             <EmptyState
@@ -222,6 +228,8 @@ export function CharactersScreen({
               data={data}
               translate={translate}
               onEdit={() => { setMobileDetailOpen(false); onEditCharacter(selectedCharacter); }}
+              onOpenScene={onOpenScene}
+              onSceneLinksChanged={onSceneLinksChanged}
               className="border-0 shadow-none"
             />
           ) : null}
@@ -311,14 +319,75 @@ function CharacterDetailPanel({
   data,
   translate,
   onEdit,
+  onOpenScene,
+  onSceneLinksChanged,
   className
 }: {
   character: Character;
   data: StudioData;
   translate: (value: string) => string;
   onEdit: () => void;
+  onOpenScene: (sceneId: string) => void;
+  onSceneLinksChanged: () => Promise<unknown>;
   className?: string;
 }) {
+  type LinkedScene = {
+    sceneId: string;
+    sceneTitle: string;
+    chapterTitle: string;
+    volumeTitle: string;
+  };
+  const [linkedScenes, setLinkedScenes] = React.useState<LinkedScene[]>([]);
+  const [selectedSceneId, setSelectedSceneId] = React.useState("");
+  const [sceneLinksLoading, setSceneLinksLoading] = React.useState(true);
+  const [sceneLinkPending, setSceneLinkPending] = React.useState(false);
+  const [sceneLinkError, setSceneLinkError] = React.useState("");
+  const linkedSceneIds = React.useMemo(() => new Set(linkedScenes.map((scene) => scene.sceneId)), [linkedScenes]);
+  const availableScenes = data.scenes.filter((scene) => !scene.archived && !linkedSceneIds.has(scene.id));
+  const sceneContext = (sceneId: string) => {
+    const scene = data.scenes.find((item) => item.id === sceneId);
+    const chapter = data.chapters.find((item) => item.id === scene?.chapterId);
+    const volume = data.volumes.find((item) => item.id === chapter?.volumeId);
+    return { scene, chapter, volume };
+  };
+
+  const loadLinkedScenes = React.useCallback(async () => {
+    setSceneLinksLoading(true);
+    setSceneLinkError("");
+    try {
+      const response = await fetch(`/api/characters/${encodeURIComponent(character.id)}/scenes`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Could not load linked scenes");
+      setLinkedScenes((await response.json()) as LinkedScene[]);
+    } catch (error) {
+      setSceneLinkError(error instanceof Error ? error.message : "Could not load linked scenes");
+    } finally {
+      setSceneLinksLoading(false);
+    }
+  }, [character.id]);
+
+  React.useEffect(() => { void loadLinkedScenes(); }, [loadLinkedScenes]);
+
+  const updateSceneLink = async (method: "POST" | "DELETE", sceneId: string) => {
+    setSceneLinkPending(true);
+    setSceneLinkError("");
+    try {
+      const response = await fetch(`/api/characters/${encodeURIComponent(character.id)}/scenes`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sceneId })
+      });
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Could not update linked scenes");
+      }
+      setSelectedSceneId("");
+      await Promise.all([loadLinkedScenes(), onSceneLinksChanged()]);
+    } catch (error) {
+      setSceneLinkError(error instanceof Error ? error.message : "Could not update linked scenes");
+    } finally {
+      setSceneLinkPending(false);
+    }
+  };
   const linkedPlaces = uniqueStrings(
     data.timelineEvents
       .filter((event) => event.characterIds.includes(character.id))
@@ -376,10 +445,6 @@ function CharacterDetailPanel({
               label={translate("First appearance")}
               value={valueOrFallback(character.firstAppearance)}
             />
-            <FieldLine
-              label={translate("Linked scenes")}
-              value={`${character.scenes} ${translate("Scenes").toLowerCase()}`}
-            />
           </div>
         </DetailSection>
         <DetailSection title={translate("Characterization")}>
@@ -399,6 +464,57 @@ function CharacterDetailPanel({
         </DetailSection>
         <DetailSection title={translate("Story connections")}>
           <div className="grid gap-3">
+            <div className="space-y-3 rounded-lg border border-border/60 bg-background/45 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">{translate("Linked scenes")}</p>
+                  <p className="text-xs text-muted-foreground">{linkedScenes.length} {translate("Scenes").toLowerCase()}</p>
+                </div>
+                <Link2 className="size-4 text-muted-foreground" aria-hidden="true" />
+              </div>
+              {sceneLinksLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : null}
+              {!sceneLinksLoading && linkedScenes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{translate("No linked scenes yet")}</p>
+              ) : null}
+              {linkedScenes.map((scene) => (
+                <div key={scene.sceneId} className="flex items-center gap-2 rounded-md border border-border/50 bg-card p-2">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`${translate("Open scene in editor")}: ${scene.sceneTitle}`}
+                    onClick={() => onOpenScene(scene.sceneId)}
+                  >
+                    <span className="flex items-center gap-1.5 text-sm font-medium"><span className="truncate">{scene.sceneTitle}</span><ExternalLink className="size-3 shrink-0" /></span>
+                    <span className="block truncate text-xs text-muted-foreground">{scene.volumeTitle} · {scene.chapterTitle}</span>
+                  </button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    disabled={sceneLinkPending}
+                    aria-label={`${translate("Remove linked scene")}: ${scene.sceneTitle}`}
+                    onClick={() => void updateSceneLink("DELETE", scene.sceneId)}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex items-end gap-2">
+                <Select value={selectedSceneId} onValueChange={setSelectedSceneId} disabled={sceneLinkPending || availableScenes.length === 0}>
+                  <SelectTrigger aria-label={translate("Select scene to link")} className="min-w-0 flex-1"><SelectValue placeholder={translate("Link scene")} /></SelectTrigger>
+                  <SelectContent>
+                    {availableScenes.map((scene) => {
+                      const context = sceneContext(scene.id);
+                      return <SelectItem key={scene.id} value={scene.id}>{context.volume?.title} · {context.chapter?.title} · {scene.title}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
+                <Button type="button" size="sm" disabled={!selectedSceneId || sceneLinkPending} onClick={() => void updateSceneLink("POST", selectedSceneId)}>
+                  <Plus className="size-4" /> {translate("Link")}
+                </Button>
+              </div>
+              {sceneLinkError ? <p role="alert" className="text-sm text-destructive">{sceneLinkError}</p> : null}
+            </div>
             <FieldLine
               label={translate("Linked places")}
               value={linkedPlaces.length ? linkedPlaces.join(", ") : translate("No linked places yet")}

@@ -20,18 +20,8 @@ export type CharacterModel = runtime.Types.Result.DefaultSelection<Prisma.$Chara
 
 export type AggregateCharacter = {
   _count: CharacterCountAggregateOutputType | null
-  _avg: CharacterAvgAggregateOutputType | null
-  _sum: CharacterSumAggregateOutputType | null
   _min: CharacterMinAggregateOutputType | null
   _max: CharacterMaxAggregateOutputType | null
-}
-
-export type CharacterAvgAggregateOutputType = {
-  scenesCount: number | null
-}
-
-export type CharacterSumAggregateOutputType = {
-  scenesCount: number | null
 }
 
 export type CharacterMinAggregateOutputType = {
@@ -51,7 +41,6 @@ export type CharacterMinAggregateOutputType = {
   firstAppearance: string | null
   status: string | null
   image: string | null
-  scenesCount: number | null
 }
 
 export type CharacterMaxAggregateOutputType = {
@@ -71,7 +60,6 @@ export type CharacterMaxAggregateOutputType = {
   firstAppearance: string | null
   status: string | null
   image: string | null
-  scenesCount: number | null
 }
 
 export type CharacterCountAggregateOutputType = {
@@ -91,18 +79,9 @@ export type CharacterCountAggregateOutputType = {
   firstAppearance: number
   status: number
   image: number
-  scenesCount: number
   _all: number
 }
 
-
-export type CharacterAvgAggregateInputType = {
-  scenesCount?: true
-}
-
-export type CharacterSumAggregateInputType = {
-  scenesCount?: true
-}
 
 export type CharacterMinAggregateInputType = {
   id?: true
@@ -121,7 +100,6 @@ export type CharacterMinAggregateInputType = {
   firstAppearance?: true
   status?: true
   image?: true
-  scenesCount?: true
 }
 
 export type CharacterMaxAggregateInputType = {
@@ -141,7 +119,6 @@ export type CharacterMaxAggregateInputType = {
   firstAppearance?: true
   status?: true
   image?: true
-  scenesCount?: true
 }
 
 export type CharacterCountAggregateInputType = {
@@ -161,7 +138,6 @@ export type CharacterCountAggregateInputType = {
   firstAppearance?: true
   status?: true
   image?: true
-  scenesCount?: true
   _all?: true
 }
 
@@ -203,18 +179,6 @@ export type CharacterAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inte
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
-   * Select which fields to average
-  **/
-  _avg?: CharacterAvgAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
-   * Select which fields to sum
-  **/
-  _sum?: CharacterSumAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
    * Select which fields to find the minimum value
   **/
   _min?: CharacterMinAggregateInputType
@@ -245,8 +209,6 @@ export type CharacterGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   _count?: CharacterCountAggregateInputType | true
-  _avg?: CharacterAvgAggregateInputType
-  _sum?: CharacterSumAggregateInputType
   _min?: CharacterMinAggregateInputType
   _max?: CharacterMaxAggregateInputType
 }
@@ -268,10 +230,7 @@ export type CharacterGroupByOutputType = {
   firstAppearance: string
   status: string
   image: string
-  scenesCount: number
   _count: CharacterCountAggregateOutputType | null
-  _avg: CharacterAvgAggregateOutputType | null
-  _sum: CharacterSumAggregateOutputType | null
   _min: CharacterMinAggregateOutputType | null
   _max: CharacterMaxAggregateOutputType | null
 }
@@ -311,7 +270,6 @@ export type CharacterWhereInput = {
   firstAppearance?: Prisma.StringFilter<"Character"> | string
   status?: Prisma.StringFilter<"Character"> | string
   image?: Prisma.StringFilter<"Character"> | string
-  scenesCount?: Prisma.IntFilter<"Character"> | number
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   outgoingRelationships?: Prisma.RelationshipListRelationFilter
   incomingRelationships?: Prisma.RelationshipListRelationFilter
@@ -335,7 +293,6 @@ export type CharacterOrderByWithRelationInput = {
   firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
-  scenesCount?: Prisma.SortOrder
   novel?: Prisma.NovelOrderByWithRelationInput
   outgoingRelationships?: Prisma.RelationshipOrderByRelationAggregateInput
   incomingRelationships?: Prisma.RelationshipOrderByRelationAggregateInput
@@ -362,7 +319,6 @@ export type CharacterWhereUniqueInput = Prisma.AtLeast<{
   firstAppearance?: Prisma.StringFilter<"Character"> | string
   status?: Prisma.StringFilter<"Character"> | string
   image?: Prisma.StringFilter<"Character"> | string
-  scenesCount?: Prisma.IntFilter<"Character"> | number
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   outgoingRelationships?: Prisma.RelationshipListRelationFilter
   incomingRelationships?: Prisma.RelationshipListRelationFilter
@@ -386,12 +342,9 @@ export type CharacterOrderByWithAggregationInput = {
   firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
-  scenesCount?: Prisma.SortOrder
   _count?: Prisma.CharacterCountOrderByAggregateInput
-  _avg?: Prisma.CharacterAvgOrderByAggregateInput
   _max?: Prisma.CharacterMaxOrderByAggregateInput
   _min?: Prisma.CharacterMinOrderByAggregateInput
-  _sum?: Prisma.CharacterSumOrderByAggregateInput
 }
 
 export type CharacterScalarWhereWithAggregatesInput = {
@@ -414,7 +367,6 @@ export type CharacterScalarWhereWithAggregatesInput = {
   firstAppearance?: Prisma.StringWithAggregatesFilter<"Character"> | string
   status?: Prisma.StringWithAggregatesFilter<"Character"> | string
   image?: Prisma.StringWithAggregatesFilter<"Character"> | string
-  scenesCount?: Prisma.IntWithAggregatesFilter<"Character"> | number
 }
 
 export type CharacterCreateInput = {
@@ -433,7 +385,6 @@ export type CharacterCreateInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
@@ -457,7 +408,6 @@ export type CharacterUncheckedCreateInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
@@ -479,7 +429,6 @@ export type CharacterUpdateInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
@@ -503,7 +452,6 @@ export type CharacterUncheckedUpdateInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
@@ -526,7 +474,6 @@ export type CharacterCreateManyInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
 }
 
 export type CharacterUpdateManyMutationInput = {
@@ -545,7 +492,6 @@ export type CharacterUpdateManyMutationInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type CharacterUncheckedUpdateManyInput = {
@@ -565,7 +511,6 @@ export type CharacterUncheckedUpdateManyInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type CharacterListRelationFilter = {
@@ -595,11 +540,6 @@ export type CharacterCountOrderByAggregateInput = {
   firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
-  scenesCount?: Prisma.SortOrder
-}
-
-export type CharacterAvgOrderByAggregateInput = {
-  scenesCount?: Prisma.SortOrder
 }
 
 export type CharacterMaxOrderByAggregateInput = {
@@ -619,7 +559,6 @@ export type CharacterMaxOrderByAggregateInput = {
   firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
-  scenesCount?: Prisma.SortOrder
 }
 
 export type CharacterMinOrderByAggregateInput = {
@@ -639,11 +578,6 @@ export type CharacterMinOrderByAggregateInput = {
   firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
-  scenesCount?: Prisma.SortOrder
-}
-
-export type CharacterSumOrderByAggregateInput = {
-  scenesCount?: Prisma.SortOrder
 }
 
 export type CharacterScalarRelationFilter = {
@@ -751,7 +685,6 @@ export type CharacterCreateWithoutNovelInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
@@ -773,7 +706,6 @@ export type CharacterUncheckedCreateWithoutNovelInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
@@ -824,7 +756,6 @@ export type CharacterScalarWhereInput = {
   firstAppearance?: Prisma.StringFilter<"Character"> | string
   status?: Prisma.StringFilter<"Character"> | string
   image?: Prisma.StringFilter<"Character"> | string
-  scenesCount?: Prisma.IntFilter<"Character"> | number
 }
 
 export type CharacterCreateWithoutSceneLinksInput = {
@@ -843,7 +774,6 @@ export type CharacterCreateWithoutSceneLinksInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
@@ -866,7 +796,6 @@ export type CharacterUncheckedCreateWithoutSceneLinksInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
 }
@@ -903,7 +832,6 @@ export type CharacterUpdateWithoutSceneLinksInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
@@ -926,7 +854,6 @@ export type CharacterUncheckedUpdateWithoutSceneLinksInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
 }
@@ -947,7 +874,6 @@ export type CharacterCreateWithoutOutgoingRelationshipsInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
@@ -970,7 +896,6 @@ export type CharacterUncheckedCreateWithoutOutgoingRelationshipsInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
 }
@@ -996,7 +921,6 @@ export type CharacterCreateWithoutIncomingRelationshipsInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
@@ -1019,7 +943,6 @@ export type CharacterUncheckedCreateWithoutIncomingRelationshipsInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
 }
@@ -1056,7 +979,6 @@ export type CharacterUpdateWithoutOutgoingRelationshipsInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
@@ -1079,7 +1001,6 @@ export type CharacterUncheckedUpdateWithoutOutgoingRelationshipsInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
@@ -1111,7 +1032,6 @@ export type CharacterUpdateWithoutIncomingRelationshipsInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
@@ -1134,7 +1054,6 @@ export type CharacterUncheckedUpdateWithoutIncomingRelationshipsInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
@@ -1155,7 +1074,6 @@ export type CharacterCreateManyNovelInput = {
   firstAppearance?: string
   status?: string
   image?: string
-  scenesCount?: number
 }
 
 export type CharacterUpdateWithoutNovelInput = {
@@ -1174,7 +1092,6 @@ export type CharacterUpdateWithoutNovelInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
@@ -1196,7 +1113,6 @@ export type CharacterUncheckedUpdateWithoutNovelInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
@@ -1218,7 +1134,6 @@ export type CharacterUncheckedUpdateManyWithoutNovelInput = {
   firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
-  scenesCount?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 
@@ -1287,7 +1202,6 @@ export type CharacterSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   firstAppearance?: boolean
   status?: boolean
   image?: boolean
-  scenesCount?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   outgoingRelationships?: boolean | Prisma.Character$outgoingRelationshipsArgs<ExtArgs>
   incomingRelationships?: boolean | Prisma.Character$incomingRelationshipsArgs<ExtArgs>
@@ -1312,7 +1226,6 @@ export type CharacterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   firstAppearance?: boolean
   status?: boolean
   image?: boolean
-  scenesCount?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["character"]>
 
@@ -1333,7 +1246,6 @@ export type CharacterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   firstAppearance?: boolean
   status?: boolean
   image?: boolean
-  scenesCount?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["character"]>
 
@@ -1354,10 +1266,9 @@ export type CharacterSelectScalar = {
   firstAppearance?: boolean
   status?: boolean
   image?: boolean
-  scenesCount?: boolean
 }
 
-export type CharacterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "name" | "alias" | "age" | "role" | "appearance" | "personality" | "wayOfSpeaking" | "goal" | "fear" | "secret" | "notes" | "firstAppearance" | "status" | "image" | "scenesCount", ExtArgs["result"]["character"]>
+export type CharacterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "name" | "alias" | "age" | "role" | "appearance" | "personality" | "wayOfSpeaking" | "goal" | "fear" | "secret" | "notes" | "firstAppearance" | "status" | "image", ExtArgs["result"]["character"]>
 export type CharacterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   outgoingRelationships?: boolean | Prisma.Character$outgoingRelationshipsArgs<ExtArgs>
@@ -1397,7 +1308,6 @@ export type $CharacterPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     firstAppearance: string
     status: string
     image: string
-    scenesCount: number
   }, ExtArgs["result"]["character"]>
   composites: {}
 }
@@ -1841,7 +1751,6 @@ export interface CharacterFieldRefs {
   readonly firstAppearance: Prisma.FieldRef<"Character", 'String'>
   readonly status: Prisma.FieldRef<"Character", 'String'>
   readonly image: Prisma.FieldRef<"Character", 'String'>
-  readonly scenesCount: Prisma.FieldRef<"Character", 'Int'>
 }
     
 

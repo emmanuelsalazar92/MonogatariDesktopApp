@@ -1697,6 +1697,8 @@ function PrivateNovelStudioContent() {
                   onStatusChange={setCharacterStatus}
                   onAddCharacter={() => { setEditingCharacter(null); setDialog("character"); }}
                   onEditCharacter={(character) => { setEditingCharacter(character); setDialog("character"); }}
+                  onOpenScene={(sceneId) => void openSceneInEditor(sceneId)}
+                  onSceneLinksChanged={() => refreshStudioData(false)}
                 />
               ) : null}
               {activePage === "places" ? (

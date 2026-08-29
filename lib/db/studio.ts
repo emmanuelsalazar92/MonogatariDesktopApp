@@ -101,7 +101,7 @@ function serializeCharacter(character: {
   firstAppearance: string;
   status: string;
   image: string;
-  scenesCount: number;
+  _count?: { sceneLinks: number };
 }) {
   const aliases = parseStoredAliases(character.alias);
   const storedStatus = parseStoredCharacterStatus(character.status);
@@ -112,7 +112,7 @@ function serializeCharacter(character: {
     role: normalizeStoredCharacterRole(character.role),
     status: storedStatus.lifecycle,
     narrativeStatus: storedStatus.narrative,
-    scenes: character.scenesCount
+    scenes: character._count?.sceneLinks ?? 0
   };
 }
 
@@ -257,7 +257,10 @@ export async function getStudioSnapshot() {
       },
       orderBy: [{ chapterId: "asc" }, { sortOrder: "asc" }]
     }),
-    prisma.character.findMany({ orderBy: [{ novelId: "asc" }, { name: "asc" }] }),
+    prisma.character.findMany({
+      include: { _count: { select: { sceneLinks: true } } },
+      orderBy: [{ novelId: "asc" }, { name: "asc" }]
+    }),
     prisma.location.findMany({ orderBy: [{ novelId: "asc" }, { name: "asc" }] }),
     prisma.relationship.findMany({ orderBy: { id: "asc" } }),
     prisma.timelineEvent.findMany({ orderBy: { id: "asc" } }),
@@ -405,8 +408,7 @@ export async function createCharacter(input: {
         notes: input.metadata.notes,
         firstAppearance: "",
         status: serializeCharacterStatus(input.metadata.status),
-        image: "",
-        scenesCount: 0
+        image: ""
       }
     });
 
@@ -419,7 +421,7 @@ export async function createCharacter(input: {
     return createdCharacter;
   });
 
-  return serializeCharacter(character);
+  return serializeCharacter({ ...character, _count: { sceneLinks: 0 } });
 }
 
 export async function updateCharacter(characterId: string, metadata: CharacterMetadataInput) {
@@ -444,9 +446,95 @@ export async function updateCharacter(characterId: string, metadata: CharacterMe
     });
     await tx.novel.update({ where: { id: existing.novelId }, data: { updatedAt: new Date() } });
     await markNotionDirty(tx, existing.novelId);
-    return updated;
+    return {
+      ...updated,
+      _count: { sceneLinks: await tx.sceneCharacter.count({ where: { characterId } }) }
+    };
   });
   return serializeCharacter(character);
+}
+
+export class SceneCharacterConflictError extends Error {}
+
+export async function listCharacterScenes(characterId: string) {
+  const character = await prisma.character.findUniqueOrThrow({
+    where: { id: characterId },
+    select: {
+      id: true,
+      novelId: true,
+      sceneLinks: {
+        select: {
+          scene: {
+            select: {
+              id: true,
+              title: true,
+              chapter: {
+                select: {
+                  id: true,
+                  title: true,
+                  volume: { select: { id: true, title: true, novelId: true } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return character.sceneLinks
+    .map(({ scene }) => ({
+      sceneId: scene.id,
+      sceneTitle: scene.title,
+      chapterId: scene.chapter.id,
+      chapterTitle: scene.chapter.title,
+      volumeId: scene.chapter.volume.id,
+      volumeTitle: scene.chapter.volume.title,
+      novelId: scene.chapter.volume.novelId
+    }))
+    .sort((a, b) =>
+      `${a.volumeTitle}\u0000${a.chapterTitle}\u0000${a.sceneTitle}`.localeCompare(
+        `${b.volumeTitle}\u0000${b.chapterTitle}\u0000${b.sceneTitle}`
+      )
+    );
+}
+
+export async function linkCharacterScene(characterId: string, sceneId: string) {
+  return prisma.$transaction(async (tx) => {
+    const [character, scene] = await Promise.all([
+      tx.character.findUnique({ where: { id: characterId }, select: { novelId: true } }),
+      tx.scene.findUnique({
+        where: { id: sceneId },
+        select: { chapter: { select: { volume: { select: { novelId: true } } } } }
+      })
+    ]);
+    if (!character || !scene) throw new SceneCharacterConflictError("Character or scene was not found");
+    if (character.novelId !== scene.chapter.volume.novelId) {
+      throw new SceneCharacterConflictError("Character and scene must belong to the same novel");
+    }
+
+    const existing = await tx.sceneCharacter.findUnique({
+      where: { sceneId_characterId: { sceneId, characterId } },
+      select: { sceneId: true }
+    });
+    await tx.sceneCharacter.upsert({
+      where: { sceneId_characterId: { sceneId, characterId } },
+      update: {},
+      create: { characterId, sceneId }
+    });
+    if (!existing) await markNotionDirty(tx, character.novelId);
+    return { created: !existing, count: await tx.sceneCharacter.count({ where: { characterId } }) };
+  });
+}
+
+export async function unlinkCharacterScene(characterId: string, sceneId: string) {
+  return prisma.$transaction(async (tx) => {
+    const character = await tx.character.findUnique({ where: { id: characterId }, select: { novelId: true } });
+    if (!character) throw new SceneCharacterConflictError("Character was not found");
+    const result = await tx.sceneCharacter.deleteMany({ where: { characterId, sceneId } });
+    if (result.count > 0) await markNotionDirty(tx, character.novelId);
+    return { removed: result.count > 0, count: await tx.sceneCharacter.count({ where: { characterId } }) };
+  });
 }
 
 export async function createLocation(input: {
