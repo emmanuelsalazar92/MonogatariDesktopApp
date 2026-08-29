@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Plus, Search, UserRound } from "lucide-react";
+import { Check, Pencil, Plus, Search, UserRound } from "lucide-react";
 
 import {
   EmptyState,
@@ -53,7 +53,8 @@ export function CharactersScreen({
   onQueryChange,
   onRoleChange,
   onStatusChange,
-  onAddCharacter
+  onAddCharacter,
+  onEditCharacter
 }: {
   data: StudioData;
   characters: Character[];
@@ -67,6 +68,7 @@ export function CharactersScreen({
   onRoleChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   onAddCharacter: () => void;
+  onEditCharacter: (character: Character) => void;
 }) {
   const [selectedCharacterId, setSelectedCharacterId] = React.useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = React.useState(false);
@@ -183,6 +185,7 @@ export function CharactersScreen({
               character={selectedCharacter}
               data={data}
               translate={translate}
+              onEdit={() => onEditCharacter(selectedCharacter)}
             />
           ) : (
             <EmptyState
@@ -217,6 +220,7 @@ export function CharactersScreen({
               character={selectedCharacter}
               data={data}
               translate={translate}
+              onEdit={() => { setMobileDetailOpen(false); onEditCharacter(selectedCharacter); }}
               className="border-0 shadow-none"
             />
           ) : null}
@@ -305,11 +309,13 @@ function CharacterDetailPanel({
   character,
   data,
   translate,
+  onEdit,
   className
 }: {
   character: Character;
   data: StudioData;
   translate: (value: string) => string;
+  onEdit: () => void;
   className?: string;
 }) {
   const linkedPlaces = uniqueStrings(
@@ -338,7 +344,12 @@ function CharacterDetailPanel({
             <UserRound className="size-10" />
           </div>
           <div>
-            <CardTitle>{character.name}</CardTitle>
+            <div className="flex items-start justify-between gap-3">
+              <CardTitle>{character.name}</CardTitle>
+              <Button type="button" size="sm" variant="outline" onClick={onEdit}>
+                <Pencil className="size-4" /> {translate("Edit character")}
+              </Button>
+            </div>
             <CardDescription>{character.alias}</CardDescription>
             <div className="mt-2 flex flex-wrap gap-2">
               <StatusBadge status={character.status} translate={translate} />

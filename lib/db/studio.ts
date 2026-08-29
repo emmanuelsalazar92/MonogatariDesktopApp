@@ -22,6 +22,7 @@ import type {
   NovelStatus,
   Relationship as StoryRelationship
 } from "@/lib/studio-domain";
+import { parseStoredAliases, type CharacterMetadataInput } from "@/lib/character-metadata";
 
 function parseList(value: string): string[] {
   try {
@@ -89,8 +90,11 @@ function serializeCharacter(character: {
   image: string;
   scenesCount: number;
 }) {
+  const aliases = parseStoredAliases(character.alias);
   return {
     ...character,
+    alias: aliases[0] ?? "",
+    aliases,
     status: character.status as Character["status"],
     scenes: character.scenesCount
   };
@@ -360,8 +364,7 @@ export async function createNovel(input: {
 
 export async function createCharacter(input: {
   novelId: string;
-  name: string;
-  notes?: string;
+  metadata: CharacterMetadataInput;
 }) {
   const id = `char-${crypto.randomUUID()}`;
 
@@ -370,19 +373,19 @@ export async function createCharacter(input: {
       data: {
         id,
         novelId: input.novelId,
-        name: input.name,
-        alias: "",
-        age: "",
-        role: "Support",
-        appearance: "",
-        personality: "",
-        wayOfSpeaking: "",
-        goal: "",
-        fear: "",
-        secret: "",
-        notes: input.notes ?? "",
+        name: input.metadata.name,
+        alias: JSON.stringify(input.metadata.aliases),
+        age: input.metadata.age,
+        role: input.metadata.role,
+        appearance: input.metadata.appearance,
+        personality: input.metadata.personality,
+        wayOfSpeaking: input.metadata.wayOfSpeaking,
+        goal: input.metadata.goal,
+        fear: input.metadata.fear,
+        secret: input.metadata.secret,
+        notes: input.metadata.notes,
         firstAppearance: "",
-        status: "Active",
+        status: input.metadata.status,
         image: "",
         scenesCount: 0
       }
@@ -397,6 +400,33 @@ export async function createCharacter(input: {
     return createdCharacter;
   });
 
+  return serializeCharacter(character);
+}
+
+export async function updateCharacter(characterId: string, metadata: CharacterMetadataInput) {
+  const character = await prisma.$transaction(async (tx) => {
+    const existing = await tx.character.findUniqueOrThrow({ where: { id: characterId } });
+    const updated = await tx.character.update({
+      where: { id: characterId },
+      data: {
+        name: metadata.name,
+        alias: JSON.stringify(metadata.aliases),
+        age: metadata.age,
+        role: metadata.role,
+        appearance: metadata.appearance,
+        personality: metadata.personality,
+        wayOfSpeaking: metadata.wayOfSpeaking,
+        goal: metadata.goal,
+        fear: metadata.fear,
+        secret: metadata.secret,
+        notes: metadata.notes,
+        status: metadata.status
+      }
+    });
+    await tx.novel.update({ where: { id: existing.novelId }, data: { updatedAt: new Date() } });
+    await markNotionDirty(tx, existing.novelId);
+    return updated;
+  });
   return serializeCharacter(character);
 }
 

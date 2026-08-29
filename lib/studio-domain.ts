@@ -122,6 +122,7 @@ export interface Character {
   novelId: string;
   name: string;
   alias: string;
+  aliases: string[];
   age: string;
   role: string;
   appearance: string;

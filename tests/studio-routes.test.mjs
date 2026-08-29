@@ -35,6 +35,36 @@ test("route parser rejects malformed IDs and prototype section names", async () 
   assert.equal(routes.isNovelWorkspaceSection("toString"), false);
 });
 
+test("character metadata supports minimal creation and normalizes aliases", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+  const minimal = metadata.validateCharacterMetadata({ novelId: "novel-1", name: "  Ada  " });
+  assert.equal(minimal.ok, true);
+  assert.equal(minimal.data.name, "Ada");
+  assert.equal(minimal.data.status, "Active");
+  assert.deepEqual(minimal.data.aliases, []);
+
+  const normalized = metadata.validateCharacterMetadata({
+    name: "Ada",
+    aliases: ["  The Cartographer ", "the cartographer", "Ada", "Ámbar"],
+    status: "Secondary"
+  });
+  assert.equal(normalized.ok, true);
+  assert.deepEqual(normalized.data.aliases, ["The Cartographer", "Ámbar"]);
+});
+
+test("character metadata rejects invalid and derived fields", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+  const derived = metadata.validateCharacterMetadata({ name: "Ada", relationships: [] });
+  assert.equal(derived.ok, false);
+  assert.match(derived.error, /not editable/);
+
+  const invalid = metadata.validateCharacterMetadata({ name: "", status: "Unknown", aliases: "Alias" });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.fieldErrors.name);
+  assert.ok(invalid.fieldErrors.status);
+  assert.ok(invalid.fieldErrors.aliases);
+});
+
 test("Library navigation accepts only allowlisted query parameters", async () => {
   const navigation = await loadTypeScriptModule("lib/studio-library-navigation.ts", (moduleId) => {
     if (moduleId === "@/lib/studio-domain") {

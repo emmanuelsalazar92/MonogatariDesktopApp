@@ -80,6 +80,7 @@ import {
   type ReaderTheme
 } from "@/lib/reader-preferences";
 import { CharactersScreen } from "@/components/studio/characters-screen";
+import { CharacterFormDialog } from "@/components/studio/character-form-dialog";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
 import { MobileNavDialog } from "@/components/studio/mobile-nav-dialog";
@@ -152,6 +153,7 @@ import {
   narrativeStatuses,
   placeTypes,
   relationshipCategories,
+  type Character,
   type ChapterStatus,
   type FocusMode,
   type Location,
@@ -179,11 +181,6 @@ type NotionAutosyncStatus = "idle" | "syncing" | "synced" | "error" | "remote-ch
 type CreateNovelInput = {
   title: string;
   synopsis: string;
-};
-
-type CreateCharacterInput = {
-  name: string;
-  notes: string;
 };
 
 type CreatePlaceInput = {
@@ -276,6 +273,7 @@ function PrivateNovelStudioContent() {
   const [dialog, setDialog] = React.useState<
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
   >(null);
+  const [editingCharacter, setEditingCharacter] = React.useState<Character | null>(null);
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved locally");
   const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
   const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
@@ -1227,30 +1225,6 @@ function PrivateNovelStudioContent() {
     [refreshStudioData, setActiveNovel, showToast]
   );
 
-  const createCharacterFromDialog = React.useCallback(
-    async (input: CreateCharacterInput) => {
-      const response = await fetch("/api/characters", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          novelId: currentNovel.id,
-          name: input.name,
-          notes: input.notes
-        })
-      });
-
-      if (!response.ok) {
-        const details = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(details?.error ?? `Character creation failed with ${response.status}`);
-      }
-
-      await refreshStudioData(false);
-      router.push(routeForPage("characters", currentNovel.id));
-      showToast("Character created in SQLite");
-    },
-    [currentNovel.id, refreshStudioData, router, showToast]
-  );
-
   const createPlaceFromDialog = React.useCallback(
     async (input: CreatePlaceInput) => {
       const response = await fetch("/api/places", {
@@ -1447,7 +1421,7 @@ function PrivateNovelStudioContent() {
   const filteredCharacters = characters.filter((character) => {
     const queryMatch =
       character.name.toLowerCase().includes(characterQuery.toLowerCase()) ||
-      character.alias.toLowerCase().includes(characterQuery.toLowerCase());
+      character.aliases.some((alias) => alias.toLowerCase().includes(characterQuery.toLowerCase()));
     const roleMatch = characterRole === "All roles" || character.role === characterRole;
     const statusMatch =
       characterStatus === "All statuses" || character.status === characterStatus;
@@ -1703,7 +1677,8 @@ function PrivateNovelStudioContent() {
                   onQueryChange={setCharacterQuery}
                   onRoleChange={setCharacterRole}
                   onStatusChange={setCharacterStatus}
-                  onAddCharacter={() => setDialog("character")}
+                  onAddCharacter={() => { setEditingCharacter(null); setDialog("character"); }}
+                  onEditCharacter={(character) => { setEditingCharacter(character); setDialog("character"); }}
                 />
               ) : null}
               {activePage === "places" ? (
@@ -1798,10 +1773,9 @@ function PrivateNovelStudioContent() {
       />
 
       <PrototypeDialog
-        dialog={dialog}
+        dialog={dialog === "character" ? null : dialog}
         exportFilename={exportPreviewName}
         onCreateNovel={createNovelFromDialog}
-        onCreateCharacter={createCharacterFromDialog}
         onCreatePlace={createPlaceFromDialog}
         onCreateRelationship={createRelationshipFromDialog}
         onCreateEvent={createTimelineEventFromDialog}
@@ -1811,6 +1785,20 @@ function PrivateNovelStudioContent() {
           setDialog(null);
         }}
         onClose={() => setDialog(null)}
+      />
+
+      <CharacterFormDialog
+        open={dialog === "character"}
+        novelId={currentNovel.id}
+        character={editingCharacter}
+        onOpenChange={(open) => {
+          if (!open) { setDialog(null); setEditingCharacter(null); }
+        }}
+        onSaved={async (_character, mode) => {
+          await refreshStudioData(false);
+          router.push(routeForPage("characters", currentNovel.id));
+          showToast(mode === "edit" ? "Character updated in SQLite" : "Character created in SQLite");
+        }}
       />
 
       <NotionConflictDialog
@@ -4114,7 +4102,6 @@ function PrototypeDialog({
   dialog,
   exportFilename,
   onCreateNovel,
-  onCreateCharacter,
   onCreatePlace,
   onCreateRelationship,
   onCreateEvent,
@@ -4125,7 +4112,6 @@ function PrototypeDialog({
   dialog:
     | null
     | "novel"
-    | "character"
     | "place"
     | "relationship"
     | "event"
@@ -4134,7 +4120,6 @@ function PrototypeDialog({
     | "toc";
   exportFilename: string;
   onCreateNovel: (input: CreateNovelInput) => Promise<void>;
-  onCreateCharacter: (input: CreateCharacterInput) => Promise<void>;
   onCreatePlace: (input: CreatePlaceInput) => Promise<void>;
   onCreateRelationship: (input: CreateRelationshipInput) => Promise<void>;
   onCreateEvent: (input: CreateTimelineEventInput) => Promise<void>;
@@ -4173,10 +4158,6 @@ function PrototypeDialog({
       title: "Create or edit story item",
       description:
         "Prototype form for adding a novel, volume, chapter, or scene to the local outline."
-    },
-    character: {
-      title: "Add character",
-      description: "Create a private character profile with role, status, and story links."
     },
     place: {
       title: "Add place",
@@ -4252,16 +4233,6 @@ function PrototypeDialog({
         await onCreateNovel({
           title: itemTitle.trim(),
           synopsis: itemNotes.trim()
-        });
-      } else if (dialog === "character") {
-        if (!itemTitle.trim()) {
-          setDialogError("Name is required.");
-          setSaving(false);
-          return;
-        }
-        await onCreateCharacter({
-          name: itemTitle.trim(),
-          notes: itemNotes.trim()
         });
       } else if (dialog === "place") {
         if (!itemTitle.trim()) {
