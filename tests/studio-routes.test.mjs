@@ -694,3 +694,22 @@ test("structure delete impact protects non-empty parents and reports their words
     { chapterCount: 0, sceneCount: 0, wordCount: 12, hardDeleteBlocked: false }
   );
 });
+
+test("character scene links use the normalized join as their single source of truth", async () => {
+  const schema = await readFile(resolve(process.cwd(), "prisma/schema.prisma"), "utf8");
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const routeSource = await readFile(resolve(process.cwd(), "app/api/characters/[characterId]/scenes/route.ts"), "utf8");
+  const charactersSource = await readFile(resolve(process.cwd(), "components/studio/characters-screen.tsx"), "utf8");
+
+  assert.match(schema, /model SceneCharacter[\s\S]*@@id\(\[sceneId, characterId\]\)/);
+  assert.doesNotMatch(schema, /scenesCount/);
+  assert.match(studioSource, /_count: \{ select: \{ sceneLinks: true \} \}/);
+  assert.match(studioSource, /character\._count\?\.sceneLinks \?\? 0/);
+  assert.match(studioSource, /character\.novelId !== scene\.chapter\.volume\.novelId/);
+  assert.match(studioSource, /sceneCharacter\.upsert/);
+  assert.match(studioSource, /sceneCharacter\.deleteMany\(\{ where: \{ characterId, sceneId \} \}\)/);
+  assert.match(routeSource, /export async function (GET|POST|DELETE)/);
+  assert.match(charactersSource, /volumeTitle[\s\S]*chapterTitle/);
+  assert.match(charactersSource, /onOpenScene\(scene\.sceneId\)/);
+  assert.match(charactersSource, /Remove linked scene/);
+});

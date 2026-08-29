@@ -1904,8 +1904,7 @@ export const CharacterScalarFieldEnum = {
   notes: 'notes',
   firstAppearance: 'firstAppearance',
   status: 'status',
-  image: 'image',
-  scenesCount: 'scenesCount'
+  image: 'image'
 } as const
 
 export type CharacterScalarFieldEnum = (typeof CharacterScalarFieldEnum)[keyof typeof CharacterScalarFieldEnum]

@@ -138,7 +138,6 @@ model Character {
   firstAppearance       String           @default("")
   status                String           @default("Active")
   image                 String           @default("")
-  scenesCount           Int              @default(0)
   novel                 Novel            @relation(fields: [novelId], references: [id], onDelete: Cascade)
   outgoingRelationships Relationship[]   @relation("RelationshipFrom")
   incomingRelationships Relationship[]   @relation("RelationshipTo")

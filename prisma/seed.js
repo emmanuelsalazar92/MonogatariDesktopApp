@@ -226,8 +226,7 @@ async function main() {
         secret: "Escucho la campana azul antes de llegar a Seiryu.",
         notes: "Su curiosidad debe causar problemas, pero tambien resolverlos.",
         firstAppearance: "Prologue",
-        status: "Active",
-        scenesCount: 18
+        status: "Active"
       },
       {
         id: "char-reina",
@@ -244,8 +243,7 @@ async function main() {
         secret: "Puede leer simbolos que no existen para otros estudiantes.",
         notes: "Romance lento con Akira, siempre desde tension de confianza.",
         firstAppearance: "Chapter 1",
-        status: "Active",
-        scenesCount: 16
+        status: "Active"
       },
       {
         id: "char-mika",
@@ -257,8 +255,7 @@ async function main() {
         personality: "Observadora, metodica y mas valiente de lo que admite.",
         goal: "Proteger a Akira usando logica donde el usa impulso.",
         firstAppearance: "Chapter 2",
-        status: "Secondary",
-        scenesCount: 9
+        status: "Secondary"
       },
       {
         id: "char-kuroda",
@@ -270,8 +267,7 @@ async function main() {
         personality: "Calmo, evasivo, amable solo cuando le conviene.",
         goal: "Administrar el secreto de la academia hasta elegir heredero.",
         firstAppearance: "Chapter 1",
-        status: "Spoiler",
-        scenesCount: 11
+        status: "Spoiler"
       }
     ]
   });
