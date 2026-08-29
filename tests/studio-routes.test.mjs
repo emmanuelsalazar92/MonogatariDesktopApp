@@ -503,6 +503,18 @@ test("reader chapter assembly stays bounded on a representative large hierarchy"
   assert.ok(document.scenes.every((scene) => scene.chapterId === "c3"));
 });
 
+test("top bar omits the technical local data status without removing navigation controls", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const topBarSource = await readFile(resolve(process.cwd(), "components/studio/top-bar.tsx"), "utf8");
+  const i18nSource = await readFile(resolve(process.cwd(), "lib/studio-i18n.ts"), "utf8");
+
+  assert.doesNotMatch(topBarSource, /ShieldCheck|dataStatusLabel|localStatus/);
+  assert.doesNotMatch(pageSource, /dataSourceLabel|localStatus/);
+  assert.doesNotMatch(i18nSource, /localStatus/);
+  assert.match(topBarSource, /ToolbarIconButton/);
+  assert.match(topBarSource, /SelectTrigger/);
+});
+
 test("reader responsive and resilience contracts prioritize content without horizontal overflow", async () => {
   const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
   const sidebarSource = await readFile(resolve(process.cwd(), "components/studio/sidebar.tsx"), "utf8");

@@ -4,8 +4,7 @@ import {
   BookOpen,
   ChevronsRight,
   Columns3,
-  Menu,
-  ShieldCheck
+  Menu
 } from "lucide-react";
 
 import {
@@ -22,7 +21,6 @@ import { type Novel, type SidebarState } from "@/lib/studio-domain";
 type TopBarCopy = {
   openNavigation: string;
   toggleSidebar: string;
-  localStatus: string;
 };
 
 export function TopBar({
@@ -32,7 +30,6 @@ export function TopBar({
   mobileNavigationOpen,
   novels,
   activeNovelId,
-  dataStatusLabel,
   copy,
   readerOptimized = false,
   onOpenMobileNav,
@@ -45,7 +42,6 @@ export function TopBar({
   mobileNavigationOpen: boolean;
   novels: Novel[];
   activeNovelId: string;
-  dataStatusLabel: string;
   copy: TopBarCopy;
   readerOptimized?: boolean;
   onOpenMobileNav: () => void;
@@ -86,13 +82,6 @@ export function TopBar({
             {pageLabel}
           </p>
           <p className="hidden truncate text-[15px] text-foreground/88 sm:block">{subtitle}</p>
-        </div>
-
-        <div className="hidden items-center gap-2 rounded-full border border-border/60 bg-card/78 px-3 py-2 text-xs text-muted-foreground lg:flex">
-          <ShieldCheck className="size-4 text-primary" />
-          <span>
-            {copy.localStatus} - {dataStatusLabel}
-          </span>
         </div>
 
         {novels.length ? (
