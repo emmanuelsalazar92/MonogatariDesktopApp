@@ -49,7 +49,6 @@ export const uiCopy = {
   en: {
     appSubtitle: "Warm Typewriter Studio",
     localStudio: "local network studio",
-    localStatus: "Running on local network",
     openNavigation: "Open navigation",
     toggleSidebar: "Toggle sidebar state",
     expandedSidebar: "Expanded sidebar",
@@ -83,7 +82,6 @@ export const uiCopy = {
   es: {
     appSubtitle: "Estudio de Maquina de Escribir Calido",
     localStudio: "estudio de red local",
-    localStatus: "Ejecutandose en la red local",
     openNavigation: "Abrir navegacion",
     toggleSidebar: "Alternar barra lateral",
     expandedSidebar: "Barra lateral expandida",

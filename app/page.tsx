@@ -246,18 +246,6 @@ const readerScopes = [
 const characterRoles = ["All roles", "Protagonist", "Deuteragonist", "Support", "Mentor / Suspect"];
 const characterStatuses = ["All statuses", "Active", "Secondary", "Missing", "Dead", "Spoiler", "Archived"];
 
-function dataSourceLabel(status: DataStatus, language: Language) {
-  if (status === "ready") {
-    return language === "es" ? "SQLite conectado" : "SQLite connected";
-  }
-
-  if (status === "loading") {
-    return language === "es" ? "Cargando SQLite" : "Loading SQLite";
-  }
-
-  return language === "es" ? "SQLite no disponible" : "SQLite unavailable";
-}
-
 function autosaveDelay(value: string) {
   if (value === "Manual only") return null;
   const seconds = Number.parseInt(value, 10);
@@ -1589,11 +1577,9 @@ function PrivateNovelStudioContent() {
                 mobileNavigationOpen={mobileDrawerOpen}
                 novels={studioData.novels}
                 activeNovelId={currentNovel.id}
-                dataStatusLabel={dataSourceLabel(dataStatus, language)}
                 copy={{
                   openNavigation: uiCopy[language].openNavigation,
-                  toggleSidebar: uiCopy[language].toggleSidebar,
-                  localStatus: uiCopy[language].localStatus
+                  toggleSidebar: uiCopy[language].toggleSidebar
                 }}
                 readerOptimized={activePage === "reader"}
                 onOpenMobileNav={() => setMobileDrawerOpen(true)}
