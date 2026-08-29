@@ -12,5 +12,7 @@ export async function GET(request: Request) {
   if (!novelId || !targetId || !scopes.has(scope)) return NextResponse.json({ error: "invalid reader request" }, { status: 400 });
   const document = await getReaderDocument(novelId, scope, targetId);
   if (!document) return NextResponse.json({ error: "reader target not found" }, { status: 404 });
-  return NextResponse.json(document);
+  return NextResponse.json(document, {
+    headers: { "Content-Type": "application/json; charset=utf-8" }
+  });
 }

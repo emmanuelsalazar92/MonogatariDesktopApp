@@ -409,6 +409,7 @@ async function main() {
         sidebarState: "expanded",
         editorFontSize: "18 px",
         readerFontSize: "18 px",
+        readerWidth: "720 px",
         autosaveInterval: "30 seconds",
         defaultFocusMode: "Writing",
         defaultReadingMode: "Sepia",

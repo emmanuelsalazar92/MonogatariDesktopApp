@@ -163,12 +163,27 @@ export function TagList({ tags }: { tags: string[] }) {
   );
 }
 
-export function ProgressBar({ value }: { value: number }) {
+export function ProgressBar({
+  value,
+  label = "Progress"
+}: {
+  value: number;
+  label?: string;
+}) {
+  const normalizedValue = Math.min(100, Math.max(0, Math.round(value)));
+
   return (
-    <div className="h-2.5 overflow-hidden rounded-full bg-muted/85">
+    <div
+      className="h-2.5 overflow-hidden rounded-full bg-muted/85"
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={normalizedValue}
+    >
       <div
         className="h-full rounded-full bg-primary shadow-[0_0_0_1px_rgba(101,70,39,0.08)]"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        style={{ width: `${normalizedValue}%` }}
       />
     </div>
   );

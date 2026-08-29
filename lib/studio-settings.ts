@@ -3,6 +3,10 @@ import {
   type PersistedStudioSettings
 } from "@/lib/studio-data";
 import { exportFormats, exportOptions } from "@/lib/studio-domain";
+import {
+  normalizeReaderFontSize,
+  normalizeReaderWidth
+} from "@/lib/reader-preferences";
 
 export const STUDIO_CONFIGURATION_ID = "studio";
 export const STUDIO_CONFIGURATION_VERSION = 1;
@@ -28,7 +32,8 @@ const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = 
   language: ["en", "es"],
   sidebarState: ["expanded", "compact", "hidden"],
   editorFontSize: ["16 px", "18 px", "20 px", "22 px"],
-  readerFontSize: ["16 px", "18 px", "20 px", "22 px"],
+  readerFontSize: [],
+  readerWidth: [],
   autosaveInterval: ["10 seconds", "30 seconds", "60 seconds", "Manual only"],
   editorInspectorOpen: ["true", "false"],
   defaultFocusMode: ["Writing", "Reading", "Off"],
@@ -81,6 +86,13 @@ function normalizeExportDefaults(value: string) {
   }
 }
 
+function normalizeSettingValue(key: keyof PersistedStudioSettings, value: string) {
+  if (key === "readerFontSize") return normalizeReaderFontSize(value);
+  if (key === "readerWidth") return normalizeReaderWidth(value);
+  if (key === "exportDefaults") return normalizeExportDefaults(value);
+  return value;
+}
+
 export function parseStudioSettings(value: string | null | undefined): PersistedStudioSettings {
   if (!value) return { ...defaultPersistedStudioSettings };
   try {
@@ -103,11 +115,9 @@ export function applyStudioSettings(
     if (!(key in allowedValues) || !isNonSecretText(value)) continue;
     const settingKey = key as keyof PersistedStudioSettings;
     let normalized = value.trim();
-    if (settingKey === "exportDefaults") {
-      const exportDefaults = normalizeExportDefaults(normalized);
-      if (!exportDefaults) continue;
-      normalized = exportDefaults;
-    }
+    const normalizedSetting = normalizeSettingValue(settingKey, normalized);
+    if (!normalizedSetting) continue;
+    normalized = normalizedSetting;
     const options = allowedValues[settingKey];
     if ((options.length > 0 && !options.includes(normalized)) || (options.length === 0 && !normalized)) {
       continue;
@@ -142,11 +152,9 @@ export function validateStudioSettingsUpdate(
 
     const settingKey = key as keyof PersistedStudioSettings;
     let normalized = value.trim();
-    if (settingKey === "exportDefaults") {
-      const exportDefaults = normalizeExportDefaults(normalized);
-      if (!exportDefaults) return null;
-      normalized = exportDefaults;
-    }
+    const normalizedSetting = normalizeSettingValue(settingKey, normalized);
+    if (!normalizedSetting) return null;
+    normalized = normalizedSetting;
 
     const options = allowedValues[settingKey];
     if ((options.length > 0 && !options.includes(normalized)) || (options.length === 0 && !normalized)) {
