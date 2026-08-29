@@ -20,10 +20,7 @@ const statusClass: Record<NovelStatus | ChapterStatus | Character["status"], str
   Ready: "bg-success text-success-foreground",
   Final: "bg-warning/18 text-foreground",
   Active: "bg-primary text-primary-foreground",
-  Secondary: "bg-secondary text-secondary-foreground",
-  Missing: "bg-muted/85 text-muted-foreground",
-  Dead: "bg-foreground/14 text-muted-foreground",
-  Spoiler: "bg-destructive text-destructive-foreground"
+  Inactive: "bg-muted/85 text-muted-foreground"
 };
 
 export function StatusBadge({

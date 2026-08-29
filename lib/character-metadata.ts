@@ -1,6 +1,64 @@
 import type { Character } from "@/lib/studio-domain";
 
-export const characterStatuses = ["Active", "Secondary", "Missing", "Dead", "Spoiler", "Archived"] as const;
+export const characterRoles = ["Protagonist", "Antagonist", "Support", "Minor", "Cameo", "Other"] as const;
+export const characterStatuses = ["Active", "Inactive", "Archived"] as const;
+export const legacyNarrativeStatuses = ["Secondary", "Missing", "Deceased", "Spoiler"] as const;
+
+export type CharacterRole = (typeof characterRoles)[number];
+export type CharacterLifecycleStatus = (typeof characterStatuses)[number];
+export type CharacterNarrativeStatus = (typeof legacyNarrativeStatuses)[number] | "";
+
+const legacyRoleMap: Record<string, CharacterRole> = {
+  Deuteragonist: "Support",
+  "Mentor / Suspect": "Other"
+};
+
+const legacyNarrativeMap: Record<string, CharacterNarrativeStatus> = {
+  Secondary: "Secondary",
+  Missing: "Missing",
+  Dead: "Deceased",
+  Deceased: "Deceased",
+  Spoiler: "Spoiler"
+};
+
+export function normalizeStoredCharacterRole(value: string): CharacterRole {
+  if (characterRoles.includes(value as CharacterRole)) return value as CharacterRole;
+  return legacyRoleMap[value] ?? "Other";
+}
+
+export function parseStoredCharacterStatus(value: string): {
+  lifecycle: CharacterLifecycleStatus;
+  narrative: CharacterNarrativeStatus;
+} {
+  try {
+    const parsed = JSON.parse(value) as { lifecycle?: unknown; narrative?: unknown };
+    const lifecycle = characterStatuses.includes(parsed.lifecycle as CharacterLifecycleStatus)
+      ? parsed.lifecycle as CharacterLifecycleStatus
+      : "Active";
+    const narrative = legacyNarrativeStatuses.includes(parsed.narrative as Exclude<CharacterNarrativeStatus, "">)
+      ? parsed.narrative as CharacterNarrativeStatus
+      : "";
+    return { lifecycle, narrative };
+  } catch {
+    if (characterStatuses.includes(value as CharacterLifecycleStatus)) {
+      return { lifecycle: value as CharacterLifecycleStatus, narrative: "" };
+    }
+    return { lifecycle: "Active", narrative: legacyNarrativeMap[value] ?? "" };
+  }
+}
+
+export function serializeCharacterStatus(lifecycle: CharacterLifecycleStatus, narrative: CharacterNarrativeStatus = "") {
+  return JSON.stringify({ lifecycle, ...(narrative ? { narrative } : {}) });
+}
+
+export function matchesCharacterClassification(
+  character: Pick<Character, "role" | "status">,
+  role: string,
+  status: string
+) {
+  return (role === "All roles" || character.role === role) &&
+    (status === "All statuses" || character.status === status);
+}
 
 export type CharacterMetadataInput = Pick<
   Character,
@@ -20,9 +78,8 @@ export type CharacterMetadataInput = Pick<
 
 export type CharacterFieldErrors = Partial<Record<keyof CharacterMetadataInput | "novelId", string>>;
 
-const limits: Record<keyof Omit<CharacterMetadataInput, "aliases" | "status">, number> = {
+const limits: Record<keyof Omit<CharacterMetadataInput, "aliases" | "status" | "role">, number> = {
   name: 120,
-  role: 80,
   age: 80,
   appearance: 2_000,
   personality: 2_000,
@@ -70,7 +127,7 @@ export function validateCharacterMetadata(value: unknown):
   }
 
   const input = value as Record<string, unknown>;
-  const allowed = new Set([...Object.keys(limits), "aliases", "status", "novelId"]);
+  const allowed = new Set([...Object.keys(limits), "aliases", "role", "status", "novelId"]);
   const unknown = Object.keys(input).filter((key) => !allowed.has(key));
   if (unknown.length) {
     return { ok: false, error: `Fields are not editable: ${unknown.join(", ")}`, fieldErrors: {} };
@@ -95,6 +152,8 @@ export function validateCharacterMetadata(value: unknown):
   if (!characterStatuses.includes(status as CharacterMetadataInput["status"])) {
     fieldErrors.status = "Status is invalid";
   }
+  const role = input.role ?? "Support";
+  if (!characterRoles.includes(role as CharacterRole)) fieldErrors.role = "Role is invalid";
 
   if (Object.keys(fieldErrors).length) {
     return { ok: false, error: "Review the highlighted fields", fieldErrors };
@@ -105,6 +164,7 @@ export function validateCharacterMetadata(value: unknown):
     data: {
       ...text,
       aliases,
+      role: role as CharacterRole,
       status: status as CharacterMetadataInput["status"]
     }
   };

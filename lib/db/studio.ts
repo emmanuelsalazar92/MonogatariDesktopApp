@@ -15,14 +15,19 @@ import {
   validateStudioSettingsUpdate
 } from "@/lib/studio-settings";
 import type {
-  Character,
   ChapterStatus,
   Location,
   Note,
   NovelStatus,
   Relationship as StoryRelationship
 } from "@/lib/studio-domain";
-import { parseStoredAliases, type CharacterMetadataInput } from "@/lib/character-metadata";
+import {
+  normalizeStoredCharacterRole,
+  parseStoredAliases,
+  parseStoredCharacterStatus,
+  serializeCharacterStatus,
+  type CharacterMetadataInput
+} from "@/lib/character-metadata";
 
 function parseList(value: string): string[] {
   try {
@@ -91,11 +96,14 @@ function serializeCharacter(character: {
   scenesCount: number;
 }) {
   const aliases = parseStoredAliases(character.alias);
+  const storedStatus = parseStoredCharacterStatus(character.status);
   return {
     ...character,
     alias: aliases[0] ?? "",
     aliases,
-    status: character.status as Character["status"],
+    role: normalizeStoredCharacterRole(character.role),
+    status: storedStatus.lifecycle,
+    narrativeStatus: storedStatus.narrative,
     scenes: character.scenesCount
   };
 }
@@ -385,7 +393,7 @@ export async function createCharacter(input: {
         secret: input.metadata.secret,
         notes: input.metadata.notes,
         firstAppearance: "",
-        status: input.metadata.status,
+        status: serializeCharacterStatus(input.metadata.status),
         image: "",
         scenesCount: 0
       }
@@ -420,7 +428,7 @@ export async function updateCharacter(characterId: string, metadata: CharacterMe
         fear: metadata.fear,
         secret: metadata.secret,
         notes: metadata.notes,
-        status: metadata.status
+        status: serializeCharacterStatus(metadata.status, parseStoredCharacterStatus(existing.status).narrative)
       }
     });
     await tx.novel.update({ where: { id: existing.novelId }, data: { updatedAt: new Date() } });

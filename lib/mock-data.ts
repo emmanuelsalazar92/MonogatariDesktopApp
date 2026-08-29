@@ -244,6 +244,7 @@ export const characters: Character[] = [
     notes: "Su curiosidad debe causar problemas, pero tambiÃ©n resolverlos.",
     firstAppearance: "Prologue",
     status: "Active",
+    narrativeStatus: "",
     image: "",
     scenes: 18
   },
@@ -254,7 +255,7 @@ export const characters: Character[] = [
     alias: "Guardiana de la llave azul",
     aliases: ["Guardiana de la llave azul"],
     age: "16",
-    role: "Deuteragonist",
+    role: "Support",
     appearance: "Cabello plateado, mirada serena, cinta azul en la muÃ±eca.",
     personality: "Reservada, precisa y protectora con quien gana su confianza.",
     wayOfSpeaking: "Formal, breve, con pausas calculadas.",
@@ -264,6 +265,7 @@ export const characters: Character[] = [
     notes: "Romance lento con Akira, siempre desde tensiÃ³n de confianza.",
     firstAppearance: "Chapter 1",
     status: "Active",
+    narrativeStatus: "",
     image: "",
     scenes: 16
   },
@@ -283,7 +285,8 @@ export const characters: Character[] = [
     secret: "El mapa de Seiryu cambia cuando ella lo toca.",
     notes: "Funciona como brÃºjula emocional y lÃ³gica del equipo.",
     firstAppearance: "Chapter 2",
-    status: "Secondary",
+    status: "Active",
+    narrativeStatus: "Secondary",
     image: "",
     scenes: 9
   },
@@ -294,7 +297,7 @@ export const characters: Character[] = [
     alias: "Archivist of sealed rooms",
     aliases: ["Archivist of sealed rooms"],
     age: "42",
-    role: "Mentor / Suspect",
+    role: "Other",
     appearance: "Abrigo oscuro, guantes de cuero, siempre lleva tiza azul.",
     personality: "Calmo, evasivo, amable solo cuando le conviene.",
     wayOfSpeaking: "AcadÃ©mico, con frases que parecen advertencias.",
@@ -303,7 +306,8 @@ export const characters: Character[] = [
     secret: "Ã‰l cerrÃ³ la Torre Sellada la Ãºltima vez.",
     notes: "Debe sentirse Ãºtil y peligroso en la misma escena.",
     firstAppearance: "Chapter 1",
-    status: "Spoiler",
+    status: "Active",
+    narrativeStatus: "Spoiler",
     image: "",
     scenes: 11
   }
