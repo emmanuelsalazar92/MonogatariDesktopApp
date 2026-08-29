@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, Search, UserRound } from "lucide-react";
+import * as React from "react";
+import { Check, Plus, Search, UserRound } from "lucide-react";
 
 import {
   EmptyState,
@@ -19,6 +20,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,12 +34,12 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import {
-  characterName,
   placeName,
   uniqueStrings,
   type StudioData
 } from "@/lib/studio-data";
 import { type Character } from "@/lib/studio-domain";
+import { cn } from "@/lib/utils";
 
 export function CharactersScreen({
   data,
@@ -60,7 +68,39 @@ export function CharactersScreen({
   onStatusChange: (value: string) => void;
   onAddCharacter: () => void;
 }) {
-  const selectedCharacter = characters[0] ?? null;
+  const [selectedCharacterId, setSelectedCharacterId] = React.useState<string | null>(null);
+  const [mobileDetailOpen, setMobileDetailOpen] = React.useState(false);
+  const catalogCharacters = characters.filter((character) =>
+    data.novels.some((novel) => novel.id === character.novelId)
+  );
+  const selectedCharacter = selectedCharacterId
+    ? catalogCharacters.find((character) => character.id === selectedCharacterId) ?? null
+    : null;
+
+  React.useEffect(() => {
+    if (selectedCharacterId && !selectedCharacter) {
+      setSelectedCharacterId(null);
+      setMobileDetailOpen(false);
+    }
+  }, [selectedCharacter, selectedCharacterId]);
+
+  React.useEffect(() => {
+    const desktopMedia = window.matchMedia("(min-width: 1280px)");
+    const closeDrawerOnDesktop = () => {
+      if (desktopMedia.matches) setMobileDetailOpen(false);
+    };
+
+    closeDrawerOnDesktop();
+    desktopMedia.addEventListener("change", closeDrawerOnDesktop);
+    return () => desktopMedia.removeEventListener("change", closeDrawerOnDesktop);
+  }, []);
+
+  const selectCharacter = (characterId: string) => {
+    setSelectedCharacterId(characterId);
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      setMobileDetailOpen(true);
+    }
+  };
 
   return (
     <div className="grid gap-6">
@@ -117,14 +157,15 @@ export function CharactersScreen({
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_400px]">
-        {characters.length ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {characters.map((character) => (
+        {catalogCharacters.length ? (
+          <div className="grid content-start gap-3 2xl:grid-cols-2">
+            {catalogCharacters.map((character) => (
               <CharacterCard
                 key={character.id}
                 character={character}
-                data={data}
+                selected={character.id === selectedCharacter?.id}
                 translate={translate}
+                onSelect={() => selectCharacter(character.id)}
               />
             ))}
           </div>
@@ -136,84 +177,140 @@ export function CharactersScreen({
           />
         )}
 
-        {selectedCharacter ? (
-          <CharacterDetailPanel
-            character={selectedCharacter}
-            data={data}
-            translate={translate}
-          />
-        ) : null}
+        <div className="hidden xl:block">
+          {selectedCharacter ? (
+            <CharacterDetailPanel
+              character={selectedCharacter}
+              data={data}
+              translate={translate}
+            />
+          ) : (
+            <EmptyState
+              icon={UserRound}
+              title={translate("Select a character")}
+              description={translate("Choose a character from the catalog to open their profile.")}
+            />
+          )}
+        </div>
       </div>
+
+      {!selectedCharacter && catalogCharacters.length ? (
+        <div className="xl:hidden">
+          <EmptyState
+            icon={UserRound}
+            title={translate("Select a character")}
+            description={translate("Choose a character from the catalog to open their profile.")}
+          />
+        </div>
+      ) : null}
+
+      <Dialog open={mobileDetailOpen && Boolean(selectedCharacter)} onOpenChange={setMobileDetailOpen}>
+        <DialogContent className="h-[calc(100dvh-1rem)] max-w-2xl overflow-y-auto p-0 xl:hidden sm:max-h-[calc(100dvh-2rem)] sm:h-auto">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selectedCharacter?.name ?? translate("Character profile")}</DialogTitle>
+            <DialogDescription>
+              {translate("Character details and connected story material.")}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCharacter ? (
+            <CharacterDetailPanel
+              character={selectedCharacter}
+              data={data}
+              translate={translate}
+              className="border-0 shadow-none"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function CharacterCard({
   character,
-  data,
-  translate
+  selected,
+  translate,
+  onSelect
 }: {
   character: Character;
-  data: StudioData;
+  selected: boolean;
   translate: (value: string) => string;
+  onSelect: () => void;
 }) {
-  const relatedNames =
-    data.relationships
-      .filter(
-        (relationship) =>
-          relationship.fromCharacterId === character.id ||
-          relationship.toCharacterId === character.id
-      )
-      .map((relationship) =>
-        relationship.fromCharacterId === character.id
-          ? characterName(relationship.toCharacterId, data)
-          : characterName(relationship.fromCharacterId, data)
-      )
-      .join(", ") || translate("None yet");
-
   return (
-    <Card className="surface-panel">
-      <CardContent className="grid gap-4 p-5 sm:grid-cols-[72px_1fr]">
-        <div className="grid size-[4.5rem] place-items-center rounded-xl border border-border/55 bg-surface-elevated text-primary shadow-paper-sm">
-          <UserRound className="size-8" />
-        </div>
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate font-semibold">{character.name}</h3>
-              <p className="truncate text-sm text-muted-foreground">{character.alias}</p>
+    <button
+      type="button"
+      aria-current={selected ? "true" : undefined}
+      aria-label={`${translate("Open character profile")}: ${character.name}`}
+      onClick={onSelect}
+      className="w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <Card
+        className={cn(
+          "surface-panel h-full transition-colors hover:border-primary/45 hover:bg-primary/[0.025]",
+          selected && "border-primary/75 bg-primary/[0.07] shadow-lift"
+        )}
+      >
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-[52px_1fr]">
+          <div className="grid size-[3.25rem] place-items-center rounded-full border border-border/55 bg-surface-elevated text-primary shadow-paper-sm">
+            <UserRound className="size-6" />
+          </div>
+          <div className="min-w-0 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate font-semibold">{character.name}</h3>
+                <p className="truncate text-sm text-muted-foreground">
+                  {character.alias || translate("No alias")}
+                </p>
+              </div>
+              {selected ? (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                  <Check className="size-3" aria-hidden="true" />
+                  {translate("Selected")}
+                </span>
+              ) : (
+                <StatusBadge status={character.status} translate={translate} />
+              )}
             </div>
-            <StatusBadge status={character.status} translate={translate} />
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{translate(character.role)}</Badge>
+              {selected ? <StatusBadge status={character.status} translate={translate} /> : null}
+            </div>
+            <div className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+              <CompactFact label={translate("Scenes")} value={character.scenes} />
+              <CompactFact
+                label={translate("First appearance")}
+                value={character.firstAppearance || translate("Not specified")}
+              />
+            </div>
           </div>
-          <div className="grid gap-2 text-sm sm:grid-cols-2">
-            <FieldLine label={translate("Role")} value={translate(character.role)} />
-            <FieldLine label={translate("Age")} value={character.age} />
-            <FieldLine
-              label={translate("First appearance")}
-              value={character.firstAppearance}
-            />
-            <FieldLine label={translate("Scenes")} value={character.scenes} />
-          </div>
-          <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-            {character.personality}
-          </p>
-          <p className="rounded-lg bg-surface/72 px-3 py-2.5 text-sm text-muted-foreground">
-            {translate("Related characters")}: {relatedNames}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </button>
+  );
+}
+
+function CompactFact({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="truncate text-sm text-foreground">{value}</p>
+    </div>
   );
 }
 
 function CharacterDetailPanel({
   character,
   data,
-  translate
+  translate,
+  className
 }: {
   character: Character;
   data: StudioData;
   translate: (value: string) => string;
+  className?: string;
 }) {
   const linkedPlaces = uniqueStrings(
     data.timelineEvents
@@ -221,9 +318,20 @@ function CharacterDetailPanel({
       .map((event) => placeName(event.locationId, data))
       .filter((place) => place !== "Unknown place")
   );
+  const relationships = data.relationships
+    .filter(
+      (relationship) =>
+        relationship.fromCharacterId === character.id ||
+        relationship.toCharacterId === character.id
+    )
+    .map((relationship) => relationship.relationshipType);
+  const valueOrFallback = (value: React.ReactNode) =>
+    value === "" || value === null || value === undefined
+      ? translate("Not specified")
+      : value;
 
   return (
-    <Card className="surface-elevated xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+    <Card className={cn("surface-elevated xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto", className)}>
       <CardHeader>
         <div className="grid gap-4 sm:grid-cols-[90px_1fr]">
           <div className="grid size-[5.5rem] place-items-center rounded-xl border border-border/55 bg-surface-elevated text-primary shadow-paper-sm">
@@ -239,42 +347,59 @@ function CharacterDetailPanel({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <FieldLine label={translate("Age")} value={character.age} />
-        <FieldLine label={translate("Appearance")} value={character.appearance} />
-        <FieldLine label={translate("Personality")} value={character.personality} />
-        <FieldLine label={translate("Way of speaking")} value={character.wayOfSpeaking} />
-        <FieldLine label={translate("Goal")} value={character.goal} />
-        <FieldLine label={translate("Fear")} value={character.fear} />
-        <FieldLine label={translate("Secret")} value={character.secret} />
-        <FieldLine label={translate("Notes")} value={character.notes} />
-        <FieldLine label={translate("First appearance")} value={character.firstAppearance} />
-        <FieldLine
-          label={translate("Linked scenes")}
-          value={`${character.scenes} ${translate("Scenes").toLowerCase()}`}
-        />
-        <FieldLine
-          label={translate("Linked places")}
-          value={
-            linkedPlaces.length
-              ? linkedPlaces.join(", ")
-              : translate("No linked places yet")
-          }
-        />
-        <FieldLine
-          label={translate("Relationships")}
-          value={
-            data.relationships
-              .filter(
-                (relationship) =>
-                  relationship.fromCharacterId === character.id ||
-                  relationship.toCharacterId === character.id
-              )
-              .map((relationship) => relationship.relationshipType)
-              .join(", ") || translate("None yet")
-          }
-        />
+      <CardContent className="space-y-6">
+        <DetailSection title={translate("Identity")}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FieldLine label={translate("Age")} value={valueOrFallback(character.age)} />
+            <FieldLine
+              label={translate("First appearance")}
+              value={valueOrFallback(character.firstAppearance)}
+            />
+            <FieldLine
+              label={translate("Linked scenes")}
+              value={`${character.scenes} ${translate("Scenes").toLowerCase()}`}
+            />
+          </div>
+        </DetailSection>
+        <DetailSection title={translate("Characterization")}>
+          <div className="grid gap-3">
+            <FieldLine label={translate("Appearance")} value={valueOrFallback(character.appearance)} />
+            <FieldLine label={translate("Personality")} value={valueOrFallback(character.personality)} />
+            <FieldLine label={translate("Way of speaking")} value={valueOrFallback(character.wayOfSpeaking)} />
+          </div>
+        </DetailSection>
+        <DetailSection title={translate("Motivation and continuity")}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FieldLine label={translate("Goal")} value={valueOrFallback(character.goal)} />
+            <FieldLine label={translate("Fear")} value={valueOrFallback(character.fear)} />
+            <FieldLine label={translate("Secret")} value={valueOrFallback(character.secret)} />
+            <FieldLine label={translate("Notes")} value={valueOrFallback(character.notes)} />
+          </div>
+        </DetailSection>
+        <DetailSection title={translate("Story connections")}>
+          <div className="grid gap-3">
+            <FieldLine
+              label={translate("Linked places")}
+              value={linkedPlaces.length ? linkedPlaces.join(", ") : translate("No linked places yet")}
+            />
+            <FieldLine
+              label={translate("Relationships")}
+              value={relationships.length ? relationships.join(", ") : translate("None yet")}
+            />
+          </div>
+        </DetailSection>
       </CardContent>
     </Card>
+  );
+}
+
+function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        {title}
+      </h4>
+      {children}
+    </section>
   );
 }

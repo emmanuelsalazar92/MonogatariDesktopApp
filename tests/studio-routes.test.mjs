@@ -515,6 +515,24 @@ test("top bar omits the technical local data status without removing navigation 
   assert.match(topBarSource, /SelectTrigger/);
 });
 
+test("character catalog keeps selection explicit, novel-scoped, stale-safe, and responsive", async () => {
+  const source = await readFile(
+    resolve(process.cwd(), "components/studio/characters-screen.tsx"),
+    "utf8"
+  );
+
+  assert.match(source, /useState<string \| null>\(null\)/);
+  assert.doesNotMatch(source, /characters\[0\]/);
+  assert.match(source, /data\.novels\.some\(\(novel\) => novel\.id === character\.novelId\)/);
+  assert.match(source, /aria-current=\{selected \? "true" : undefined\}/);
+  assert.match(source, /Check className="size-3" aria-hidden="true"/);
+  assert.match(source, /setSelectedCharacterId\(null\)/);
+  assert.match(source, /window\.matchMedia\("\(max-width: 1279px\)"\)/);
+  assert.match(source, /DialogContent className="[^"]*xl:hidden/);
+  assert.match(source, /Select a character/);
+  assert.match(source, /CompactFact[\s\S]*First appearance/);
+});
+
 test("reader responsive and resilience contracts prioritize content without horizontal overflow", async () => {
   const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
   const sidebarSource = await readFile(resolve(process.cwd(), "components/studio/sidebar.tsx"), "utf8");
