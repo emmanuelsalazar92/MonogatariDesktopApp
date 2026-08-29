@@ -385,7 +385,9 @@ export const relationships: Relationship[] = [
     isSpoiler: false,
     status: "Growing",
     since: "Chapter 1",
-    notes: "Keep it subtle through shared danger and quiet trust."
+    notes: "Keep it subtle through shared danger and quiet trust.",
+    labelFromTo: "is in love with",
+    labelToFrom: "is loved by"
   },
   {
     id: "rel-mika-akira",
@@ -399,7 +401,9 @@ export const relationships: Relationship[] = [
     isSpoiler: false,
     status: "Stable",
     since: "Before story",
-    notes: "Their banter should feel lived in."
+    notes: "Their banter should feel lived in.",
+    labelFromTo: "cousin of",
+    labelToFrom: "cousin of"
   },
   {
     id: "rel-reina-kuroda",
@@ -413,7 +417,9 @@ export const relationships: Relationship[] = [
     isSpoiler: true,
     status: "Tense",
     since: "Prologue",
-    notes: "Let Kuroda be helpful enough to complicate Reina's certainty."
+    notes: "Let Kuroda be helpful enough to complicate Reina's certainty.",
+    labelFromTo: "distrusts",
+    labelToFrom: "is distrusted by"
   }
 ];
 

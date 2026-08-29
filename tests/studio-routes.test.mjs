@@ -89,6 +89,39 @@ test("character classification migrates legacy values and filters canonical life
   assert.equal(metadata.matchesCharacterClassification(archived, "All roles", "Archived"), true);
 });
 
+test("character relationships enforce one identity and coherent inverse labels", async () => {
+  const relationships = await loadTypeScriptModule("lib/character-relationship.ts");
+  const symmetric = relationships.getRelationshipDefinition("spouses");
+  assert.equal(symmetric.direction, "Bidirectional");
+  assert.equal(symmetric.labelFromTo, "Spouse");
+  assert.equal(symmetric.labelToFrom, "Spouse");
+
+  const directed = relationships.getRelationshipDefinition("parent-child");
+  assert.equal(directed.labelFromTo, "Child");
+  assert.equal(directed.labelToFrom, "Parent");
+  assert.deepEqual(
+    relationships.relationshipViewForCharacter(
+      { fromCharacterId: "parent", toCharacterId: "child", labelFromTo: "Child", labelToFrom: "Parent" },
+      "child"
+    ),
+    { otherCharacterId: "parent", label: "Parent" }
+  );
+
+  assert.equal(
+    relationships.relationshipIdentity("novel", "a", "b", "spouses"),
+    relationships.relationshipIdentity("novel", "b", "a", "spouses")
+  );
+});
+
+test("character relationships reject self, arbitrary types, and cross-novel ownership", async () => {
+  const relationships = await loadTypeScriptModule("lib/character-relationship.ts");
+  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "a", relationshipType: "spouses" }).ok, false);
+  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "b", relationshipType: "invented" }).ok, false);
+  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "b", relationshipType: "friends", labelFromTo: "hacked" }).ok, false);
+  assert.equal(relationships.charactersBelongToNovel([{ id: "a", novelId: "n1" }, { id: "b", novelId: "n2" }], "n1", ["a", "b"]), false);
+  assert.equal(relationships.charactersBelongToNovel([{ id: "a", novelId: "n1" }, { id: "b", novelId: "n1" }], "n1", ["a", "b"]), true);
+});
+
 test("Library navigation accepts only allowlisted query parameters", async () => {
   const navigation = await loadTypeScriptModule("lib/studio-library-navigation.ts", (moduleId) => {
     if (moduleId === "@/lib/studio-domain") {

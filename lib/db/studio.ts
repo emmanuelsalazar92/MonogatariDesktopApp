@@ -1,5 +1,6 @@
 ﻿import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
+import { createHash } from "node:crypto";
 import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-preview";
 import type { ReaderOutline, ReaderScope } from "@/lib/reader-document";
 import {
@@ -28,6 +29,13 @@ import {
   serializeCharacterStatus,
   type CharacterMetadataInput
 } from "@/lib/character-metadata";
+import {
+  getRelationshipDefinition,
+  charactersBelongToNovel,
+  relationshipIdentity,
+  resolveRelationshipSemantics,
+  type RelationshipTypeKey
+} from "@/lib/character-relationship";
 
 function parseList(value: string): string[] {
   try {
@@ -180,10 +188,13 @@ function serializeRelationship(relationship: {
   since: string;
   notes: string;
 }) {
+  const semantics = resolveRelationshipSemantics(relationship.relationshipType, relationship.direction);
   return {
     ...relationship,
     category: relationship.category as StoryRelationship["category"],
-    direction: relationship.direction as StoryRelationship["direction"]
+    direction: relationship.direction as StoryRelationship["direction"],
+    labelFromTo: semantics.labelFromTo,
+    labelToFrom: semantics.labelToFrom
   };
 }
 
@@ -473,22 +484,49 @@ export async function createLocation(input: {
   return serializeLocation(location);
 }
 
+export class RelationshipConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RelationshipConflictError";
+  }
+}
+
 export async function createRelationship(input: {
   novelId: string;
   fromCharacterId: string;
   toCharacterId: string;
-  relationshipType: string;
-  category: StoryRelationship["category"];
-  direction?: StoryRelationship["direction"];
+  relationshipType: RelationshipTypeKey;
   description?: string;
   isSpoiler?: boolean;
   status?: string;
   since?: string;
   notes?: string;
 }) {
-  const id = `rel-${crypto.randomUUID()}`;
+  const definition = getRelationshipDefinition(input.relationshipType);
+  if (!definition) throw new RelationshipConflictError("Relationship type is invalid");
+  const identity = relationshipIdentity(input.novelId, input.fromCharacterId, input.toCharacterId, input.relationshipType);
+  const id = `rel-${createHash("sha256").update(identity).digest("hex").slice(0, 32)}`;
 
   const relationship = await prisma.$transaction(async (tx) => {
+    const characters = await tx.character.findMany({
+      where: { id: { in: [input.fromCharacterId, input.toCharacterId] } },
+      select: { id: true, novelId: true }
+    });
+    if (!charactersBelongToNovel(characters, input.novelId, [input.fromCharacterId, input.toCharacterId])) {
+      throw new RelationshipConflictError("Both characters must belong to the active novel");
+    }
+    const duplicate = await tx.relationship.findFirst({
+      where: {
+        novelId: input.novelId,
+        relationshipType: input.relationshipType,
+        OR: [
+          { fromCharacterId: input.fromCharacterId, toCharacterId: input.toCharacterId },
+          { fromCharacterId: input.toCharacterId, toCharacterId: input.fromCharacterId }
+        ]
+      },
+      select: { id: true }
+    });
+    if (duplicate) throw new RelationshipConflictError("An equivalent relationship already exists; edit it instead");
     const createdRelationship = await tx.relationship.create({
       data: {
         id,
@@ -496,8 +534,8 @@ export async function createRelationship(input: {
         fromCharacterId: input.fromCharacterId,
         toCharacterId: input.toCharacterId,
         relationshipType: input.relationshipType,
-        category: input.category,
-        direction: input.direction ?? "Directional",
+        category: definition.category,
+        direction: definition.direction,
         description: input.description ?? "",
         isSpoiler: input.isSpoiler ?? false,
         status: input.status ?? "Growing",
@@ -510,11 +548,22 @@ export async function createRelationship(input: {
       where: { id: input.novelId },
       data: { updatedAt: new Date() }
     });
+    await markNotionDirty(tx, input.novelId);
 
     return createdRelationship;
   });
 
   return serializeRelationship(relationship);
+}
+
+export async function deleteRelationship(relationshipId: string) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.relationship.findUniqueOrThrow({ where: { id: relationshipId } });
+    await tx.relationship.delete({ where: { id: relationshipId } });
+    await tx.novel.update({ where: { id: existing.novelId }, data: { updatedAt: new Date() } });
+    await markNotionDirty(tx, existing.novelId);
+    return { id: relationshipId };
+  });
 }
 
 export async function createTimelineEvent(input: {

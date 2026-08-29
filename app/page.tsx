@@ -86,6 +86,11 @@ import {
   characterStatuses as validCharacterStatuses,
   matchesCharacterClassification
 } from "@/lib/character-metadata";
+import {
+  relationshipDefinitions,
+  relationshipViewForCharacter,
+  resolveRelationshipSemantics
+} from "@/lib/character-relationship";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
 import { MobileNavDialog } from "@/components/studio/mobile-nav-dialog";
@@ -157,7 +162,6 @@ import {
   exportScopes,
   narrativeStatuses,
   placeTypes,
-  relationshipCategories,
   type Character,
   type ChapterStatus,
   type FocusMode,
@@ -202,8 +206,6 @@ type CreateRelationshipInput = {
   fromCharacterId: string;
   toCharacterId: string;
   relationshipType: string;
-  category: Relationship["category"];
-  direction: Relationship["direction"];
   status: string;
   since: string;
   description: string;
@@ -233,7 +235,7 @@ function useStudioData() {
 
 const relationshipFilterTypes = [
   "All relationships",
-  ...Object.values(relationshipCategories).flat()
+  ...relationshipDefinitions.map((definition) => definition.name)
 ];
 
 const chapterStatusOptions = narrativeStatuses;
@@ -1303,6 +1305,20 @@ function PrivateNovelStudioContent() {
     [currentNovel.id, refreshStudioData, router, showToast]
   );
 
+  const removeRelationship = React.useCallback(async (relationship: Relationship) => {
+    const from = characterName(relationship.fromCharacterId, studioData);
+    const to = characterName(relationship.toCharacterId, studioData);
+    if (!window.confirm(`Remove the relationship between ${from} and ${to}? Characters will not be deleted.`)) return;
+    const response = await fetch(`/api/relationships/${encodeURIComponent(relationship.id)}`, { method: "DELETE" });
+    if (!response.ok) {
+      const details = await response.json().catch(() => null) as { error?: string } | null;
+      showToast(details?.error ?? "Could not remove relationship");
+      return;
+    }
+    await refreshStudioData(false);
+    showToast("Relationship removed; characters were preserved");
+  }, [refreshStudioData, showToast, studioData]);
+
   const createTimelineEventFromDialog = React.useCallback(
     async (input: CreateTimelineEventInput) => {
       const response = await fetch("/api/timeline-events", {
@@ -1439,7 +1455,7 @@ function PrivateNovelStudioContent() {
   const filteredRelationships = relationships.filter((relationship) => {
     const typeMatch =
       relationshipType === "All relationships" ||
-      relationship.relationshipType.toLowerCase() === relationshipType.toLowerCase();
+      resolveRelationshipSemantics(relationship.relationshipType, relationship.direction).name.toLowerCase() === relationshipType.toLowerCase();
     const characterMatch =
       relationshipCharacter === "All characters" ||
       relationship.fromCharacterId === relationshipCharacter ||
@@ -1703,6 +1719,7 @@ function PrivateNovelStudioContent() {
                   onRelationshipCharacterChange={setRelationshipCharacter}
                   onShowSpoilersChange={setShowSpoilers}
                   onAddRelationship={() => setDialog("relationship")}
+                  onRemoveRelationship={(relationship) => void removeRelationship(relationship)}
                 />
               ) : null}
               {activePage === "timeline" ? (
@@ -3367,7 +3384,8 @@ function RelationshipsScreen({
   onRelationshipTypeChange,
   onRelationshipCharacterChange,
   onShowSpoilersChange,
-  onAddRelationship
+  onAddRelationship,
+  onRemoveRelationship
 }: {
   relationships: Relationship[];
   relationshipType: string;
@@ -3377,6 +3395,7 @@ function RelationshipsScreen({
   onRelationshipCharacterChange: (value: string) => void;
   onShowSpoilersChange: (value: boolean) => void;
   onAddRelationship: () => void;
+  onRemoveRelationship: (relationship: Relationship) => void;
 }) {
   const data = useStudioData();
 
@@ -3385,7 +3404,7 @@ function RelationshipsScreen({
       <SectionHeader
         eyebrow="Relationships"
         title="Character relationship map"
-        description="Manage relationship type, direction, status, spoiler flags, and notes."
+        description="Define one relationship and see the correct label from each character's perspective."
         action={
           <Button onClick={onAddRelationship}>
             <Plus className="size-4" />
@@ -3453,10 +3472,10 @@ function RelationshipsScreen({
                   {relationship.isSpoiler ? <Badge variant="accent">Spoiler</Badge> : null}
                 </div>
                 <p className="font-medium">
-                  {characterName(relationship.fromCharacterId, data)}{" "}
-                  {relationship.direction === "Bidirectional" ? "<->" : "->"}{" "}
-                  {relationship.relationshipType} {"->"}{" "}
-                  {characterName(relationship.toCharacterId, data)}
+                  {characterName(relationship.fromCharacterId, data)} — {relationship.labelFromTo} → {characterName(relationship.toCharacterId, data)}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {characterName(relationship.toCharacterId, data)} — {relationship.labelToFrom} → {characterName(relationship.fromCharacterId, data)}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {relationship.description}
@@ -3465,6 +3484,9 @@ function RelationshipsScreen({
                   <FieldLine label="Status" value={relationship.status} />
                   <FieldLine label="Since" value={relationship.since} />
                 </div>
+                <Button type="button" variant="ghost" size="sm" className="mt-3 text-destructive" onClick={() => onRemoveRelationship(relationship)}>
+                  <Trash2 className="size-4" /> Remove relationship
+                </Button>
               </div>
             ))}
           </CardContent>
@@ -3473,20 +3495,19 @@ function RelationshipsScreen({
 
       <Card>
         <CardHeader>
-          <CardTitle>Relationship categories</CardTitle>
-          <CardDescription>Available type library for local character links</CardDescription>
+          <CardTitle>Relationship type semantics</CardTitle>
+          <CardDescription>Direction and inverse labels are defined by the selected type</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {Object.entries(relationshipCategories).map(([category, items]) => (
-            <div key={category} className="rounded-md border bg-background/35 p-3">
-              <h3 className="mb-2 font-semibold">{category}</h3>
-              <div className="flex flex-wrap gap-2">
-                {items.map((item) => (
-                  <Badge key={item} variant="outline">
-                    {item}
-                  </Badge>
-                ))}
+        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {relationshipDefinitions.map((definition) => (
+            <div key={definition.key} className="rounded-md border bg-background/35 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-semibold">{definition.name}</h3>
+                <Badge variant="outline">{definition.direction}</Badge>
               </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                A → B: {definition.labelFromTo}<br />B → A: {definition.labelToFrom}
+              </p>
             </div>
           ))}
         </CardContent>
@@ -3547,7 +3568,7 @@ function RelationshipMap({
               (relationship) =>
                 relationship.fromCharacterId === id || relationship.toCharacterId === id
             )
-            .map((relationship) => relationship.relationshipType)
+            .map((relationship) => relationshipViewForCharacter(relationship, id)?.label ?? "")
         )
           .slice(0, 2)
           .join(" · ");
@@ -3578,7 +3599,7 @@ function RelationshipMap({
             </span>
             <span className="text-muted-foreground">
               {" · "}
-              {relationship.relationshipType}
+              {relationship.labelFromTo} / {relationship.labelToFrom}
             </span>
           </div>
         ))}
@@ -4139,8 +4160,6 @@ function PrototypeDialog({
     fromCharacterId: "",
     toCharacterId: "",
     relationshipType: "",
-    category: "Social",
-    direction: "Directional",
     status: "Growing",
     since: "",
     description: "",
@@ -4198,8 +4217,6 @@ function PrototypeDialog({
       fromCharacterId: data.characters[0]?.id ?? "",
       toCharacterId: data.characters[1]?.id ?? data.characters[0]?.id ?? "",
       relationshipType: "",
-      category: "Social",
-      direction: "Directional",
       status: "Growing",
       since: "",
       description: "",
@@ -4335,14 +4352,14 @@ function PrototypeDialog({
                   <>
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
-                        <Label>From character</Label>
+                        <Label htmlFor="relationship-from">From character</Label>
                         <Select
                           value={relationshipForm.fromCharacterId}
                           onValueChange={(value) =>
                             setRelationshipForm((current) => ({ ...current, fromCharacterId: value }))
                           }
                         >
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger id="relationship-from" className="mt-2">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -4355,14 +4372,14 @@ function PrototypeDialog({
                         </Select>
                       </div>
                       <div>
-                        <Label>To character</Label>
+                        <Label htmlFor="relationship-to">To character</Label>
                         <Select
                           value={relationshipForm.toCharacterId}
                           onValueChange={(value) =>
                             setRelationshipForm((current) => ({ ...current, toCharacterId: value }))
                           }
                         >
-                          <SelectTrigger className="mt-2">
+                          <SelectTrigger id="relationship-to" className="mt-2">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -4377,43 +4394,12 @@ function PrototypeDialog({
                     </div>
                     <div className="grid gap-3 md:grid-cols-2">
                       <div>
-                        <Label>Relationship type</Label>
-                        <Input
-                          className="mt-2"
-                          value={relationshipForm.relationshipType}
-                          placeholder="Trusts, rivals, in love with..."
-                          onChange={(event) =>
-                            setRelationshipForm((current) => ({
-                              ...current,
-                              relationshipType: event.target.value
-                            }))
-                          }
-                        />
+                        <Label htmlFor="relationship-type">Relationship type</Label>
+                        <Select value={relationshipForm.relationshipType} onValueChange={(value) => setRelationshipForm((current) => ({ ...current, relationshipType: value }))}>
+                          <SelectTrigger id="relationship-type" className="mt-2"><SelectValue placeholder="Select a relationship" /></SelectTrigger>
+                          <SelectContent>{relationshipDefinitions.map((definition) => <SelectItem key={definition.key} value={definition.key}>{definition.name}</SelectItem>)}</SelectContent>
+                        </Select>
                       </div>
-                      <FilterSelect
-                        label="Category"
-                        value={relationshipForm.category}
-                        values={Object.keys(relationshipCategories)}
-                        onValueChange={(value) =>
-                          setRelationshipForm((current) => ({
-                            ...current,
-                            category: value as Relationship["category"]
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <FilterSelect
-                        label="Direction"
-                        value={relationshipForm.direction}
-                        values={["Directional", "Bidirectional"]}
-                        onValueChange={(value) =>
-                          setRelationshipForm((current) => ({
-                            ...current,
-                            direction: value as Relationship["direction"]
-                          }))
-                        }
-                      />
                       <div>
                         <Label>Status</Label>
                         <Input

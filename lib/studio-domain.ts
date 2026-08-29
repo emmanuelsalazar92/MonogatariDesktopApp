@@ -177,6 +177,8 @@ export interface Relationship {
   status: string;
   since: string;
   notes: string;
+  labelFromTo: string;
+  labelToFrom: string;
 }
 
 export interface TimelineEvent {

@@ -39,6 +39,7 @@ import {
   type StudioData
 } from "@/lib/studio-data";
 import { type Character } from "@/lib/studio-domain";
+import { relationshipViewForCharacter } from "@/lib/character-relationship";
 import { cn } from "@/lib/utils";
 
 export function CharactersScreen({
@@ -330,7 +331,13 @@ function CharacterDetailPanel({
         relationship.fromCharacterId === character.id ||
         relationship.toCharacterId === character.id
     )
-    .map((relationship) => relationship.relationshipType);
+    .map((relationship) => {
+      const view = relationshipViewForCharacter(relationship, character.id);
+      if (!view) return "";
+      const other = data.characters.find((candidate) => candidate.id === view.otherCharacterId);
+      return `${other?.name ?? "Unknown character"} — ${view.label}`;
+    })
+    .filter(Boolean);
   const valueOrFallback = (value: React.ReactNode) =>
     value === "" || value === null || value === undefined
       ? translate("Not specified")
