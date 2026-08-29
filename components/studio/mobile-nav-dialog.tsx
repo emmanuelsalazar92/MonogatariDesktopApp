@@ -30,6 +30,7 @@ export function MobileNavDialog({
   labels,
   description,
   hasNovelContext,
+  readerOptimized = false,
   onOpenChange,
   onSelectPage
 }: {
@@ -38,6 +39,7 @@ export function MobileNavDialog({
   labels: Record<PageId, string>;
   description: string;
   hasNovelContext: boolean;
+  readerOptimized?: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectPage: (page: PageId) => void;
 }) {
@@ -75,7 +77,7 @@ export function MobileNavDialog({
       <DialogContent
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          if (window.matchMedia("(max-width: 767px)").matches) {
+          if (window.matchMedia(readerOptimized ? "(max-width: 1023px)" : "(max-width: 767px)").matches) {
             document.getElementById("mobile-navigation-toggle")?.focus();
           }
         }}

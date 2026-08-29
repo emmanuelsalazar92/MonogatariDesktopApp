@@ -328,7 +328,7 @@ test("reading progress uses a separate current-state table and debounced writes"
 
 test("reader keeps the active scene content visible while a read document is unavailable", async () => {
   const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
-  assert.match(pageSource, /readerDocument\?\.scenes\?\.length \? readerDocument\.scenes : \[\{ id: activeScene\.id, title: activeScene\.title, content: activeScene\.content \}\]/);
+  assert.match(pageSource, /readerDocument[\s\S]*\? readerDocument\.scenes[\s\S]*: activeScene\.id[\s\S]*content: activeScene\.content/);
   assert.match(pageSource, /const readerScenes = React\.useMemo/);
   assert.match(pageSource, /readerScenes\.map/);
 });
@@ -453,6 +453,74 @@ test("reader experience persists appearance, exposes canonical navigation, and a
   assert.match(sharedSource, /role="progressbar"/);
   assert.match(sharedSource, /aria-valuenow=\{normalizedValue\}/);
   assert.match(readerRouteSource, /application\/json; charset=utf-8/);
+});
+
+test("reader hardening limits small scopes and exposes a metadata-only outline", async () => {
+  const dbSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const outlineRouteSource = await readFile(resolve(process.cwd(), "app/api/reader/outline/route.ts"), "utf8");
+  const documentFunction = dbSource.slice(
+    dbSource.indexOf("export async function getReaderDocument"),
+    dbSource.indexOf("export async function getReaderOutline")
+  );
+  const outlineFunction = dbSource.slice(
+    dbSource.indexOf("export async function getReaderOutline"),
+    dbSource.indexOf("export class ReadingProgressValidationError")
+  );
+
+  assert.match(documentFunction, /scope === "scene"[\s\S]*prisma\.scene\.findFirst/);
+  assert.match(documentFunction, /scope === "chapter"[\s\S]*prisma\.chapter\.findFirst/);
+  assert.match(documentFunction, /scope === "volume"[\s\S]*prisma\.volume\.findFirst/);
+  assert.match(documentFunction, /targetId !== novelId[\s\S]*prisma\.novel\.findUnique/);
+  assert.doesNotMatch(outlineFunction, /content:\s*true/);
+  assert.doesNotMatch(outlineFunction, /notion/i);
+  assert.match(outlineRouteSource, /getReaderOutline/);
+});
+
+test("reader chapter assembly stays bounded on a representative large hierarchy", async () => {
+  const reader = await loadTypeScriptModule("lib/reader-document.ts");
+  const volumes = [{ id: "v1", novelId: "n1", title: "Volume", sortOrder: 1, archived: false }];
+  const chapters = Array.from({ length: 4 }, (_, index) => ({
+    id: `c${index + 1}`,
+    volumeId: "v1",
+    title: `Chapter ${index + 1}`,
+    sortOrder: index + 1,
+    archived: false
+  }));
+  const scenes = chapters.flatMap((chapter) =>
+    Array.from({ length: 125 }, (_, index) => ({
+      id: `${chapter.id}-s${index + 1}`,
+      chapterId: chapter.id,
+      title: `Scene ${index + 1}`,
+      content: "texto local",
+      sortOrder: index + 1,
+      archived: false
+    }))
+  );
+
+  const document = reader.assembleReaderDocument("chapter", "c3", volumes, chapters, scenes);
+  assert.equal(scenes.length, 500);
+  assert.equal(document.scenes.length, 125);
+  assert.ok(document.scenes.every((scene) => scene.chapterId === "c3"));
+});
+
+test("reader responsive and resilience contracts prioritize content without horizontal overflow", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const sidebarSource = await readFile(resolve(process.cwd(), "components/studio/sidebar.tsx"), "utf8");
+  const topBarSource = await readFile(resolve(process.cwd(), "components/studio/top-bar.tsx"), "utf8");
+  const mobileNavSource = await readFile(resolve(process.cwd(), "components/studio/mobile-nav-dialog.tsx"), "utf8");
+
+  assert.match(sidebarSource, /readerOptimized \? "lg:block" : "md:block"/);
+  assert.match(topBarSource, /readerOptimized \? "lg:hidden" : "md:hidden"/);
+  assert.match(mobileNavSource, /max-width: 1023px/);
+  assert.match(pageSource, /lg:grid-cols-\[minmax\(11rem,220px\)/);
+  assert.match(pageSource, /className="min-h-11 lg:hidden"[\s\S]*Preferences/);
+  assert.match(pageSource, /Dialog open=\{focusPanel !== null\}/);
+  assert.match(pageSource, /fetch\(`\/api\/reader\/outline\?novelId=/);
+  assert.match(pageSource, /Reading progress is temporarily unavailable\. Reading remains available\./);
+  assert.match(pageSource, /Nothing to read here yet/);
+  assert.match(pageSource, /Back to Structure/);
+  assert.match(pageSource, /const SceneHeading = isFocusMode && sceneIndex === 0 \? "h1"/);
+  assert.match(pageSource, /motion-reduce:transition-none/);
 });
 
 test("structure status allowlist excludes archival and rejects unknown values", async () => {

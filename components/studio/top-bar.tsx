@@ -34,6 +34,7 @@ export function TopBar({
   activeNovelId,
   dataStatusLabel,
   copy,
+  readerOptimized = false,
   onOpenMobileNav,
   onCycleSidebar,
   onActiveNovelChange
@@ -46,6 +47,7 @@ export function TopBar({
   activeNovelId: string;
   dataStatusLabel: string;
   copy: TopBarCopy;
+  readerOptimized?: boolean;
   onOpenMobileNav: () => void;
   onCycleSidebar: () => void;
   onActiveNovelChange: (novelId: string) => void;
@@ -53,7 +55,7 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/82 backdrop-blur-xl">
       <div className="flex min-h-[4.5rem] flex-wrap items-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="md:hidden">
+        <div className={readerOptimized ? "lg:hidden" : "md:hidden"}>
           <ToolbarIconButton
             id="mobile-navigation-toggle"
             label={copy.openNavigation}
@@ -63,7 +65,7 @@ export function TopBar({
             <Menu className="size-5" />
           </ToolbarIconButton>
         </div>
-        <div className="hidden md:block">
+        <div className={readerOptimized ? "hidden lg:block" : "hidden md:block"}>
           <ToolbarIconButton
             label={copy.toggleSidebar}
             onClick={onCycleSidebar}

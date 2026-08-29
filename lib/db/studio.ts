@@ -1,7 +1,7 @@
 ﻿import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-preview";
-import { assembleReaderDocument, type ReaderScope } from "@/lib/reader-document";
+import type { ReaderOutline, ReaderScope } from "@/lib/reader-document";
 import {
   clampReadingRatio,
   resolveReadingProgress,
@@ -915,19 +915,187 @@ export async function getChapterPreview(chapterId: string) {
   };
 }
 
+function readerVolumeMetadata(volume: {
+  id: string;
+  novelId: string;
+  title: string;
+  sortOrder: number;
+  archived: boolean;
+}) {
+  return {
+    id: volume.id,
+    novelId: volume.novelId,
+    title: volume.title,
+    sortOrder: volume.sortOrder,
+    archived: volume.archived
+  };
+}
+
+function readerChapterMetadata(chapter: {
+  id: string;
+  volumeId: string;
+  title: string;
+  sortOrder: number;
+  archived: boolean;
+}) {
+  return {
+    id: chapter.id,
+    volumeId: chapter.volumeId,
+    title: chapter.title,
+    sortOrder: chapter.sortOrder,
+    archived: chapter.archived
+  };
+}
+
 export async function getReaderDocument(novelId: string, scope: ReaderScope, targetId: string) {
+  const sceneSelect = {
+    id: true,
+    chapterId: true,
+    title: true,
+    content: true,
+    sortOrder: true,
+    archived: true,
+    revision: true
+  } as const;
+
+  if (scope === "scene") {
+    const scene = await prisma.scene.findFirst({
+      where: {
+        id: targetId,
+        archived: false,
+        chapter: { archived: false, volume: { archived: false, novelId } }
+      },
+      select: {
+        ...sceneSelect,
+        chapter: {
+          select: {
+            id: true,
+            volumeId: true,
+            title: true,
+            sortOrder: true,
+            archived: true,
+            volume: {
+              select: {
+                id: true,
+                novelId: true,
+                title: true,
+                sortOrder: true,
+                archived: true,
+                novel: { select: { id: true, title: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+    if (!scene) return null;
+    const { chapter, ...readerScene } = scene;
+    const { volume, ...readerChapter } = chapter;
+    const { novel, ...readerVolume } = volume;
+    return { novel, scope, targetId, volumes: [readerVolume], chapters: [readerChapter], scenes: [readerScene] };
+  }
+
+  if (scope === "chapter") {
+    const chapter = await prisma.chapter.findFirst({
+      where: { id: targetId, archived: false, volume: { archived: false, novelId } },
+      select: {
+        id: true,
+        volumeId: true,
+        title: true,
+        sortOrder: true,
+        archived: true,
+        volume: {
+          select: {
+            id: true,
+            novelId: true,
+            title: true,
+            sortOrder: true,
+            archived: true,
+            novel: { select: { id: true, title: true } }
+          }
+        },
+        scenes: {
+          where: { archived: false },
+          select: sceneSelect,
+          orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+        }
+      }
+    });
+    if (!chapter) return null;
+    const { volume, scenes, ...readerChapter } = chapter;
+    const { novel, ...readerVolume } = volume;
+    return { novel, scope, targetId, volumes: [readerVolume], chapters: [readerChapter], scenes };
+  }
+
+  if (scope === "volume") {
+    const volume = await prisma.volume.findFirst({
+      where: { id: targetId, novelId, archived: false },
+      select: {
+        id: true,
+        novelId: true,
+        title: true,
+        sortOrder: true,
+        archived: true,
+        novel: { select: { id: true, title: true } },
+        chapters: {
+          where: { archived: false },
+          orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            volumeId: true,
+            title: true,
+            sortOrder: true,
+            archived: true,
+            scenes: {
+              where: { archived: false },
+              select: sceneSelect,
+              orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+            }
+          }
+        }
+      }
+    });
+    if (!volume) return null;
+    const { novel, chapters, ...readerVolume } = volume;
+    return {
+      novel,
+      scope,
+      targetId,
+      volumes: [readerVolume],
+      chapters: chapters.map(readerChapterMetadata),
+      scenes: chapters.flatMap((chapter) => chapter.scenes)
+    };
+  }
+
+  if (targetId !== novelId) return null;
   const novel = await prisma.novel.findUnique({
     where: { id: novelId },
     select: {
       id: true,
       title: true,
       volumes: {
+        where: { archived: false },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         select: {
-          id: true, novelId: true, title: true, sortOrder: true, archived: true,
+          id: true,
+          novelId: true,
+          title: true,
+          sortOrder: true,
+          archived: true,
           chapters: {
+            where: { archived: false },
+            orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
             select: {
-              id: true, volumeId: true, title: true, sortOrder: true, archived: true,
-              scenes: { select: { id: true, chapterId: true, title: true, content: true, sortOrder: true, archived: true, revision: true } }
+              id: true,
+              volumeId: true,
+              title: true,
+              sortOrder: true,
+              archived: true,
+              scenes: {
+                where: { archived: false },
+                select: sceneSelect,
+                orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
+              }
             }
           }
         }
@@ -935,13 +1103,58 @@ export async function getReaderDocument(novelId: string, scope: ReaderScope, tar
     }
   });
   if (!novel) return null;
-  const volumes = novel.volumes;
-  const chapters = volumes.flatMap((volume) => volume.chapters);
-  const scenes = chapters.flatMap((chapter) => chapter.scenes);
-  const document = assembleReaderDocument(scope, targetId, volumes, chapters, scenes);
-  const validTarget = scope === "novel" ? targetId === novel.id : scope === "volume" ? document.volumes.some((item) => item.id === targetId) : scope === "chapter" ? document.chapters.some((item) => item.id === targetId) : document.scenes.some((item) => item.id === targetId);
-  if (!validTarget) return null;
-  return { novel: { id: novel.id, title: novel.title }, scope, targetId, ...document };
+  return {
+    novel: { id: novel.id, title: novel.title },
+    scope,
+    targetId,
+    volumes: novel.volumes.map(readerVolumeMetadata),
+    chapters: novel.volumes.flatMap((volume) => volume.chapters.map(readerChapterMetadata)),
+    scenes: novel.volumes.flatMap((volume) => volume.chapters.flatMap((chapter) => chapter.scenes))
+  };
+}
+
+export async function getReaderOutline(novelId: string): Promise<ReaderOutline | null> {
+  const novel = await prisma.novel.findUnique({
+    where: { id: novelId },
+    select: {
+      id: true,
+      title: true,
+      volumes: {
+        where: { archived: false },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          novelId: true,
+          title: true,
+          sortOrder: true,
+          archived: true,
+          chapters: {
+            where: { archived: false },
+            orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+            select: {
+              id: true,
+              volumeId: true,
+              title: true,
+              sortOrder: true,
+              archived: true,
+              scenes: {
+                where: { archived: false },
+                orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+                select: { id: true, chapterId: true, title: true, sortOrder: true, archived: true }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+  if (!novel) return null;
+  return {
+    novel: { id: novel.id, title: novel.title },
+    volumes: novel.volumes.map(readerVolumeMetadata),
+    chapters: novel.volumes.flatMap((volume) => volume.chapters.map(readerChapterMetadata)),
+    scenes: novel.volumes.flatMap((volume) => volume.chapters.flatMap((chapter) => chapter.scenes))
+  };
 }
 
 export class ReadingProgressValidationError extends Error {
