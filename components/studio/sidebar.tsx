@@ -39,6 +39,7 @@ export function Sidebar({
   labels,
   copy,
   hasNovelContext,
+  readerOptimized = false,
   onSelectPage,
   onSidebarStateChange
 }: {
@@ -47,6 +48,7 @@ export function Sidebar({
   labels: Record<PageId, string>;
   copy: SidebarCopy;
   hasNovelContext: boolean;
+  readerOptimized?: boolean;
   onSelectPage: (page: PageId) => void;
   onSidebarStateChange: (state: SidebarState) => void;
 }) {
@@ -88,7 +90,8 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "surface-panel sticky top-0 hidden h-screen shrink-0 border-r border-border/55 md:block",
+        "surface-panel sticky top-0 hidden h-screen shrink-0 border-r border-border/55",
+        readerOptimized ? "lg:block" : "md:block",
         compact ? "w-20" : "w-72"
       )}
     >

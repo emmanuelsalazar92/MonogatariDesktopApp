@@ -1,10 +1,17 @@
 export type ReaderScope = "scene" | "chapter" | "volume" | "novel";
 
 export type ReaderScene = { id: string; chapterId: string; title: string; content: string; sortOrder: number; archived: boolean };
+export type ReaderSceneMetadata = Omit<ReaderScene, "content">;
 export type ReaderChapter = { id: string; volumeId: string; title: string; sortOrder: number; archived: boolean };
 export type ReaderVolume = { id: string; novelId: string; title: string; sortOrder: number; archived: boolean };
+export type ReaderOutline = {
+  novel: { id: string; title: string };
+  volumes: ReaderVolume[];
+  chapters: ReaderChapter[];
+  scenes: ReaderSceneMetadata[];
+};
 
-export function getReaderScopeUnits(scope: ReaderScope, novelId: string, volumes: ReaderVolume[], chapters: ReaderChapter[], scenes: ReaderScene[]) {
+export function getReaderScopeUnits(scope: ReaderScope, novelId: string, volumes: ReaderVolume[], chapters: ReaderChapter[], scenes: ReaderSceneMetadata[]) {
   const activeVolumes = volumes.filter((item) => item.novelId === novelId && !item.archived).sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
   const activeChapters = chapters.filter((item) => !item.archived && activeVolumes.some((volume) => volume.id === item.volumeId));
   const activeScenes = scenes.filter((item) => !item.archived && activeChapters.some((chapter) => chapter.id === item.chapterId));

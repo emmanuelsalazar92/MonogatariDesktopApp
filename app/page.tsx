@@ -62,7 +62,11 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { getReaderAdjacentUnits, getReaderScopeUnits } from "@/lib/reader-document";
+import {
+  getReaderAdjacentUnits,
+  getReaderScopeUnits,
+  type ReaderOutline
+} from "@/lib/reader-document";
 import { clampReadingRatio, type ResolvedReadingProgress } from "@/lib/reader-progress";
 import {
   defaultReaderPreferences,
@@ -363,19 +367,25 @@ function PrivateNovelStudioContent() {
   );
   const currentNovel = getCurrentNovel(routeContextData);
   const readerFallbackChapter = getActiveChapter(scopedStudioData);
+  const readerFallbackNavigation = React.useMemo<ReaderNavigationState>(
+    () => readerFallbackChapter.id
+      ? { scope: "chapter", targetId: readerFallbackChapter.id }
+      : { scope: "novel", targetId: currentNovel.id },
+    [currentNovel.id, readerFallbackChapter.id]
+  );
   const readerNavigation = React.useMemo(
     () =>
       parseReaderNavigationState(
         searchParams,
         currentNovel.id,
-        { scope: "chapter", targetId: readerFallbackChapter.id },
+        readerFallbackNavigation,
         scopedStudioData.volumes,
         scopedStudioData.chapters,
         scopedStudioData.scenes
       ),
     [
       currentNovel.id,
-      readerFallbackChapter.id,
+      readerFallbackNavigation,
       scopedStudioData.chapters,
       scopedStudioData.scenes,
       scopedStudioData.volumes,
@@ -520,7 +530,9 @@ function PrivateNovelStudioContent() {
   }, [activePage, currentNovel.id, dataStatus, readerNavigation, router, searchParams]);
 
   React.useEffect(() => {
-    const desktopMedia = window.matchMedia("(min-width: 768px)");
+    const desktopMedia = window.matchMedia(
+      activePage === "reader" ? "(min-width: 1024px)" : "(min-width: 768px)"
+    );
     const closeDrawerOnDesktop = () => {
       if (desktopMedia.matches) setMobileDrawerOpen(false);
     };
@@ -528,7 +540,7 @@ function PrivateNovelStudioContent() {
     closeDrawerOnDesktop();
     desktopMedia.addEventListener("change", closeDrawerOnDesktop);
     return () => desktopMedia.removeEventListener("change", closeDrawerOnDesktop);
-  }, []);
+  }, [activePage]);
 
   React.useEffect(() => {
     if (activePage !== "export") {
@@ -1562,6 +1574,7 @@ function PrivateNovelStudioContent() {
                 hideSidebar: uiCopy[language].hideSidebar
               }}
               hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
+              readerOptimized={activePage === "reader"}
               onSelectPage={selectPage}
               onSidebarStateChange={updateSidebarState}
             />
@@ -1582,6 +1595,7 @@ function PrivateNovelStudioContent() {
                   toggleSidebar: uiCopy[language].toggleSidebar,
                   localStatus: uiCopy[language].localStatus
                 }}
+                readerOptimized={activePage === "reader"}
                 onOpenMobileNav={() => setMobileDrawerOpen(true)}
                 onCycleSidebar={cycleSidebar}
                 onActiveNovelChange={(novelId) =>
@@ -1686,7 +1700,8 @@ function PrivateNovelStudioContent() {
                   onExitFocus={() => void changeFocusMode("none")}
                   onFocusOverlayChange={setReaderFocusOverlayOpen}
                   onRegisterFocusToggle={registerReaderFocusToggle}
-                  onOpenToc={() => setDialog("toc")}
+                  onOpenStructure={() => void selectPage("structure")}
+                  onOpenEditor={() => void selectPage("editor")}
                 />
               ) : null}
               {activePage === "characters" ? (
@@ -1791,6 +1806,7 @@ function PrivateNovelStudioContent() {
         labels={pageLabelsByLanguage[language]}
         description={uiCopy[language].openNavigation}
         hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
+        readerOptimized={activePage === "reader"}
         onOpenChange={setMobileDrawerOpen}
         onSelectPage={selectPage}
       />
@@ -2483,7 +2499,8 @@ function ReaderScreen({
   onExitFocus,
   onFocusOverlayChange,
   onRegisterFocusToggle,
-  onOpenToc
+  onOpenStructure,
+  onOpenEditor
 }: {
   navigation: ReaderNavigationState;
   readerTheme: ReaderTheme;
@@ -2499,7 +2516,8 @@ function ReaderScreen({
   onExitFocus: () => void;
   onFocusOverlayChange: (open: boolean) => void;
   onRegisterFocusToggle: (handler: (() => void) | null) => void;
-  onOpenToc: () => void;
+  onOpenStructure: () => void;
+  onOpenEditor: () => void;
 }) {
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
@@ -2507,8 +2525,15 @@ function ReaderScreen({
   const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
   const readerScope = navigation.scope;
   const readerTargetId = navigation.targetId;
-  const [readerDocument, setReaderDocument] = React.useState<{ scenes: Array<{ id: string; chapterId?: string; title: string; content: string; revision?: number }> } | null>(null);
+  const [readerDocument, setReaderDocument] = React.useState<{
+    novel?: { id: string; title: string };
+    volumes?: Array<{ id: string; title: string }>;
+    chapters?: Array<{ id: string; title: string }>;
+    scenes: Array<{ id: string; chapterId?: string; title: string; content: string; revision?: number }>;
+  } | null>(null);
+  const [readerOutline, setReaderOutline] = React.useState<ReaderOutline | null>(null);
   const [savedProgress, setSavedProgress] = React.useState<ResolvedReadingProgress | null>(null);
+  const [readerProgressUnavailable, setReaderProgressUnavailable] = React.useState(false);
   const [currentReaderSceneId, setCurrentReaderSceneId] = React.useState(activeScene.id);
   const [readingRatio, setReadingRatio] = React.useState(0);
   const [readerLoadError, setReaderLoadError] = React.useState("");
@@ -2524,13 +2549,51 @@ function ReaderScreen({
   const pendingProgressRef = React.useRef<{ novelId: string; preferredScope: typeof readerScope; sceneId: string; positionRatio: number } | null>(null);
   const progressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReaderScrollIntentRef = React.useRef(0);
+  const readerHierarchy = React.useMemo(
+    () => readerOutline ?? {
+      novel: { id: data.settings.activeNovelId, title: "" },
+      volumes: data.volumes,
+      chapters: data.chapters,
+      scenes: data.scenes.map((scene) => ({
+        id: scene.id,
+        chapterId: scene.chapterId,
+        title: scene.title,
+        sortOrder: scene.sortOrder,
+        archived: scene.archived
+      }))
+    },
+    [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerOutline]
+  );
   const readerScenes = React.useMemo(
-    () => readerDocument?.scenes?.length ? readerDocument.scenes : [{ id: activeScene.id, title: activeScene.title, content: activeScene.content }],
+    () => readerDocument
+      ? readerDocument.scenes
+      : activeScene.id
+        ? [{ id: activeScene.id, title: activeScene.title, content: activeScene.content }]
+        : [],
     [activeScene.content, activeScene.id, activeScene.title, readerDocument]
   );
-  const scopeUnits = React.useMemo(() => getReaderScopeUnits(readerScope, data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes, readerScope]);
+  const scopeUnits = React.useMemo(
+    () => getReaderScopeUnits(
+      readerScope,
+      data.settings.activeNovelId,
+      readerHierarchy.volumes,
+      readerHierarchy.chapters,
+      readerHierarchy.scenes
+    ),
+    [data.settings.activeNovelId, readerHierarchy, readerScope]
+  );
   const adjacentUnits = getReaderAdjacentUnits(scopeUnits, readerTargetId);
   const currentReaderScene = readerScenes.find((scene) => scene.id === currentReaderSceneId) ?? readerScenes[0];
+  const readerTargetTitle = currentReaderScene?.title
+    ?? (readerScope === "chapter"
+      ? readerDocument?.chapters?.find((chapter) => chapter.id === readerTargetId)?.title
+      : readerScope === "volume"
+        ? readerDocument?.volumes?.find((volume) => volume.id === readerTargetId)?.title
+        : readerScope === "novel"
+          ? readerDocument?.novel?.title
+          : undefined)
+    ?? activeChapter.title
+    ?? "Reader";
   const currentReaderSceneIndex = Math.max(
     0,
     readerScenes.findIndex((scene) => scene.id === currentReaderScene?.id)
@@ -2599,6 +2662,7 @@ function ReaderScreen({
   const toggleReadingFocus = React.useCallback(() => {
     const position = captureCurrentReaderPosition();
     pendingFocusPositionRef.current = position;
+    setFocusPanel(null);
     if (isFocusMode) onExitFocus();
     else onFocus();
   }, [captureCurrentReaderPosition, isFocusMode, onExitFocus, onFocus]);
@@ -2609,17 +2673,13 @@ function ReaderScreen({
   }, [onRegisterFocusToggle, toggleReadingFocus]);
 
   React.useEffect(() => {
-    onFocusOverlayChange(isFocusMode && focusPanel !== null);
-  }, [focusPanel, isFocusMode, onFocusOverlayChange]);
+    onFocusOverlayChange(focusPanel !== null);
+  }, [focusPanel, onFocusOverlayChange]);
 
   React.useEffect(
     () => () => onFocusOverlayChange(false),
     [onFocusOverlayChange]
   );
-
-  React.useEffect(() => {
-    if (!isFocusMode) setFocusPanel(null);
-  }, [isFocusMode]);
 
   React.useLayoutEffect(() => {
     if (previousFocusModeRef.current === isFocusMode) return;
@@ -2651,8 +2711,11 @@ function ReaderScreen({
       keepalive: true
     })
       .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((progress: ResolvedReadingProgress | null) => progress && setSavedProgress(progress))
-      .catch(() => undefined);
+      .then((progress: ResolvedReadingProgress | null) => {
+        if (progress) setSavedProgress(progress);
+        setReaderProgressUnavailable(false);
+      })
+      .catch(() => setReaderProgressUnavailable(true));
   }, []);
 
   const scheduleReadingProgress = React.useCallback((sceneId: string, positionRatio: number) => {
@@ -2668,16 +2731,26 @@ function ReaderScreen({
   }, [data.settings.activeNovelId, flushReadingProgress, readerScope]);
 
   const changeReaderScope = (scope: "scene" | "chapter" | "volume" | "novel") => {
+    const units = getReaderScopeUnits(
+      scope,
+      data.settings.activeNovelId,
+      readerHierarchy.volumes,
+      readerHierarchy.chapters,
+      readerHierarchy.scenes
+    );
+    const preferredTarget =
+      scope === "scene"
+        ? activeScene.id
+        : scope === "chapter"
+          ? activeChapter.id
+          : scope === "volume"
+            ? activeVolume?.id || ""
+            : data.settings.activeNovelId;
+    const targetId = units.includes(preferredTarget) ? preferredTarget : units[0] ?? "";
+    if (!targetId) return;
     onNavigationChange({
       scope,
-      targetId:
-        scope === "scene"
-          ? activeScene.id
-          : scope === "chapter"
-            ? activeChapter.id
-            : scope === "volume"
-              ? activeVolume?.id || ""
-              : data.settings.activeNovelId
+      targetId
     });
     setReadingRatio(0);
   };
@@ -2685,10 +2758,27 @@ function ReaderScreen({
   React.useEffect(() => {
     const controller = new AbortController();
     setSavedProgress(null);
+    setReaderProgressUnavailable(false);
     if (!data.settings.activeNovelId) return () => controller.abort();
     void fetch(`/api/reader/progress?novelId=${encodeURIComponent(data.settings.activeNovelId)}`, { signal: controller.signal })
       .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((progress: ResolvedReadingProgress | null) => setSavedProgress(progress))
+      .then((progress: ResolvedReadingProgress | null) => {
+        setSavedProgress(progress);
+        setReaderProgressUnavailable(false);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setReaderProgressUnavailable(true);
+      });
+    return () => controller.abort();
+  }, [data.settings.activeNovelId]);
+
+  React.useEffect(() => {
+    const controller = new AbortController();
+    setReaderOutline(null);
+    if (!data.settings.activeNovelId) return () => controller.abort();
+    void fetch(`/api/reader/outline?novelId=${encodeURIComponent(data.settings.activeNovelId)}`, { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((outline: ReaderOutline) => setReaderOutline(outline))
       .catch(() => undefined);
     return () => controller.abort();
   }, [data.settings.activeNovelId]);
@@ -2698,6 +2788,7 @@ function ReaderScreen({
     const targetId = readerTargetId;
     if (!targetId || !data.settings.activeNovelId) return () => controller.abort();
     setReaderLoadError("");
+    setReaderDocument(null);
     void fetch(`/api/reader?novelId=${encodeURIComponent(data.settings.activeNovelId)}&scope=${readerScope}&targetId=${encodeURIComponent(targetId)}`, { signal: controller.signal })
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then(setReaderDocument)
@@ -2807,25 +2898,27 @@ function ReaderScreen({
             <div className="mx-auto flex min-h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-serif text-base font-semibold sm:text-lg">
-                  {currentReaderScene?.title || activeChapter.title}
+                  {readerTargetTitle}
                 </p>
                 <p className="text-xs opacity-70" aria-live="polite">
-                  {readingProgressPercent}% of {readerScope} · saved locally
+                  {readerProgressUnavailable
+                    ? "Progress unavailable · reading remains available"
+                    : `${readingProgressPercent}% of ${readerScope} · saved locally`}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => navigateToReaderTarget(adjacentUnits.previousId)} className="motion-reduce:transition-none">
+              <Button variant="ghost" size="icon" aria-label={`Previous ${readerScope}`} disabled={!adjacentUnits.previousId} onClick={() => navigateToReaderTarget(adjacentUnits.previousId)} className="size-11 min-h-11 motion-reduce:transition-none">
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => navigateToReaderTarget(adjacentUnits.nextId)} className="motion-reduce:transition-none">
+              <Button variant="ghost" size="icon" aria-label={`Next ${readerScope}`} disabled={!adjacentUnits.nextId} onClick={() => navigateToReaderTarget(adjacentUnits.nextId)} className="size-11 min-h-11 motion-reduce:transition-none">
                 <ChevronRight className="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Open table of contents" onClick={() => setFocusPanel("toc")} className="motion-reduce:transition-none">
+              <Button variant="ghost" size="icon" aria-label="Open table of contents" onClick={() => setFocusPanel("toc")} className="size-11 min-h-11 motion-reduce:transition-none">
                 <ListTree className="size-4" />
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Open reading preferences" onClick={() => setFocusPanel("preferences")} className="motion-reduce:transition-none">
+              <Button variant="ghost" size="icon" aria-label="Open reading preferences" onClick={() => setFocusPanel("preferences")} className="size-11 min-h-11 motion-reduce:transition-none">
                 <SlidersHorizontal className="size-4" />
               </Button>
-              <Button variant="outline" onClick={toggleReadingFocus} aria-label="Exit reading focus" className="motion-reduce:transition-none">
+              <Button variant="outline" onClick={toggleReadingFocus} aria-label="Exit reading focus" className="min-h-11 motion-reduce:transition-none">
                 <X className="size-4" />
                 <span className="hidden sm:inline">Exit focus</span>
               </Button>
@@ -2843,7 +2936,7 @@ function ReaderScreen({
                   <Eye className="size-4" />
                   Reading focus
                 </Button>
-                <Button variant="outline" onClick={onOpenToc}>
+                <Button variant="outline" onClick={() => setFocusPanel("toc")}>
                   <ListTree className="size-4" />
                   Table of contents
                 </Button>
@@ -2855,7 +2948,7 @@ function ReaderScreen({
 
       <div className={cn(isFocusMode && "hidden")}>
         <Card>
-          <CardContent className="grid gap-3 p-4 lg:grid-cols-[220px_150px_1fr_1fr_auto] lg:items-end">
+          <CardContent className="grid min-w-0 gap-3 p-4 lg:grid-cols-[minmax(11rem,220px)_150px_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
             <div>
               <Label>Scope</Label>
               <Select value={readerScope} onValueChange={(value) => changeReaderScope(value as typeof readerScope)}>
@@ -2864,14 +2957,24 @@ function ReaderScreen({
                 </SelectTrigger>
                 <SelectContent>
                   {readerScopes.map((scope, index) => (
-                    <SelectItem key={scope} value={["novel", "volume", "chapter", "scene"][index]}>
+                    <SelectItem
+                      key={scope}
+                      value={["novel", "volume", "chapter", "scene"][index]}
+                      disabled={getReaderScopeUnits(
+                        ["novel", "volume", "chapter", "scene"][index] as typeof readerScope,
+                        data.settings.activeNovelId,
+                        readerHierarchy.volumes,
+                        readerHierarchy.chapters,
+                        readerHierarchy.scenes
+                      ).length === 0}
+                    >
                       {scope}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="hidden lg:block">
               <Label>Theme</Label>
               <Select value={readerTheme} onValueChange={(value) => onReaderThemeChange(value as ReaderTheme)}>
                 <SelectTrigger className="mt-2">
@@ -2884,17 +2987,27 @@ function ReaderScreen({
                 </SelectContent>
               </Select>
             </div>
-            <ControlSlider label="Font size" value={readerFontSize} min={readerPreferenceRanges.fontSize.min} max={readerPreferenceRanges.fontSize.max} suffix="px" onChange={changeReaderFontSize} />
-            <ControlSlider label="Reading width" value={readerWidth} min={readerPreferenceRanges.width.min} max={readerPreferenceRanges.width.max} suffix="px" onChange={changeReaderWidth} />
+            <div className="hidden min-w-0 lg:block">
+              <ControlSlider label="Font size" value={readerFontSize} min={readerPreferenceRanges.fontSize.min} max={readerPreferenceRanges.fontSize.max} suffix="px" onChange={changeReaderFontSize} />
+            </div>
+            <div className="hidden min-w-0 lg:block">
+              <ControlSlider label="Reading width" value={readerWidth} min={readerPreferenceRanges.width.min} max={readerPreferenceRanges.width.max} suffix="px" onChange={changeReaderWidth} />
+            </div>
             <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="min-h-11 lg:hidden" onClick={() => setFocusPanel("preferences")}>
+                <SlidersHorizontal className="size-4" />
+                Preferences
+              </Button>
               <Button variant="outline" disabled={!savedProgress} onClick={continueReading}>
                 <BookOpen className="size-4" />
                 Continue reading
               </Button>
               <Button variant="ghost" onClick={resetReaderPreferences}>Reset</Button>
             </div>
-            <p className="text-xs text-muted-foreground lg:col-span-5">
-              {savedProgress
+            <p className="text-xs text-muted-foreground lg:col-span-5" aria-live="polite">
+              {readerProgressUnavailable
+                ? "Reading progress is temporarily unavailable. Reading remains available."
+                : savedProgress
                 ? `Saved locally · ${Math.round(savedProgress.positionRatio * 100)}% in ${savedProgress.usedFallback ? "the nearest readable scene" : "the current scene"}`
                 : "Scroll to create a local reading position for this novel."}
             </p>
@@ -2912,7 +3025,9 @@ function ReaderScreen({
         <CardHeader className={cn("border-b", isFocusMode && "hidden")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>{currentReaderScene?.title || activeChapter.title}</CardTitle>
+              <h2 className="text-[1.05rem] font-semibold leading-snug tracking-normal">
+                {readerTargetTitle}
+              </h2>
               <CardDescription>Local reading progress · {readingProgressPercent}% of {readerScope}</CardDescription>
             </div>
           </div>
@@ -2920,7 +3035,7 @@ function ReaderScreen({
         </CardHeader>
         <CardContent
           className={cn(
-            "mx-auto my-6 rounded-lg border p-6 shadow-inner sm:p-10",
+            "mx-auto my-6 w-full min-w-0 rounded-lg border p-6 shadow-inner sm:p-10",
             isFocusMode && "my-0 rounded-none border-0 px-5 py-12 shadow-none sm:px-10 sm:py-16",
             readerTheme === "Dark" && "bg-[#0E0F11] text-[#E7D8B5]",
             readerTheme === "Light" && "bg-[#F7F2E8] text-[#2B2118]",
@@ -2928,55 +3043,75 @@ function ReaderScreen({
           )}
           style={{ maxWidth: `${readerWidth}px`, fontSize: `${readerFontSize}px` }}
         >
-          <article className="space-y-6 leading-9">
-            {readerScenes.map((scene) => (
-              <section
-                key={scene.id}
-                data-reader-scene-id={scene.id}
-                ref={(element) => {
-                  if (element) readerSectionRefs.current.set(scene.id, element);
-                  else readerSectionRefs.current.delete(scene.id);
-                }}
-                className="space-y-4"
-              >
-                <h2 className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</h2>
-                {scene.content.split("\n\n").map((paragraph, index) => (
-                  <p key={`${scene.id}-${index}`}>{paragraph}</p>
-                ))}
-              </section>
-            ))}
-          </article>
+          {readerDocument && readerScenes.length === 0 ? (
+            <section className="mx-auto max-w-xl py-10 text-center" aria-labelledby="empty-reader-title">
+              {isFocusMode ? (
+                <h1 id="empty-reader-title" className="font-serif text-3xl font-semibold tracking-normal">Nothing to read here yet</h1>
+              ) : (
+                <h3 id="empty-reader-title" className="font-serif text-2xl font-semibold tracking-normal">Nothing to read here yet</h3>
+              )}
+              <p className="mt-3 text-base leading-7 opacity-75">
+                This {readerScope} has no readable scenes. Return to Structure or Editor to choose the next step.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button variant="outline" className="min-h-11" onClick={onOpenStructure}>Back to Structure</Button>
+                <Button className="min-h-11" onClick={onOpenEditor}>Open Editor</Button>
+              </div>
+            </section>
+          ) : (
+            <article className="space-y-6 leading-9">
+              {readerScenes.map((scene, sceneIndex) => {
+                const SceneHeading = isFocusMode && sceneIndex === 0 ? "h1" : isFocusMode ? "h2" : "h3";
+                return (
+                  <section
+                    key={scene.id}
+                    data-reader-scene-id={scene.id}
+                    ref={(element) => {
+                      if (element) readerSectionRefs.current.set(scene.id, element);
+                      else readerSectionRefs.current.delete(scene.id);
+                    }}
+                    className="space-y-4"
+                  >
+                    <SceneHeading className="font-serif text-3xl font-semibold tracking-normal">{scene.title}</SceneHeading>
+                    {scene.content.split("\n\n").map((paragraph, index) => (
+                      <p key={`${scene.id}-${index}`}>{paragraph}</p>
+                    ))}
+                  </section>
+                );
+              })}
+            </article>
+          )}
         </CardContent>
         <CardFooter className={cn("mx-auto flex w-full flex-wrap justify-between gap-2 border-t p-4", isFocusMode && "border-current/10 bg-inherit px-5 sm:px-10")} style={{ maxWidth: `${readerWidth}px` }}>
-          <Button variant="outline" disabled={!adjacentUnits.previousId} onClick={() => navigateToReaderTarget(adjacentUnits.previousId)}>
+          <Button variant="outline" className="min-h-11" disabled={!adjacentUnits.previousId} onClick={() => navigateToReaderTarget(adjacentUnits.previousId)}>
             <ChevronLeft className="size-4" />
             Previous
           </Button>
-          <Button variant="outline" disabled={!adjacentUnits.nextId} onClick={() => navigateToReaderTarget(adjacentUnits.nextId)}>
+          <Button variant="outline" className="min-h-11" disabled={!adjacentUnits.nextId} onClick={() => navigateToReaderTarget(adjacentUnits.nextId)}>
             Next
             <ChevronRight className="size-4" />
           </Button>
         </CardFooter>
       </Card>
 
-      <Dialog open={isFocusMode && focusPanel !== null} onOpenChange={(open) => { if (!open) setFocusPanel(null); }}>
-        <DialogContent className="max-w-xl motion-reduce:duration-0">
+      <Dialog open={focusPanel !== null} onOpenChange={(open) => { if (!open) setFocusPanel(null); }}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-xl min-w-0 overflow-y-auto motion-reduce:duration-0">
           {focusPanel === "toc" ? (
             <>
               <DialogHeader>
                 <DialogTitle>Table of contents</DialogTitle>
-                <DialogDescription>Jump to a scene without leaving Reading Focus.</DialogDescription>
+                <DialogDescription>Jump to a scene without loading manuscript bodies into the table of contents.</DialogDescription>
               </DialogHeader>
-              <div role="tree" aria-label="Reading focus table of contents" className="max-h-[60vh] overflow-y-auto rounded-md border bg-background p-3">
-                {data.volumes.filter((volume) => volume.novelId === data.settings.activeNovelId && !volume.archived).map((volume) => (
+              <div role="tree" aria-label="Reader table of contents" className="max-h-[60vh] overflow-y-auto rounded-md border bg-background p-3">
+                {readerHierarchy.volumes.map((volume) => (
                   <div key={volume.id} role="treeitem" aria-expanded="true" aria-selected="false" className="mb-3">
                     <p className="font-semibold">{volume.title}</p>
                     <div role="group" className="mt-2 space-y-2 pl-3">
-                      {data.chapters.filter((chapter) => chapter.volumeId === volume.id && !chapter.archived).map((chapter) => (
+                      {readerHierarchy.chapters.filter((chapter) => chapter.volumeId === volume.id).map((chapter) => (
                         <div key={chapter.id} role="treeitem" aria-expanded="true" aria-selected="false">
                           <p className="px-2 py-1 text-sm font-medium">{chapter.title}</p>
                           <div role="group" className="space-y-1 pl-3">
-                            {data.scenes.filter((scene) => scene.chapterId === chapter.id && !scene.archived).map((scene) => (
+                            {readerHierarchy.scenes.filter((scene) => scene.chapterId === chapter.id).map((scene) => (
                               <button
                                 key={scene.id}
                                 type="button"
@@ -3001,7 +3136,7 @@ function ReaderScreen({
             <>
               <DialogHeader>
                 <DialogTitle>Reading preferences</DialogTitle>
-                <DialogDescription>Adjust the book surface without leaving Reading Focus.</DialogDescription>
+                <DialogDescription>Adjust the book surface without leaving the Reader.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-5">
                 <div>
