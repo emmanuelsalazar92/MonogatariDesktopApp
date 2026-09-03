@@ -1,5 +1,6 @@
 import type {
   Character,
+  CharacterPlaceLink,
   Chapter,
   Location,
   Novel,
@@ -26,6 +27,7 @@ export type StudioData = {
   chapters: Chapter[];
   scenes: Scene[];
   characters: Character[];
+  characterPlaceLinks: CharacterPlaceLink[];
   locations: Location[];
   relationships: Relationship[];
   timelineEvents: TimelineEvent[];
@@ -71,6 +73,7 @@ export const emptyStudioData: StudioData = {
   chapters: [],
   scenes: [],
   characters: [],
+  characterPlaceLinks: [],
   locations: [],
   relationships: [],
   timelineEvents: [],
@@ -151,6 +154,9 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
     characters: Array.isArray(payload.characters)
       ? payload.characters
       : emptyStudioData.characters,
+    characterPlaceLinks: Array.isArray(payload.characterPlaceLinks)
+      ? payload.characterPlaceLinks
+      : emptyStudioData.characterPlaceLinks,
     locations: Array.isArray(payload.locations) ? payload.locations : emptyStudioData.locations,
     relationships: Array.isArray(payload.relationships)
       ? payload.relationships
@@ -202,6 +208,11 @@ export function getScopedStudioData(data: StudioData): StudioData {
     chapters: data.chapters.filter((chapter) => scopedChapterIds.has(chapter.id)),
     scenes: data.scenes.filter((scene) => scopedSceneIds.has(scene.id)),
     characters: data.characters.filter((character) => character.novelId === activeNovelId),
+    characterPlaceLinks: data.characterPlaceLinks.filter((link) =>
+      data.characters.some(
+        (character) => character.id === link.characterId && character.novelId === activeNovelId
+      )
+    ),
     locations: data.locations.filter((location) => location.novelId === activeNovelId),
     relationships: data.relationships.filter(
       (relationship) => relationship.novelId === activeNovelId

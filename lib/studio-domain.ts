@@ -136,25 +136,19 @@ export interface Character {
   status: "Active" | "Inactive" | "Archived";
   narrativeStatus: "Secondary" | "Missing" | "Deceased" | "Spoiler" | "";
   image: string;
+  updatedAt: string;
+  archivedAt: string | null;
   scenes: number;
+  places?: number;
+  relationships?: number;
+  firstAppearanceOrder: number | null;
 }
 
 export interface Location {
   id: string;
   novelId: string;
   name: string;
-  type:
-    | "House"
-    | "School"
-    | "City"
-    | "Kingdom"
-    | "Forest"
-    | "Temple"
-    | "Dungeon"
-    | "Shop"
-    | "Room"
-    | "Other World"
-    | "Other";
+  type: import("./place-classification").PlaceType;
   region: string;
   description: string;
   importance: string;
@@ -162,6 +156,27 @@ export interface Location {
   rules: string;
   firstAppearance: string;
   notes: string;
+  status: import("./place-classification").PlaceStatus;
+  atmosphere: string;
+  parentPlaceId: string | null;
+  revision: number;
+  sceneCount?: number;
+}
+
+export const characterPlaceRelationshipTypes = [
+  "Lives at",
+  "Works at",
+  "Frequent location",
+  "Associated with"
+] as const;
+
+export type CharacterPlaceRelationshipType =
+  (typeof characterPlaceRelationshipTypes)[number];
+
+export interface CharacterPlaceLink {
+  characterId: string;
+  locationId: string;
+  relationshipType: CharacterPlaceRelationshipType;
 }
 
 export interface Relationship {
@@ -311,19 +326,7 @@ export const relationshipCategories = {
   ]
 } as const;
 
-export const placeTypes = [
-  "House",
-  "School",
-  "City",
-  "Kingdom",
-  "Forest",
-  "Temple",
-  "Dungeon",
-  "Shop",
-  "Room",
-  "Other World",
-  "Other"
-];
+export { placeTypes } from "./place-classification";
 
 export const genreFilters = [
   "All genres",

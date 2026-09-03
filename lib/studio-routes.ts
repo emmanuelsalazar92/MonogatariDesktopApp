@@ -23,6 +23,8 @@ export type StudioRoute = {
   page: PageId;
   novelId?: string;
   sceneId?: string;
+  characterId?: string;
+  placeId?: string;
 };
 
 export function routeForPage(page: PageId, novelId?: string, sceneId?: string) {
@@ -36,6 +38,16 @@ export function routeForPage(page: PageId, novelId?: string, sceneId?: string) {
     return `/novels/${encodedNovelId}/editor/${encodeURIComponent(sceneId)}`;
   }
   return `/novels/${encodedNovelId}/${page}`;
+}
+
+export function routeForCharacter(novelId: string, characterId?: string) {
+  const baseRoute = routeForPage("characters", novelId);
+  return characterId ? `${baseRoute}/${encodeURIComponent(characterId)}` : baseRoute;
+}
+
+export function routeForPlace(novelId: string, placeId?: string) {
+  const baseRoute = routeForPage("places", novelId);
+  return placeId ? `${baseRoute}/${encodeURIComponent(placeId)}` : baseRoute;
 }
 
 export function parseStudioRoute(pathname: string): StudioRoute | null {
@@ -53,6 +65,20 @@ export function parseStudioRoute(pathname: string): StudioRoute | null {
       return isValidNovelRouteId(novelId) && isValidSceneRouteId(sceneId)
         ? { page: "editor", novelId, sceneId }
         : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const entityMatch = /^\/novels\/([^/]+)\/(characters|places)\/([^/]+)$/.exec(normalizedPath);
+  if (entityMatch) {
+    try {
+      const novelId = decodeURIComponent(entityMatch[1]);
+      const entityId = decodeURIComponent(entityMatch[3]);
+      if (!isValidNovelRouteId(novelId) || !isValidNovelRouteId(entityId)) return null;
+      return entityMatch[2] === "characters"
+        ? { page: "characters", novelId, characterId: entityId }
+        : { page: "places", novelId, placeId: entityId };
     } catch {
       return null;
     }
@@ -85,3 +111,5 @@ export function isValidNovelRouteId(value: string) {
 }
 
 export const isValidSceneRouteId = isValidNovelRouteId;
+export const isValidCharacterRouteId = isValidNovelRouteId;
+export const isValidPlaceRouteId = isValidNovelRouteId;

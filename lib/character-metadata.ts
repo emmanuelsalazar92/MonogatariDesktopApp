@@ -2,6 +2,7 @@ import type { Character } from "@/lib/studio-domain";
 
 export const characterRoles = ["Protagonist", "Antagonist", "Support", "Minor", "Cameo", "Other"] as const;
 export const characterStatuses = ["Active", "Inactive", "Archived"] as const;
+export const editableCharacterStatuses = ["Active", "Inactive"] as const;
 export const legacyNarrativeStatuses = ["Secondary", "Missing", "Deceased", "Spoiler"] as const;
 
 export type CharacterRole = (typeof characterRoles)[number];
@@ -149,7 +150,7 @@ export function validateCharacterMetadata(value: unknown):
   else if (aliases.some((alias) => alias.length > 120)) fieldErrors.aliases = "Each alias must be 120 characters or fewer";
 
   const status = input.status ?? "Active";
-  if (!characterStatuses.includes(status as CharacterMetadataInput["status"])) {
+  if (!editableCharacterStatuses.includes(status as (typeof editableCharacterStatuses)[number])) {
     fieldErrors.status = "Status is invalid";
   }
   const role = input.role ?? "Support";

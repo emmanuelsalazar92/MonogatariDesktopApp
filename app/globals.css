@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Modal panels stay opaque; only their separate overlay may use transparency. */
+.dialog-surface {
+  background-color: hsl(var(--popover) / 1);
+}
+
 :root {
   --background: 40 50% 95%;
   --foreground: 26 30% 15%;

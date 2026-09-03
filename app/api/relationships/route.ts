@@ -1,8 +1,12 @@
 ﻿import { NextResponse } from "next/server";
 import { createRelationship, RelationshipConflictError } from "@/lib/db/studio";
 import { validateRelationshipInput } from "@/lib/character-relationship";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ error: "Cross-origin mutation rejected" }, { status: 403 });
+  }
   const validation = validateRelationshipInput(await request.json());
   if (!validation.ok) return NextResponse.json(validation, { status: 400 });
   try {

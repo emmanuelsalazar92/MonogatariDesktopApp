@@ -135,13 +135,15 @@ model Character {
   fear                  String           @default("")
   secret                String           @default("")
   notes                 String           @default("")
-  firstAppearance       String           @default("")
   status                String           @default("Active")
   image                 String           @default("")
+  updatedAt             DateTime         @default(now()) @updatedAt
+  archivedAt            DateTime?
   novel                 Novel            @relation(fields: [novelId], references: [id], onDelete: Cascade)
   outgoingRelationships Relationship[]   @relation("RelationshipFrom")
   incomingRelationships Relationship[]   @relation("RelationshipTo")
   sceneLinks            SceneCharacter[]
+  placeLinks            CharacterPlace[]
 
   @@index([novelId, name])
 }
@@ -150,29 +152,48 @@ model SceneCharacter {
   sceneId     String
   characterId String
   scene       Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Restrict)
 
   @@id([sceneId, characterId])
   @@index([characterId])
 }
 
+model CharacterPlace {
+  characterId      String
+  locationId       String
+  relationshipType String    @default("Associated with")
+  character        Character @relation(fields: [characterId], references: [id], onDelete: Restrict)
+  location         Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, locationId])
+  @@index([locationId])
+}
+
 model Location {
-  id              String          @id
+  id              String           @id
   novelId         String
   name            String
-  type            String          @default("Other")
-  region          String          @default("")
-  description     String          @default("")
-  importance      String          @default("")
-  visualNotes     String          @default("")
-  rules           String          @default("")
-  firstAppearance String          @default("")
-  notes           String          @default("")
-  novel           Novel           @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  type            String           @default("other")
+  region          String           @default("")
+  description     String           @default("")
+  importance      String           @default("")
+  visualNotes     String           @default("")
+  rules           String           @default("")
+  firstAppearance String           @default("")
+  notes           String           @default("")
+  status          String           @default("active")
+  atmosphere      String           @default("")
+  revision        Int              @default(0)
+  parentPlaceId   String?
+  parentPlace     Location?        @relation("PlaceHierarchy", fields: [parentPlaceId], references: [id], onDelete: SetNull)
+  childPlaces     Location[]       @relation("PlaceHierarchy")
+  novel           Novel            @relation(fields: [novelId], references: [id], onDelete: Cascade)
   scenes          Scene[]
   timelineEvents  TimelineEvent[]
+  characterLinks  CharacterPlace[]
 
   @@index([novelId, name])
+  @@index([parentPlaceId])
 }
 
 model Relationship {
@@ -189,8 +210,8 @@ model Relationship {
   since            String    @default("")
   notes            String    @default("")
   novel            Novel     @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  fromCharacter    Character @relation("RelationshipFrom", fields: [fromCharacterId], references: [id], onDelete: Cascade)
-  toCharacter      Character @relation("RelationshipTo", fields: [toCharacterId], references: [id], onDelete: Cascade)
+  fromCharacter    Character @relation("RelationshipFrom", fields: [fromCharacterId], references: [id], onDelete: Restrict)
+  toCharacter      Character @relation("RelationshipTo", fields: [toCharacterId], references: [id], onDelete: Restrict)
 
   @@index([novelId])
   @@index([fromCharacterId])

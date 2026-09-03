@@ -29,8 +29,24 @@ test("route parser rejects malformed IDs and prototype section names", async () 
     novelId: "novel-1",
     sceneId: "scene-2"
   });
+  assert.deepEqual(routes.parseStudioRoute("/novels/novel-1/characters/character-2"), {
+    page: "characters",
+    novelId: "novel-1",
+    characterId: "character-2"
+  });
+  assert.deepEqual(routes.parseStudioRoute("/novels/novel-1/places/place-2"), {
+    page: "places",
+    novelId: "novel-1",
+    placeId: "place-2"
+  });
+  assert.equal(
+    routes.routeForCharacter("novel-1", "character-2"),
+    "/novels/novel-1/characters/character-2"
+  );
+  assert.equal(routes.routeForPlace("novel-1", "place-2"), "/novels/novel-1/places/place-2");
   assert.equal(routes.parseStudioRoute("/novels/%2Fnot-an-id"), null);
   assert.equal(routes.parseStudioRoute("/novels/novel-1/editor/%2Fscene"), null);
+  assert.equal(routes.parseStudioRoute("/novels/novel-1/characters/%2Fcharacter"), null);
   assert.equal(routes.parseStudioRoute("/novels/novel-1/constructor"), null);
   assert.equal(routes.isNovelWorkspaceSection("toString"), false);
 });
@@ -65,6 +81,7 @@ test("character metadata rejects invalid and derived fields", async () => {
   assert.ok(invalid.fieldErrors.status);
   assert.ok(invalid.fieldErrors.role);
   assert.ok(invalid.fieldErrors.aliases);
+  assert.equal(metadata.validateCharacterMetadata({ name: "Ada", status: "Archived" }).ok, false);
 });
 
 test("character classification migrates legacy values and filters canonical lifecycle", async () => {
@@ -423,7 +440,7 @@ test("reader keeps the active scene content visible while a read document is una
 test("dialog surface uses opaque theme tokens while preserving the blurred backdrop", async () => {
   const dialogSource = await readFile(resolve(process.cwd(), "components/ui/dialog.tsx"), "utf8");
 
-  assert.match(dialogSource, /bg-popover p-5/);
+  assert.match(dialogSource, /dialog-surface/);
   assert.doesNotMatch(dialogSource, /bg-popover\/\d+/);
   assert.match(dialogSource, /backdrop-blur-\[2px\]/);
   assert.match(dialogSource, /bg-background p-1\.5/);
@@ -608,12 +625,13 @@ test("character catalog keeps selection explicit, novel-scoped, stale-safe, and 
     "utf8"
   );
 
-  assert.match(source, /useState<string \| null>\(null\)/);
+  assert.match(source, /selectedCharacterId: string \| null/);
   assert.doesNotMatch(source, /characters\[0\]/);
   assert.match(source, /data\.novels\.some\(\(novel\) => novel\.id === character\.novelId\)/);
+  assert.match(source, /data\.characters\.find\(\(character\) => character\.id === selectedCharacterId\)/);
   assert.match(source, /aria-current=\{selected \? "true" : undefined\}/);
   assert.match(source, /Check className="size-3" aria-hidden="true"/);
-  assert.match(source, /setSelectedCharacterId\(null\)/);
+  assert.match(source, /href=\{characterHref\(character\.id\)\}/);
   assert.match(source, /window\.matchMedia\("\(max-width: 1279px\)"\)/);
   assert.match(source, /DialogContent className="[^"]*xl:hidden/);
   assert.match(source, /Select a character/);
@@ -643,6 +661,7 @@ test("reader responsive and resilience contracts prioritize content without hori
 test("structure status allowlist excludes archival and rejects unknown values", async () => {
   const domain = await loadTypeScriptModule("lib/studio-domain.ts", (moduleId) => {
     if (moduleId === "lucide-react") return {};
+    if (moduleId === "./place-classification") return {};
     throw new Error(`Unexpected module: ${moduleId}`);
   });
 
@@ -703,13 +722,373 @@ test("character scene links use the normalized join as their single source of tr
 
   assert.match(schema, /model SceneCharacter[\s\S]*@@id\(\[sceneId, characterId\]\)/);
   assert.doesNotMatch(schema, /scenesCount/);
-  assert.match(studioSource, /_count: \{ select: \{ sceneLinks: true \} \}/);
+  assert.match(studioSource, /_count: \{[\s\S]*?sceneLinks: true/);
   assert.match(studioSource, /character\._count\?\.sceneLinks \?\? 0/);
   assert.match(studioSource, /character\.novelId !== scene\.chapter\.volume\.novelId/);
   assert.match(studioSource, /sceneCharacter\.upsert/);
   assert.match(studioSource, /sceneCharacter\.deleteMany\(\{ where: \{ characterId, sceneId \} \}\)/);
   assert.match(routeSource, /export async function (GET|POST|DELETE)/);
   assert.match(charactersSource, /volumeTitle[\s\S]*chapterTitle/);
-  assert.match(charactersSource, /onOpenScene\(scene\.sceneId\)/);
+  assert.match(charactersSource, /routeForPage\("editor", character\.novelId, scene\.sceneId\)/);
   assert.match(charactersSource, /Remove linked scene/);
+});
+
+test("character catalog parses safe URL state and clears back to canonical defaults", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+  const catalog = await loadTypeScriptModule("lib/character-catalog.ts", (moduleId) => {
+    if (moduleId === "@/lib/character-metadata") return metadata;
+    if (moduleId === "@/lib/studio-domain") return {};
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+
+  assert.deepEqual(
+    catalog.parseCharacterCatalogState(
+      new URLSearchParams("q=juan&role=support&status=active&sort=scene-count")
+    ),
+    { query: "juan", role: "Support", status: "Active", sort: "Scene count", showArchived: false }
+  );
+  assert.deepEqual(
+    catalog.parseCharacterCatalogState(
+      new URLSearchParams("role=wizard&status=unknown&sort=DROP%20TABLE")
+    ),
+    catalog.defaultCharacterCatalogState
+  );
+  assert.equal(
+    catalog.serializeCharacterCatalogState(catalog.defaultCharacterCatalogState).toString(),
+    ""
+  );
+});
+
+test("character catalog searches names, combines filters, and sorts deterministically", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+  const catalog = await loadTypeScriptModule("lib/character-catalog.ts", (moduleId) => {
+    if (moduleId === "@/lib/character-metadata") return metadata;
+    if (moduleId === "@/lib/studio-domain") return {};
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+  const characters = [
+    { id: "juana", name: "Juana", aliases: [], role: "Support", status: "Active", updatedAt: "2026-01-01T00:00:00.000Z", firstAppearanceOrder: 2, scenes: 4 },
+    { id: "juancho", name: "Juancho", aliases: [], role: "Support", status: "Active", updatedAt: "2026-03-01T00:00:00.000Z", firstAppearanceOrder: 0, scenes: 8 },
+    { id: "alias-only", name: "Ana", aliases: ["Juan"], role: "Support", status: "Active", updatedAt: "2026-02-01T00:00:00.000Z", firstAppearanceOrder: 1, scenes: 2 },
+    { id: "inactive", name: "Juan Carlos", aliases: [], role: "Support", status: "Inactive", updatedAt: "2026-04-01T00:00:00.000Z", firstAppearanceOrder: null, scenes: 10 },
+    { id: "lead", name: "Juanita", aliases: [], role: "Protagonist", status: "Active", updatedAt: "2026-05-01T00:00:00.000Z", firstAppearanceOrder: null, scenes: 12 }
+  ];
+  const state = { query: "juan", role: "Support", status: "Active", sort: "Name" };
+
+  assert.deepEqual(
+    catalog.filterAndSortCharacters(characters, state).map((character) => character.id),
+    ["juana", "juancho"]
+  );
+  assert.deepEqual(
+    catalog.filterAndSortCharacters(characters, { ...state, sort: "Last edited" }).map((character) => character.id),
+    ["juancho", "juana"]
+  );
+  assert.deepEqual(
+    catalog.filterAndSortCharacters(characters, { ...state, sort: "First appearance" }).map((character) => character.id),
+    ["juancho", "juana"]
+  );
+  assert.deepEqual(
+    catalog.filterAndSortCharacters(characters, { ...state, sort: "Scene count" }).map((character) => character.id),
+    ["juancho", "juana"]
+  );
+  assert.deepEqual(
+    catalog.filterAndSortCharacters(
+      [
+        { ...characters[0], id: "b", name: "Same" },
+        { ...characters[0], id: "a", name: "Same" }
+      ],
+      catalog.defaultCharacterCatalogState
+    ).map((character) => character.id),
+    ["a", "b"]
+  );
+});
+
+test("character catalog controls persist URL state and expose clear filters", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const charactersSource = await readFile(
+    resolve(process.cwd(), "components/studio/characters-screen.tsx"),
+    "utf8"
+  );
+
+  assert.match(pageSource, /parseCharacterCatalogState\(searchParams\)/);
+  assert.match(pageSource, /serializeCharacterCatalogState\(nextState\)/);
+  assert.match(pageSource, /filterAndSortCharacters\(characters, characterCatalogState\)/);
+  assert.match(charactersSource, /Clear filters/);
+  assert.match(charactersSource, /Sort characters/);
+});
+
+test("character catalog hides archived records by default and can reveal them", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+  const catalog = await loadTypeScriptModule("lib/character-catalog.ts", (moduleId) => {
+    if (moduleId === "@/lib/character-metadata") return metadata;
+    if (moduleId === "@/lib/studio-domain") return {};
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+  const archived = {
+    id: "archived",
+    name: "Archived",
+    aliases: [],
+    role: "Support",
+    status: "Archived",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    firstAppearanceOrder: null,
+    scenes: 2
+  };
+
+  assert.deepEqual(catalog.filterAndSortCharacters([archived], catalog.defaultCharacterCatalogState), []);
+  assert.deepEqual(
+    catalog.filterAndSortCharacters(
+      [archived],
+      { ...catalog.defaultCharacterCatalogState, showArchived: true }
+    ).map((character) => character.id),
+    ["archived"]
+  );
+  assert.deepEqual(
+    catalog.parseCharacterCatalogState(new URLSearchParams("archived=true&status=archived")),
+    { ...catalog.defaultCharacterCatalogState, status: "Archived", showArchived: true }
+  );
+});
+
+test("character lifecycle preserves joins and protects hard delete with current impact", async () => {
+  const schema = await readFile(resolve(process.cwd(), "prisma/schema.prisma"), "utf8");
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const characterRoute = await readFile(resolve(process.cwd(), "app/api/characters/[characterId]/route.ts"), "utf8");
+  const archiveRoute = await readFile(resolve(process.cwd(), "app/api/characters/[characterId]/archive/route.ts"), "utf8");
+  const restoreRoute = await readFile(resolve(process.cwd(), "app/api/characters/[characterId]/restore/route.ts"), "utf8");
+  const impactRoute = await readFile(resolve(process.cwd(), "app/api/characters/[characterId]/impact/route.ts"), "utf8");
+  const charactersSource = await readFile(
+    resolve(process.cwd(), "components/studio/characters-screen.tsx"),
+    "utf8"
+  );
+  const archiveFunction = studioSource.slice(
+    studioSource.indexOf("export async function archiveCharacter"),
+    studioSource.indexOf("export async function restoreCharacter")
+  );
+  const deleteFunction = studioSource.slice(
+    studioSource.indexOf("export async function deleteCharacter"),
+    studioSource.indexOf("export class SceneCharacterConflictError")
+  );
+
+  assert.match(schema, /model Character[\s\S]*archivedAt\s+DateTime\?/);
+  assert.match(schema, /model SceneCharacter[\s\S]*character\s+Character[^\n]*onDelete: Restrict/);
+  assert.match(schema, /model CharacterPlace[\s\S]*character\s+Character[^\n]*onDelete: Restrict/);
+  assert.match(schema, /fromCharacter\s+Character[^\n]*onDelete: Restrict/);
+  assert.match(schema, /toCharacter\s+Character[^\n]*onDelete: Restrict/);
+  assert.match(archiveFunction, /data: \{ archivedAt: new Date\(\) \}/);
+  assert.doesNotMatch(archiveFunction, /sceneCharacter\.(delete|update)/);
+  assert.doesNotMatch(archiveFunction, /characterPlace\.(delete|update)/);
+  assert.doesNotMatch(archiveFunction, /relationship\.(delete|update)/);
+  assert.match(studioSource, /sceneCharacter\.count\(\{ where: \{ characterId \} \}\)/);
+  assert.match(studioSource, /characterPlace\.count\(\{ where: \{ characterId \} \}\)/);
+  assert.match(studioSource, /relationship\.count/);
+  assert.match(deleteFunction, /Character references changed; review the current impact/);
+  assert.match(deleteFunction, /if \(!impact\.canDelete\)/);
+  assert.match(deleteFunction, /tx\.character\.delete/);
+  assert.match(characterRoute, /body\?\.confirmed !== true/);
+  assert.match(characterRoute, /status: error\.message === "Character was not found" \? 404 : 409/);
+  assert.match(archiveRoute, /archiveCharacter/);
+  assert.match(restoreRoute, /restoreCharacter/);
+  assert.match(impactRoute, /getCharacterDeleteImpact/);
+  assert.match(charactersSource, /deleteImpact\.linkedScenes/);
+  assert.match(charactersSource, /deleteImpact\.linkedPlaces/);
+  assert.match(charactersSource, /deleteImpact\.relationships/);
+  assert.match(charactersSource, /disabled=\{!deleteImpact\?\.canDelete \|\| lifecyclePending\}/);
+  assert.match(charactersSource, /Show archived/);
+});
+
+test("character first appearance follows narrative order and ignores archived or cross-novel scenes", async () => {
+  const firstAppearance = await loadTypeScriptModule("lib/character-first-appearance.ts");
+  const characters = [{ id: "character", novelId: "novel" }];
+  const volumes = [
+    { id: "volume-2", novelId: "novel", title: "Volume 2", sortOrder: 2 },
+    { id: "volume-1", novelId: "novel", title: "Volume 1", sortOrder: 1 },
+    { id: "foreign-volume", novelId: "other", title: "Foreign", sortOrder: 0 }
+  ];
+  const chapters = [
+    { id: "chapter-2", volumeId: "volume-1", title: "Chapter 2", sortOrder: 2 },
+    { id: "chapter-1", volumeId: "volume-1", title: "Chapter 1", sortOrder: 1 },
+    { id: "foreign-chapter", volumeId: "foreign-volume", title: "Foreign", sortOrder: 0 }
+  ];
+  const scenes = [
+    { id: "s8", chapterId: "chapter-2", title: "Later", sortOrder: 8, archived: false },
+    { id: "s3", chapterId: "chapter-1", title: "Arrival", sortOrder: 3, archived: false },
+    { id: "archived", chapterId: "chapter-1", title: "Hidden", sortOrder: 1, archived: true },
+    { id: "foreign", chapterId: "foreign-chapter", title: "Foreign", sortOrder: 0, archived: false }
+  ];
+  const links = ["s8", "s3", "archived", "foreign"].map((sceneId) => ({
+    characterId: "character",
+    sceneId
+  }));
+
+  const initial = firstAppearance.deriveCharacterFirstAppearances(
+    characters,
+    volumes,
+    chapters,
+    scenes,
+    links
+  );
+  assert.equal(initial.get("character"), "Volume 1 · Chapter 1 · 03 — Arrival");
+
+  const reordered = firstAppearance.deriveCharacterFirstAppearances(
+    characters,
+    volumes,
+    [{ ...chapters[0], sortOrder: 0 }, chapters[1], chapters[2]],
+    scenes,
+    links
+  );
+  assert.equal(reordered.get("character"), "Volume 1 · Chapter 2 · 08 — Later");
+
+  const afterUnlink = firstAppearance.deriveCharacterFirstAppearances(
+    characters,
+    volumes,
+    chapters,
+    scenes,
+    links.filter((link) => link.sceneId !== "s3")
+  );
+  assert.equal(afterUnlink.get("character"), "Volume 1 · Chapter 2 · 08 — Later");
+  assert.equal(
+    firstAppearance.deriveCharacterFirstAppearances(characters, volumes, chapters, scenes, []).get("character"),
+    undefined
+  );
+});
+
+test("character first appearance is derived and not persisted", async () => {
+  const schema = await readFile(resolve(process.cwd(), "prisma/schema.prisma"), "utf8");
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const charactersSource = await readFile(
+    resolve(process.cwd(), "components/studio/characters-screen.tsx"),
+    "utf8"
+  );
+  const characterModel = schema.slice(
+    schema.indexOf("model Character {"),
+    schema.indexOf("model SceneCharacter {")
+  );
+
+  assert.doesNotMatch(characterModel, /firstAppearance/);
+  assert.match(studioSource, /deriveCharacterFirstAppearanceDetails/);
+  assert.match(studioSource, /prisma\.sceneCharacter\.findMany/);
+  assert.match(charactersSource, /character\.firstAppearance \|\| translate\("Not linked yet"\)/);
+});
+
+test("character place links are normalized, allowlisted, novel-scoped, and navigable", async () => {
+  const schema = await readFile(resolve(process.cwd(), "prisma/schema.prisma"), "utf8");
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const routeSource = await readFile(resolve(process.cwd(), "app/api/characters/[characterId]/places/route.ts"), "utf8");
+  const charactersSource = await readFile(resolve(process.cwd(), "components/studio/characters-screen.tsx"), "utf8");
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const characterPlace = await loadTypeScriptModule(
+    "lib/character-place.ts",
+    (moduleId) => {
+      if (moduleId === "@/lib/studio-domain") {
+        return {
+          characterPlaceRelationshipTypes: [
+            "Lives at",
+            "Works at",
+            "Frequent location",
+            "Associated with"
+          ]
+        };
+      }
+      throw new Error(`Unexpected module: ${moduleId}`);
+    }
+  );
+
+  assert.match(schema, /model CharacterPlace[\s\S]*@@id\(\[characterId, locationId\]\)/);
+  assert.match(studioSource, /character\.novelId !== location\.novelId/);
+  assert.match(studioSource, /characterPlace\.upsert/);
+  assert.match(studioSource, /characterPlace\.deleteMany\(\{ where: \{ characterId, locationId \} \}\)/);
+  assert.match(routeSource, /export async function (GET|POST|DELETE)/);
+  assert.equal(characterPlace.parseCharacterPlaceRelationshipType(undefined), "Associated with");
+  assert.equal(characterPlace.parseCharacterPlaceRelationshipType("Lives at"), "Lives at");
+  assert.equal(characterPlace.parseCharacterPlaceRelationshipType("Invented"), null);
+  assert.doesNotMatch(charactersSource, /timelineEvents[\s\S]*Linked places/);
+  assert.match(charactersSource, /routeForPlace\(character\.novelId, place\.locationId\)/);
+  assert.match(pageSource, /characterPlaceLinks[\s\S]*link\.locationId === place\.id/);
+  assert.match(pageSource, /selectedPlaceId=\{activeRoute\?\.placeId \?\? null\}/);
+});
+
+test("character deep links are URL-controlled, ownership-checked, and connect related entities", async () => {
+  const pageSource = await readFile(resolve(process.cwd(), "app/page.tsx"), "utf8");
+  const charactersSource = await readFile(
+    resolve(process.cwd(), "components/studio/characters-screen.tsx"),
+    "utf8"
+  );
+  const routeSource = await readFile(
+    resolve(process.cwd(), "app/novels/[novelId]/characters/[characterId]/page.tsx"),
+    "utf8"
+  );
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+
+  assert.match(pageSource, /selectedCharacterId=\{activeRoute\?\.characterId \?\? null\}/);
+  assert.match(pageSource, /routeForCharacter\(currentNovel\.id, characterId\)/);
+  assert.match(charactersSource, /href=\{routeForCharacter\(character\.novelId, relatedCharacter\.id\)\}/);
+  assert.match(charactersSource, /href=\{routeForPage\("editor", character\.novelId, scene\.sceneId\)\}/);
+  assert.match(charactersSource, /titleRef\.current\?\.focus\(\)/);
+  assert.match(routeSource, /characterBelongsToNovelForRoute\(novelId, characterId\)/);
+  assert.match(studioSource, /where: \{ id: characterId, novelId \}/);
+});
+
+test("character catalog responses stay minimal and detail failures remain isolated", async () => {
+  const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
+  const charactersSource = await readFile(
+    resolve(process.cwd(), "components/studio/characters-screen.tsx"),
+    "utf8"
+  );
+  const summarySerializer = studioSource.slice(
+    studioSource.indexOf("function serializeCharacterSummary"),
+    studioSource.indexOf("function serializeNovel")
+  );
+
+  assert.doesNotMatch(summarySerializer, /secret|notes|appearance|personality|wayOfSpeaking|goal|fear/);
+  assert.match(summarySerializer, /sceneLinks/);
+  assert.match(summarySerializer, /placeLinks/);
+  assert.match(summarySerializer, /outgoingRelationships/);
+  assert.match(studioSource, /export async function getCharacterDetail\(novelId: string, characterId: string\)/);
+  assert.match(charactersSource, /CharacterDetailError/);
+  assert.match(charactersSource, /controller\.abort\(\)/);
+  assert.match(charactersSource, /Could not load character details/);
+  assert.match(charactersSource, /Related character unavailable/);
+  assert.doesNotMatch(charactersSource, /xl:max-h-\[calc\(100vh-7rem\)\]/);
+});
+
+test("character mutations reject untrusted browser origins", async () => {
+  const security = await loadTypeScriptModule("lib/request-security.ts");
+
+  assert.equal(
+    security.isTrustedMutationRequest(new Request("http://192.168.1.20:3000/api/characters", {
+      method: "POST",
+      headers: { origin: "http://192.168.1.20:3000", "sec-fetch-site": "same-origin" }
+    })),
+    true
+  );
+  assert.equal(
+    security.isTrustedMutationRequest(new Request("http://192.168.1.20:3000/api/characters", {
+      method: "POST",
+      headers: { origin: "https://evil.example", "sec-fetch-site": "cross-site" }
+    })),
+    false
+  );
+});
+
+test("character catalog remains deterministic for a 300-character dataset", async () => {
+  const metadata = await loadTypeScriptModule("lib/character-metadata.ts");
+  const catalog = await loadTypeScriptModule("lib/character-catalog.ts", (moduleId) => {
+    if (moduleId === "@/lib/character-metadata") return metadata;
+    if (moduleId === "@/lib/studio-domain") return {};
+    throw new Error(`Unexpected module: ${moduleId}`);
+  });
+  const characters = Array.from({ length: 300 }, (_, index) => ({
+    id: `character-${String(index).padStart(3, "0")}`,
+    name: `Character ${String(299 - index).padStart(3, "0")}`,
+    role: index % 2 === 0 ? "Support" : "Minor",
+    status: "Active",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    firstAppearanceOrder: index,
+    scenes: index % 20
+  }));
+
+  const result = catalog.filterAndSortCharacters(characters, catalog.defaultCharacterCatalogState);
+  assert.equal(result.length, 300);
+  assert.equal(result[0].name, "Character 000");
+  assert.equal(result[299].name, "Character 299");
 });

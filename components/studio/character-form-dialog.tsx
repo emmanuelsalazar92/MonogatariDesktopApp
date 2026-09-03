@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { characterRoles, characterStatuses, type CharacterFieldErrors, type CharacterMetadataInput } from "@/lib/character-metadata";
+import { characterRoles, editableCharacterStatuses, type CharacterFieldErrors, type CharacterMetadataInput } from "@/lib/character-metadata";
 import type { Character } from "@/lib/studio-domain";
 
 const emptyForm: CharacterMetadataInput = {
@@ -93,7 +93,7 @@ export function CharacterFormDialog({ open, novelId, character, onOpenChange, on
               <Label htmlFor="character-status">Status</Label>
               <Select value={form.status} onValueChange={(value) => update("status", value)}>
                 <SelectTrigger id="character-status" aria-invalid={Boolean(errors.status)}><SelectValue /></SelectTrigger>
-                <SelectContent>{characterStatuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
+                <SelectContent>{editableCharacterStatuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
               </Select>
               <FieldError message={errors.status} />
             </div>

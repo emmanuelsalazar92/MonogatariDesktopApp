@@ -393,6 +393,7 @@ export const ModelName = {
   WritingActivity: 'WritingActivity',
   Character: 'Character',
   SceneCharacter: 'SceneCharacter',
+  CharacterPlace: 'CharacterPlace',
   Location: 'Location',
   Relationship: 'Relationship',
   TimelineEvent: 'TimelineEvent',
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "writingActivity" | "character" | "sceneCharacter" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "writingActivity" | "character" | "sceneCharacter" | "characterPlace" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1084,6 +1085,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SceneCharacterCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SceneCharacterCountAggregateOutputType> | number
+        }
+      }
+    }
+    CharacterPlace: {
+      payload: Prisma.$CharacterPlacePayload<ExtArgs>
+      fields: Prisma.CharacterPlaceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CharacterPlaceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CharacterPlaceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>
+        }
+        findFirst: {
+          args: Prisma.CharacterPlaceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CharacterPlaceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>
+        }
+        findMany: {
+          args: Prisma.CharacterPlaceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>[]
+        }
+        create: {
+          args: Prisma.CharacterPlaceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>
+        }
+        createMany: {
+          args: Prisma.CharacterPlaceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CharacterPlaceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>[]
+        }
+        delete: {
+          args: Prisma.CharacterPlaceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>
+        }
+        update: {
+          args: Prisma.CharacterPlaceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>
+        }
+        deleteMany: {
+          args: Prisma.CharacterPlaceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CharacterPlaceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CharacterPlaceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>[]
+        }
+        upsert: {
+          args: Prisma.CharacterPlaceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CharacterPlacePayload>
+        }
+        aggregate: {
+          args: Prisma.CharacterPlaceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCharacterPlace>
+        }
+        groupBy: {
+          args: Prisma.CharacterPlaceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterPlaceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CharacterPlaceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CharacterPlaceCountAggregateOutputType> | number
         }
       }
     }
@@ -1902,9 +1977,10 @@ export const CharacterScalarFieldEnum = {
   fear: 'fear',
   secret: 'secret',
   notes: 'notes',
-  firstAppearance: 'firstAppearance',
   status: 'status',
-  image: 'image'
+  image: 'image',
+  updatedAt: 'updatedAt',
+  archivedAt: 'archivedAt'
 } as const
 
 export type CharacterScalarFieldEnum = (typeof CharacterScalarFieldEnum)[keyof typeof CharacterScalarFieldEnum]
@@ -1918,6 +1994,15 @@ export const SceneCharacterScalarFieldEnum = {
 export type SceneCharacterScalarFieldEnum = (typeof SceneCharacterScalarFieldEnum)[keyof typeof SceneCharacterScalarFieldEnum]
 
 
+export const CharacterPlaceScalarFieldEnum = {
+  characterId: 'characterId',
+  locationId: 'locationId',
+  relationshipType: 'relationshipType'
+} as const
+
+export type CharacterPlaceScalarFieldEnum = (typeof CharacterPlaceScalarFieldEnum)[keyof typeof CharacterPlaceScalarFieldEnum]
+
+
 export const LocationScalarFieldEnum = {
   id: 'id',
   novelId: 'novelId',
@@ -1929,7 +2014,11 @@ export const LocationScalarFieldEnum = {
   visualNotes: 'visualNotes',
   rules: 'rules',
   firstAppearance: 'firstAppearance',
-  notes: 'notes'
+  notes: 'notes',
+  status: 'status',
+  atmosphere: 'atmosphere',
+  revision: 'revision',
+  parentPlaceId: 'parentPlaceId'
 } as const
 
 export type LocationScalarFieldEnum = (typeof LocationScalarFieldEnum)[keyof typeof LocationScalarFieldEnum]
@@ -2216,6 +2305,7 @@ export type GlobalOmitConfig = {
   writingActivity?: Prisma.WritingActivityOmit
   character?: Prisma.CharacterOmit
   sceneCharacter?: Prisma.SceneCharacterOmit
+  characterPlace?: Prisma.CharacterPlaceOmit
   location?: Prisma.LocationOmit
   relationship?: Prisma.RelationshipOmit
   timelineEvent?: Prisma.TimelineEventOmit

@@ -1,6 +1,8 @@
 ﻿"use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { placeTypeLabels, placeStatusLabels, placeStatuses, matchesPlaceClassification } from "@/lib/place-classification";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArchiveRestore,
@@ -81,10 +83,18 @@ import {
 } from "@/lib/reader-preferences";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { CharacterFormDialog } from "@/components/studio/character-form-dialog";
+import { PlaceFormDialog } from "@/components/studio/place-form-dialog";
+import {
+  characterSortOptions,
+  defaultCharacterCatalogState,
+  filterAndSortCharacters,
+  parseCharacterCatalogState,
+  serializeCharacterCatalogState,
+  type CharacterCatalogState
+} from "@/lib/character-catalog";
 import {
   characterRoles as validCharacterRoles,
-  characterStatuses as validCharacterStatuses,
-  matchesCharacterClassification
+  characterStatuses as validCharacterStatuses
 } from "@/lib/character-metadata";
 import {
   relationshipDefinitions,
@@ -140,7 +150,12 @@ import {
   notionAutosyncIntervalMilliseconds,
   parseExportDefaults
 } from "@/lib/studio-settings";
-import { parseStudioRoute, routeForPage } from "@/lib/studio-routes";
+import {
+  parseStudioRoute,
+  routeForCharacter,
+  routeForPage,
+  routeForPlace
+} from "@/lib/studio-routes";
 import {
   defaultLibraryNavigationState,
   parseLibraryNavigationState,
@@ -190,11 +205,6 @@ type NotionAutosyncStatus = "idle" | "syncing" | "synced" | "error" | "remote-ch
 type CreateNovelInput = {
   title: string;
   synopsis: string;
-};
-
-type CreatePlaceInput = {
-  name: string;
-  notes: string;
 };
 
 type CreateNoteInput = {
@@ -250,6 +260,12 @@ const readerScopes = [
 const characterRoles = ["All roles", ...validCharacterRoles];
 const characterStatuses = ["All statuses", ...validCharacterStatuses];
 
+type CharacterDeleteImpact = {
+  linkedScenes: number;
+  linkedPlaces: number;
+  relationships: number;
+};
+
 function autosaveDelay(value: string) {
   if (value === "Manual only") return null;
   const seconds = Number.parseInt(value, 10);
@@ -281,6 +297,7 @@ function PrivateNovelStudioContent() {
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
   >(null);
   const [editingCharacter, setEditingCharacter] = React.useState<Character | null>(null);
+  const [editingPlace, setEditingPlace] = React.useState<Location | null>(null);
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved locally");
   const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
   const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
@@ -292,11 +309,9 @@ function PrivateNovelStudioContent() {
   const [resolvingNotionConflict, setResolvingNotionConflict] = React.useState(false);
   const [toast, setToast] = React.useState("");
   const [libraryQuery, setLibraryQuery] = React.useState("");
-  const [characterQuery, setCharacterQuery] = React.useState("");
-  const [characterRole, setCharacterRole] = React.useState("All roles");
-  const [characterStatus, setCharacterStatus] = React.useState("All statuses");
   const [placeQuery, setPlaceQuery] = React.useState("");
-  const [placeType, setPlaceType] = React.useState("All places");
+  const [placeType, setPlaceType] = React.useState("all");
+  const [placeStatus, setPlaceStatus] = React.useState("active");
   const [relationshipType, setRelationshipType] = React.useState("All relationships");
   const [relationshipCharacter, setRelationshipCharacter] = React.useState("All characters");
   const [showSpoilers, setShowSpoilers] = React.useState(false);
@@ -392,6 +407,10 @@ function PrivateNovelStudioContent() {
     () => parseLibraryNavigationState(searchParams),
     [searchParams]
   );
+  const characterCatalogState = React.useMemo(
+    () => parseCharacterCatalogState(searchParams),
+    [searchParams]
+  );
   const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
   const readerFocusToggleHandlerRef = React.useRef<(() => void) | null>(null);
   const editorDirtyRef = React.useRef(false);
@@ -420,6 +439,19 @@ function PrivateNovelStudioContent() {
       router.push(query ? `/library?${query}` : "/library");
     },
     [libraryNavigationState, router]
+  );
+
+  const updateCharacterCatalog = React.useCallback(
+    (changes: Partial<CharacterCatalogState>) => {
+      const nextState = { ...characterCatalogState, ...changes };
+      const query = serializeCharacterCatalogState(nextState).toString();
+      const charactersRoute = routeForCharacter(
+        currentNovel.id,
+        activeRoute?.page === "characters" ? activeRoute.characterId : undefined
+      );
+      router.replace(query ? `${charactersRoute}?${query}` : charactersRoute);
+    },
+    [activeRoute?.characterId, activeRoute?.page, characterCatalogState, currentNovel.id, router]
   );
 
   const showToast = React.useCallback((message: string) => {
@@ -521,6 +553,14 @@ function PrivateNovelStudioContent() {
     if (searchParams.toString() === canonicalQuery) return;
     router.replace(`${routeForPage("reader", currentNovel.id)}?${canonicalQuery}`);
   }, [activePage, currentNovel.id, dataStatus, readerNavigation, router, searchParams]);
+
+  React.useEffect(() => {
+    if (activePage !== "characters" || !currentNovel.id) return;
+    const canonicalQuery = serializeCharacterCatalogState(characterCatalogState).toString();
+    if (searchParams.toString() === canonicalQuery) return;
+    const charactersRoute = routeForCharacter(currentNovel.id, activeRoute?.characterId);
+    router.replace(canonicalQuery ? `${charactersRoute}?${canonicalQuery}` : charactersRoute);
+  }, [activePage, activeRoute?.characterId, characterCatalogState, currentNovel.id, router, searchParams]);
 
   React.useEffect(() => {
     const desktopMedia = window.matchMedia(
@@ -1232,30 +1272,6 @@ function PrivateNovelStudioContent() {
     [refreshStudioData, setActiveNovel, showToast]
   );
 
-  const createPlaceFromDialog = React.useCallback(
-    async (input: CreatePlaceInput) => {
-      const response = await fetch("/api/places", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          novelId: currentNovel.id,
-          name: input.name,
-          notes: input.notes
-        })
-      });
-
-      if (!response.ok) {
-        const details = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(details?.error ?? `Place creation failed with ${response.status}`);
-      }
-
-      await refreshStudioData(false);
-      router.push(routeForPage("places", currentNovel.id));
-      showToast("Place created in SQLite");
-    },
-    [currentNovel.id, refreshStudioData, router, showToast]
-  );
-
   const createNoteFromDialog = React.useCallback(
     async (input: CreateNoteInput) => {
       const response = await fetch("/api/notes", {
@@ -1318,6 +1334,50 @@ function PrivateNovelStudioContent() {
     await refreshStudioData(false);
     showToast("Relationship removed; characters were preserved");
   }, [refreshStudioData, showToast, studioData]);
+
+  const archiveCharacter = React.useCallback(async (character: Character) => {
+    const response = await fetch(
+      `/api/characters/${encodeURIComponent(character.id)}/archive`,
+      { method: "POST" }
+    );
+    if (!response.ok) {
+      const details = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(details?.error ?? "Could not archive character");
+    }
+    await refreshStudioData(false);
+    showToast("Character archived; story links were preserved");
+  }, [refreshStudioData, showToast]);
+
+  const restoreCharacter = React.useCallback(async (character: Character) => {
+    const response = await fetch(
+      `/api/characters/${encodeURIComponent(character.id)}/restore`,
+      { method: "POST" }
+    );
+    if (!response.ok) {
+      const details = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(details?.error ?? "Could not restore character");
+    }
+    await refreshStudioData(false);
+    updateCharacterCatalog({ status: "All statuses", showArchived: false });
+    showToast("Character restored");
+  }, [refreshStudioData, showToast, updateCharacterCatalog]);
+
+  const permanentlyDeleteCharacter = React.useCallback(async (
+    character: Character,
+    impact: CharacterDeleteImpact
+  ) => {
+    const response = await fetch(`/api/characters/${encodeURIComponent(character.id)}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmed: true, impact })
+    });
+    if (!response.ok) {
+      const details = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(details?.error ?? "Could not delete character");
+    }
+    await refreshStudioData(false);
+    showToast("Character permanently deleted");
+  }, [refreshStudioData, showToast]);
 
   const createTimelineEventFromDialog = React.useCallback(
     async (input: CreateTimelineEventInput) => {
@@ -1439,17 +1499,11 @@ function PrivateNovelStudioContent() {
     return right.updatedAt.localeCompare(left.updatedAt);
   });
 
-  const filteredCharacters = characters.filter((character) => {
-    const queryMatch =
-      character.name.toLowerCase().includes(characterQuery.toLowerCase()) ||
-      character.aliases.some((alias) => alias.toLowerCase().includes(characterQuery.toLowerCase()));
-    return queryMatch && matchesCharacterClassification(character, characterRole, characterStatus);
-  });
+  const filteredCharacters = filterAndSortCharacters(characters, characterCatalogState);
 
   const filteredPlaces = locations.filter((place) => {
     const queryMatch = place.name.toLowerCase().includes(placeQuery.toLowerCase());
-    const typeMatch = placeType === "All places" || place.type === placeType;
-    return queryMatch && typeMatch;
+    return queryMatch && matchesPlaceClassification(place, placeType, placeStatus);
   });
 
   const filteredRelationships = relationships.filter((relationship) => {
@@ -1686,19 +1740,48 @@ function PrivateNovelStudioContent() {
                 <CharactersScreen
                   data={scopedStudioData}
                   characters={filteredCharacters}
-                  query={characterQuery}
-                  role={characterRole}
-                  status={characterStatus}
+                  query={characterCatalogState.query}
+                  role={characterCatalogState.role}
+                  status={characterCatalogState.status}
+                  sort={characterCatalogState.sort}
+                  showArchived={characterCatalogState.showArchived}
                   roleOptions={characterRoles}
                   statusOptions={characterStatuses}
+                  sortOptions={characterSortOptions}
                   translate={translate}
-                  onQueryChange={setCharacterQuery}
-                  onRoleChange={setCharacterRole}
-                  onStatusChange={setCharacterStatus}
+                  selectedCharacterId={activeRoute?.characterId ?? null}
+                  characterHref={(characterId) => {
+                    const query = serializeCharacterCatalogState(characterCatalogState).toString();
+                    const route = routeForCharacter(currentNovel.id, characterId);
+                    return query ? `${route}?${query}` : route;
+                  }}
+                  onQueryChange={(query) => updateCharacterCatalog({ query })}
+                  onRoleChange={(role) => updateCharacterCatalog({ role })}
+                  onStatusChange={(status) =>
+                    updateCharacterCatalog({
+                      status,
+                      ...(status === "Archived" ? { showArchived: true } : {})
+                    })
+                  }
+                  onSortChange={(sort) =>
+                    updateCharacterCatalog({ sort: sort as CharacterCatalogState["sort"] })
+                  }
+                  onClearFilters={() => updateCharacterCatalog(defaultCharacterCatalogState)}
+                  onShowArchivedChange={(showArchived) =>
+                    updateCharacterCatalog({
+                      showArchived,
+                      ...(!showArchived && characterCatalogState.status === "Archived"
+                        ? { status: "All statuses" }
+                        : {})
+                    })
+                  }
                   onAddCharacter={() => { setEditingCharacter(null); setDialog("character"); }}
                   onEditCharacter={(character) => { setEditingCharacter(character); setDialog("character"); }}
-                  onOpenScene={(sceneId) => void openSceneInEditor(sceneId)}
                   onSceneLinksChanged={() => refreshStudioData(false)}
+                  onPlaceLinksChanged={() => refreshStudioData(false)}
+                  onArchiveCharacter={archiveCharacter}
+                  onRestoreCharacter={restoreCharacter}
+                  onDeleteCharacter={permanentlyDeleteCharacter}
                 />
               ) : null}
               {activePage === "places" ? (
@@ -1706,9 +1789,13 @@ function PrivateNovelStudioContent() {
                   places={filteredPlaces}
                   query={placeQuery}
                   type={placeType}
+                  status={placeStatus}
+                  onStatusChange={setPlaceStatus}
                   onQueryChange={setPlaceQuery}
                   onTypeChange={setPlaceType}
-                  onAddPlace={() => setDialog("place")}
+                  onAddPlace={() => { setEditingPlace(null); setDialog("place"); }}
+                  onEditPlace={(place) => { setEditingPlace(place); setDialog("place"); }}
+                  selectedPlaceId={activeRoute?.placeId ?? null}
                 />
               ) : null}
               {activePage === "relationships" ? (
@@ -1794,10 +1881,9 @@ function PrivateNovelStudioContent() {
       />
 
       <PrototypeDialog
-        dialog={dialog === "character" ? null : dialog}
+        dialog={dialog === "character" || dialog === "place" ? null : dialog}
         exportFilename={exportPreviewName}
         onCreateNovel={createNovelFromDialog}
-        onCreatePlace={createPlaceFromDialog}
         onCreateRelationship={createRelationshipFromDialog}
         onCreateEvent={createTimelineEventFromDialog}
         onCreateNote={createNoteFromDialog}
@@ -1807,6 +1893,24 @@ function PrivateNovelStudioContent() {
         }}
         onClose={() => setDialog(null)}
       />
+
+      {dialog === "place" ? (
+        <PlaceFormDialog
+          novelId={currentNovel.id}
+          place={editingPlace}
+          places={scopedStudioData.locations}
+          onClose={() => { setDialog(null); setEditingPlace(null); }}
+          onSaved={async (place) => {
+            setStudioData((current) => ({
+              ...current,
+              locations: [...current.locations.filter((item) => item.id !== place.id), place]
+            }));
+            router.push(routeForPlace(place.novelId, place.id));
+            showToast(editingPlace ? "Place updated in SQLite" : "Place created in SQLite");
+            await refreshStudioData(false);
+          }}
+        />
+      ) : null}
 
       <CharacterFormDialog
         open={dialog === "character"}
@@ -3207,26 +3311,36 @@ function PlacesScreen({
   places,
   query,
   type,
+  status,
+  onStatusChange,
   onQueryChange,
   onTypeChange,
-  onAddPlace
+  onAddPlace,
+  onEditPlace,
+  selectedPlaceId
 }: {
   places: Location[];
   query: string;
   type: string;
+  status: string;
+  onStatusChange: (value: string) => void;
   onQueryChange: (value: string) => void;
   onTypeChange: (value: string) => void;
   onAddPlace: () => void;
+  onEditPlace: (place: Location) => void;
+  selectedPlaceId: string | null;
 }) {
   const data = useStudioData();
-  const selectedPlace = places[0];
+  const selectedPlace = selectedPlaceId
+    ? data.locations.find((place) => place.id === selectedPlaceId)
+    : places[0];
   const charactersByPlace = new Map(
     data.locations.map((place) => [
       place.id,
       uniqueStrings(
-        data.timelineEvents
-          .filter((event) => event.locationId === place.id)
-          .flatMap((event) => event.characterIds.map((id) => characterName(id, data)))
+        data.characterPlaceLinks
+          .filter((link) => link.locationId === place.id)
+          .map((link) => characterName(link.characterId, data))
           .filter((name) => name !== "Unknown")
       )
     ])
@@ -3247,7 +3361,7 @@ function PlacesScreen({
       />
 
       <Card>
-        <CardContent className="grid gap-3 p-4 lg:grid-cols-[1fr_220px]">
+        <CardContent className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_220px_180px]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -3258,16 +3372,23 @@ function PlacesScreen({
             />
           </div>
           <Select value={type} onValueChange={onTypeChange}>
-            <SelectTrigger>
+            <SelectTrigger aria-label="Filter place type">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="All places">All places</SelectItem>
+              <SelectItem value="all">All types</SelectItem>
               {placeTypes.map((item) => (
                 <SelectItem key={item} value={item}>
-                  {item}
+                  {placeTypeLabels[item]}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={status} onValueChange={onStatusChange}>
+            <SelectTrigger aria-label="Filter place status"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {placeStatuses.map((code) => <SelectItem key={code} value={code}>{placeStatusLabels[code]}</SelectItem>)}
             </SelectContent>
           </Select>
         </CardContent>
@@ -3277,7 +3398,7 @@ function PlacesScreen({
         {places.length ? (
           <div className="grid gap-4 md:grid-cols-2">
             {places.map((place) => (
-              <Card key={place.id}>
+              <Card key={place.id} className="min-w-0">
                 <CardContent className="space-y-4 p-4">
                   <div className="flex items-start gap-3">
                     <div className="grid size-12 shrink-0 place-items-center rounded-md border bg-editor text-primary">
@@ -3286,10 +3407,12 @@ function PlacesScreen({
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold">{place.name}</h3>
+                          <h3 className="break-words font-semibold">
+                            <Link href={routeForPlace(place.novelId, place.id)} aria-current={selectedPlace?.id === place.id ? "page" : undefined} className="underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring">{place.name}</Link>
+                          </h3>
                           <p className="text-sm text-muted-foreground">{place.region}</p>
                         </div>
-                        <Badge variant="outline">{place.type}</Badge>
+                        <Badge variant="outline">{placeTypeLabels[place.type]}</Badge>
                       </div>
                     </div>
                   </div>
@@ -3297,7 +3420,9 @@ function PlacesScreen({
                     {place.description}
                   </p>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <FieldLine label="First appearance" value={place.firstAppearance} />
+                    <FieldLine label="First appearance" value={place.firstAppearance || "Not linked yet"} />
+                    <FieldLine label="Status" value={placeStatusLabels[place.status]} />
+                    <FieldLine label="Scene count" value={place.sceneCount ?? 0} />
                     <FieldLine
                       label="Characters"
                       value={
@@ -3325,36 +3450,45 @@ function PlacesScreen({
           />
         )}
 
-        {selectedPlace ? <PlaceDetailPanel place={selectedPlace} /> : null}
+        {selectedPlace ? <PlaceDetailPanel place={selectedPlace} onEdit={() => onEditPlace(selectedPlace)} /> : null}
       </div>
     </div>
   );
 }
 
-function PlaceDetailPanel({ place }: { place: Location }) {
+function PlaceDetailPanel({ place, onEdit }: { place: Location; onEdit: () => void }) {
   const data = useStudioData();
+  const parent = data.locations.find((candidate) => candidate.id === place.parentPlaceId && candidate.novelId === place.novelId);
   const linkedCharacters = uniqueStrings(
-    data.timelineEvents
-      .filter((event) => event.locationId === place.id)
-      .flatMap((event) => event.characterIds.map((id) => characterName(id, data)))
+    data.characterPlaceLinks
+      .filter((link) => link.locationId === place.id)
+      .map((link) => characterName(link.characterId, data))
       .filter((name) => name !== "Unknown")
   );
 
   return (
-    <Card className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
+    <Card className="min-w-0 break-words xl:sticky xl:top-24">
       <CardHeader>
-        <CardTitle>{place.name}</CardTitle>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <CardTitle className="min-w-0">{place.name}</CardTitle>
+          <Button type="button" variant="outline" size="sm" onClick={onEdit}>Edit place</Button>
+        </div>
         <CardDescription>
-          {place.type} · {place.region}
+          {placeTypeLabels[place.type]} · {place.region}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <FieldLine label="Status" value={placeStatusLabels[place.status]} />
         <FieldLine label="Description" value={place.description} />
         <FieldLine label="Region" value={place.region} />
         <FieldLine label="Importance" value={place.importance} />
-        <FieldLine label="Visual notes" value={place.visualNotes} />
-        <FieldLine label="Rules of the place" value={place.rules} />
-        <FieldLine label="First appearance" value={place.firstAppearance} />
+        <FieldLine label="Visual description" value={place.visualNotes} />
+        <FieldLine label="Atmosphere" value={place.atmosphere} />
+        <FieldLine label="Rules / Characteristics" value={place.rules} />
+        <FieldLine label="Notes" value={<span className="whitespace-pre-wrap">{place.notes}</span>} />
+        <FieldLine label="Parent place" value={parent ? <Link href={routeForPlace(parent.novelId, parent.id)} className="text-primary hover:underline">{parent.name}</Link> : place.parentPlaceId ? "Parent place unavailable" : "None"} />
+        <FieldLine label="First appearance" value={place.firstAppearance || "Not linked yet"} />
+        <FieldLine label="Scene count" value={place.sceneCount ?? 0} />
         <FieldLine
           label="Linked scenes"
           value={data.scenes
@@ -4127,7 +4261,6 @@ function PrototypeDialog({
   dialog,
   exportFilename,
   onCreateNovel,
-  onCreatePlace,
   onCreateRelationship,
   onCreateEvent,
   onCreateNote,
@@ -4137,7 +4270,6 @@ function PrototypeDialog({
   dialog:
     | null
     | "novel"
-    | "place"
     | "relationship"
     | "event"
     | "note"
@@ -4145,7 +4277,6 @@ function PrototypeDialog({
     | "toc";
   exportFilename: string;
   onCreateNovel: (input: CreateNovelInput) => Promise<void>;
-  onCreatePlace: (input: CreatePlaceInput) => Promise<void>;
   onCreateRelationship: (input: CreateRelationshipInput) => Promise<void>;
   onCreateEvent: (input: CreateTimelineEventInput) => Promise<void>;
   onCreateNote: (input: CreateNoteInput) => Promise<void>;
@@ -4181,10 +4312,6 @@ function PrototypeDialog({
       title: "Create or edit story item",
       description:
         "Prototype form for adding a novel, volume, chapter, or scene to the local outline."
-    },
-    place: {
-      title: "Add place",
-      description: "Add a location with rules, visual notes, and first appearance."
     },
     relationship: {
       title: "Add relationship",
@@ -4254,16 +4381,6 @@ function PrototypeDialog({
         await onCreateNovel({
           title: itemTitle.trim(),
           synopsis: itemNotes.trim()
-        });
-      } else if (dialog === "place") {
-        if (!itemTitle.trim()) {
-          setDialogError("Name is required.");
-          setSaving(false);
-          return;
-        }
-        await onCreatePlace({
-          name: itemTitle.trim(),
-          notes: itemNotes.trim()
         });
       } else if (dialog === "relationship") {
         if (
