@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createCharacter } from "@/lib/db/studio";
 import { validateCharacterMetadata } from "@/lib/character-metadata";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ error: "Cross-origin mutation rejected" }, { status: 403 });
+  }
   const body = (await request.json()) as Record<string, unknown>;
 
   if (typeof body.novelId !== "string" || body.novelId.trim().length === 0) {

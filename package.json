@@ -8,6 +8,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test:routes": "node --test tests/studio-routes.test.mjs",
+    "test:places": "node --test tests/places.test.mjs",
     "test:repository-hygiene": "node --test tests/repository-hygiene.test.mjs",
     "test:dev-fixtures": "node --test tests/dev-fixtures.test.mjs",
     "setup:dev": "node scripts/setup-dev.mjs",
@@ -15,6 +16,8 @@
     "qa:fixtures": "node scripts/check-visual-fixtures.mjs",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:migrate-places": "node scripts/migrate-place-metadata.mjs",
+    "db:migrate-place-classification": "node scripts/migrate-place-classification.mjs",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio"
   },

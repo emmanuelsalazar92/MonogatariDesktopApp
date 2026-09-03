@@ -242,10 +242,13 @@ export const characters: Character[] = [
     fear: "Que Mika pague el precio de sus decisiones.",
     secret: "EscuchÃ³ la campana azul antes de llegar a Seiryu.",
     notes: "Su curiosidad debe causar problemas, pero tambiÃ©n resolverlos.",
-    firstAppearance: "Prologue",
+    firstAppearance: "Volume 1: El eco detrás de la puerta · Chapter 1: La puerta que no debía abrirse · 01 — Scene 1: Llegada a la Academia Seiryu",
+    firstAppearanceOrder: 0,
     status: "Active",
     narrativeStatus: "",
     image: "",
+    updatedAt: "2026-06-28T10:00:00.000Z",
+    archivedAt: null,
     scenes: 18
   },
   {
@@ -263,10 +266,13 @@ export const characters: Character[] = [
     fear: "Convertirse en la siguiente voz atrapada en la campana.",
     secret: "Puede leer sÃ­mbolos que no existen para otros estudiantes.",
     notes: "Romance lento con Akira, siempre desde tensiÃ³n de confianza.",
-    firstAppearance: "Chapter 1",
+    firstAppearance: "Volume 1: El eco detrás de la puerta · Chapter 1: La puerta que no debía abrirse · 01 — Scene 1: Llegada a la Academia Seiryu",
+    firstAppearanceOrder: 0,
     status: "Active",
     narrativeStatus: "",
     image: "",
+    updatedAt: "2026-06-27T10:00:00.000Z",
+    archivedAt: null,
     scenes: 16
   },
   {
@@ -284,10 +290,13 @@ export const characters: Character[] = [
     fear: "Ser invisible para las personas que quiere ayudar.",
     secret: "El mapa de Seiryu cambia cuando ella lo toca.",
     notes: "Funciona como brÃºjula emocional y lÃ³gica del equipo.",
-    firstAppearance: "Chapter 2",
+    firstAppearance: "Volume 1: El eco detrás de la puerta · Chapter 2: El mapa invisible · 01 — Scene 1: El mapa invisible",
+    firstAppearanceOrder: 1,
     status: "Active",
     narrativeStatus: "Secondary",
     image: "",
+    updatedAt: "2026-06-26T10:00:00.000Z",
+    archivedAt: null,
     scenes: 9
   },
   {
@@ -305,10 +314,13 @@ export const characters: Character[] = [
     fear: "Que los estudiantes descubran quÃ© ocurriÃ³ hace diez aÃ±os.",
     secret: "Ã‰l cerrÃ³ la Torre Sellada la Ãºltima vez.",
     notes: "Debe sentirse Ãºtil y peligroso en la misma escena.",
-    firstAppearance: "Chapter 1",
+    firstAppearance: "",
+    firstAppearanceOrder: null,
     status: "Active",
     narrativeStatus: "Spoiler",
     image: "",
+    updatedAt: "2026-06-25T10:00:00.000Z",
+    archivedAt: null,
     scenes: 11
   }
 ];
@@ -316,9 +328,10 @@ export const characters: Character[] = [
 export const locations: Location[] = [
   {
     id: "place-academia",
+    status: "active", atmosphere: "", parentPlaceId: null, revision: 0,
     novelId: "novel-eco-azul",
     name: "Academia Seiryu",
-    type: "School",
+    type: "building",
     region: "MontaÃ±as del norte",
     description:
       "Internado antiguo rodeado por niebla, con aulas de madera clara y corredores que cambian levemente despuÃ©s de medianoche.",
@@ -330,9 +343,10 @@ export const locations: Location[] = [
   },
   {
     id: "place-biblioteca",
+    status: "active", atmosphere: "", parentPlaceId: null, revision: 0,
     novelId: "novel-eco-azul",
     name: "Biblioteca Antigua",
-    type: "Temple",
+    type: "building",
     region: "Ala oeste",
     description:
       "Biblioteca circular con estantes mÃ³viles y un catÃ¡logo escrito en tinta que aparece bajo luz azul.",
@@ -344,9 +358,10 @@ export const locations: Location[] = [
   },
   {
     id: "place-torre",
+    status: "active", atmosphere: "", parentPlaceId: null, revision: 0,
     novelId: "novel-eco-azul",
     name: "Torre Sellada",
-    type: "Dungeon",
+    type: "other",
     region: "Patio norte",
     description:
       "Torre sin puerta visible desde afuera. Por dentro contiene escaleras imposibles y ecos de voces familiares.",
@@ -358,9 +373,10 @@ export const locations: Location[] = [
   },
   {
     id: "place-dormitorio",
+    status: "active", atmosphere: "", parentPlaceId: null, revision: 0,
     novelId: "novel-eco-azul",
     name: "Dormitorio Este",
-    type: "House",
+    type: "building",
     region: "Ala este",
     description:
       "Residencia estudiantil luminosa, con cocineta comÃºn y ventanas hacia el bosque.",

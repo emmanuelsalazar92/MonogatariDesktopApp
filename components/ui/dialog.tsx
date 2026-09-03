@@ -27,20 +27,20 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { closeDisabled?: boolean }
+>(({ className, children, closeDisabled = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border/70 bg-popover p-5 text-popover-foreground shadow-lift duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "dialog-surface fixed left-1/2 top-1/2 z-[51] grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border/70 p-5 text-popover-foreground shadow-lift",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full bg-background p-1.5 text-muted-foreground ring-offset-background transition-all hover:bg-secondary/72 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+      <DialogPrimitive.Close disabled={closeDisabled} className="absolute right-4 top-4 rounded-full bg-background p-1.5 text-muted-foreground ring-offset-background transition-all hover:bg-secondary/72 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
         <X className="size-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

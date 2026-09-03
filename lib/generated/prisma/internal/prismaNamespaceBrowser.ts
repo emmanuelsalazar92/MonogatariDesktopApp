@@ -60,6 +60,7 @@ export const ModelName = {
   WritingActivity: 'WritingActivity',
   Character: 'Character',
   SceneCharacter: 'SceneCharacter',
+  CharacterPlace: 'CharacterPlace',
   Location: 'Location',
   Relationship: 'Relationship',
   TimelineEvent: 'TimelineEvent',
@@ -197,9 +198,10 @@ export const CharacterScalarFieldEnum = {
   fear: 'fear',
   secret: 'secret',
   notes: 'notes',
-  firstAppearance: 'firstAppearance',
   status: 'status',
-  image: 'image'
+  image: 'image',
+  updatedAt: 'updatedAt',
+  archivedAt: 'archivedAt'
 } as const
 
 export type CharacterScalarFieldEnum = (typeof CharacterScalarFieldEnum)[keyof typeof CharacterScalarFieldEnum]
@@ -213,6 +215,15 @@ export const SceneCharacterScalarFieldEnum = {
 export type SceneCharacterScalarFieldEnum = (typeof SceneCharacterScalarFieldEnum)[keyof typeof SceneCharacterScalarFieldEnum]
 
 
+export const CharacterPlaceScalarFieldEnum = {
+  characterId: 'characterId',
+  locationId: 'locationId',
+  relationshipType: 'relationshipType'
+} as const
+
+export type CharacterPlaceScalarFieldEnum = (typeof CharacterPlaceScalarFieldEnum)[keyof typeof CharacterPlaceScalarFieldEnum]
+
+
 export const LocationScalarFieldEnum = {
   id: 'id',
   novelId: 'novelId',
@@ -224,7 +235,11 @@ export const LocationScalarFieldEnum = {
   visualNotes: 'visualNotes',
   rules: 'rules',
   firstAppearance: 'firstAppearance',
-  notes: 'notes'
+  notes: 'notes',
+  status: 'status',
+  atmosphere: 'atmosphere',
+  revision: 'revision',
+  parentPlaceId: 'parentPlaceId'
 } as const
 
 export type LocationScalarFieldEnum = (typeof LocationScalarFieldEnum)[keyof typeof LocationScalarFieldEnum]

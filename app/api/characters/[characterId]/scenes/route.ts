@@ -5,6 +5,7 @@ import {
   SceneCharacterConflictError,
   unlinkCharacterScene
 } from "@/lib/db/studio";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 function readSceneId(body: Record<string, unknown>) {
   return typeof body.sceneId === "string" ? body.sceneId.trim() : "";
@@ -26,6 +27,9 @@ export async function GET(_request: Request, context: { params: Promise<{ charac
 }
 
 export async function POST(request: Request, context: { params: Promise<{ characterId: string }> }) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ error: "Cross-origin mutation rejected" }, { status: 403 });
+  }
   const sceneId = readSceneId((await request.json()) as Record<string, unknown>);
   if (!sceneId) return NextResponse.json({ error: "sceneId is required" }, { status: 400 });
   try {
@@ -37,6 +41,9 @@ export async function POST(request: Request, context: { params: Promise<{ charac
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ characterId: string }> }) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ error: "Cross-origin mutation rejected" }, { status: 403 });
+  }
   const sceneId = readSceneId((await request.json()) as Record<string, unknown>);
   if (!sceneId) return NextResponse.json({ error: "sceneId is required" }, { status: 400 });
   try {

@@ -140,7 +140,7 @@ async function main() {
         id: "place-academia",
         novelId: "novel-eco-azul",
         name: "Academia Seiryu",
-        type: "School",
+        type: "building",
         region: "Montanas del norte",
         description:
           "Internado antiguo rodeado por niebla, con aulas de madera clara y corredores que cambian levemente despues de medianoche.",
@@ -153,7 +153,7 @@ async function main() {
         id: "place-biblioteca",
         novelId: "novel-eco-azul",
         name: "Biblioteca Antigua",
-        type: "Temple",
+        type: "building",
         region: "Ala oeste",
         description:
           "Biblioteca circular con estantes moviles y un catalogo escrito en tinta que aparece bajo luz azul.",
@@ -166,7 +166,7 @@ async function main() {
         id: "place-torre",
         novelId: "novel-eco-azul",
         name: "Torre Sellada",
-        type: "Dungeon",
+        type: "other",
         region: "Patio norte",
         description:
           "Torre sin puerta visible desde afuera. Por dentro contiene escaleras imposibles y ecos de voces familiares.",
@@ -225,8 +225,7 @@ async function main() {
         fear: "Que Mika pague el precio de sus decisiones.",
         secret: "Escucho la campana azul antes de llegar a Seiryu.",
         notes: "Su curiosidad debe causar problemas, pero tambien resolverlos.",
-        firstAppearance: "Prologue",
-        status: "Active"
+          status: "Active"
       },
       {
         id: "char-reina",
@@ -242,8 +241,7 @@ async function main() {
         fear: "Convertirse en la siguiente voz atrapada en la campana.",
         secret: "Puede leer simbolos que no existen para otros estudiantes.",
         notes: "Romance lento con Akira, siempre desde tension de confianza.",
-        firstAppearance: "Chapter 1",
-        status: "Active"
+          status: "Active"
       },
       {
         id: "char-mika",
@@ -254,8 +252,7 @@ async function main() {
         role: "Support",
         personality: "Observadora, metodica y mas valiente de lo que admite.",
         goal: "Proteger a Akira usando logica donde el usa impulso.",
-        firstAppearance: "Chapter 2",
-        status: "Secondary"
+          status: "Secondary"
       },
       {
         id: "char-kuroda",
@@ -266,8 +263,7 @@ async function main() {
         role: "Mentor / Suspect",
         personality: "Calmo, evasivo, amable solo cuando le conviene.",
         goal: "Administrar el secreto de la academia hasta elegir heredero.",
-        firstAppearance: "Chapter 1",
-        status: "Spoiler"
+          status: "Spoiler"
       }
     ]
   });

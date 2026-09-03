@@ -38,9 +38,10 @@ export type CharacterMinAggregateOutputType = {
   fear: string | null
   secret: string | null
   notes: string | null
-  firstAppearance: string | null
   status: string | null
   image: string | null
+  updatedAt: Date | null
+  archivedAt: Date | null
 }
 
 export type CharacterMaxAggregateOutputType = {
@@ -57,9 +58,10 @@ export type CharacterMaxAggregateOutputType = {
   fear: string | null
   secret: string | null
   notes: string | null
-  firstAppearance: string | null
   status: string | null
   image: string | null
+  updatedAt: Date | null
+  archivedAt: Date | null
 }
 
 export type CharacterCountAggregateOutputType = {
@@ -76,9 +78,10 @@ export type CharacterCountAggregateOutputType = {
   fear: number
   secret: number
   notes: number
-  firstAppearance: number
   status: number
   image: number
+  updatedAt: number
+  archivedAt: number
   _all: number
 }
 
@@ -97,9 +100,10 @@ export type CharacterMinAggregateInputType = {
   fear?: true
   secret?: true
   notes?: true
-  firstAppearance?: true
   status?: true
   image?: true
+  updatedAt?: true
+  archivedAt?: true
 }
 
 export type CharacterMaxAggregateInputType = {
@@ -116,9 +120,10 @@ export type CharacterMaxAggregateInputType = {
   fear?: true
   secret?: true
   notes?: true
-  firstAppearance?: true
   status?: true
   image?: true
+  updatedAt?: true
+  archivedAt?: true
 }
 
 export type CharacterCountAggregateInputType = {
@@ -135,9 +140,10 @@ export type CharacterCountAggregateInputType = {
   fear?: true
   secret?: true
   notes?: true
-  firstAppearance?: true
   status?: true
   image?: true
+  updatedAt?: true
+  archivedAt?: true
   _all?: true
 }
 
@@ -227,9 +233,10 @@ export type CharacterGroupByOutputType = {
   fear: string
   secret: string
   notes: string
-  firstAppearance: string
   status: string
   image: string
+  updatedAt: Date
+  archivedAt: Date | null
   _count: CharacterCountAggregateOutputType | null
   _min: CharacterMinAggregateOutputType | null
   _max: CharacterMaxAggregateOutputType | null
@@ -267,13 +274,15 @@ export type CharacterWhereInput = {
   fear?: Prisma.StringFilter<"Character"> | string
   secret?: Prisma.StringFilter<"Character"> | string
   notes?: Prisma.StringFilter<"Character"> | string
-  firstAppearance?: Prisma.StringFilter<"Character"> | string
   status?: Prisma.StringFilter<"Character"> | string
   image?: Prisma.StringFilter<"Character"> | string
+  updatedAt?: Prisma.DateTimeFilter<"Character"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Character"> | Date | string | null
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   outgoingRelationships?: Prisma.RelationshipListRelationFilter
   incomingRelationships?: Prisma.RelationshipListRelationFilter
   sceneLinks?: Prisma.SceneCharacterListRelationFilter
+  placeLinks?: Prisma.CharacterPlaceListRelationFilter
 }
 
 export type CharacterOrderByWithRelationInput = {
@@ -290,13 +299,15 @@ export type CharacterOrderByWithRelationInput = {
   fear?: Prisma.SortOrder
   secret?: Prisma.SortOrder
   notes?: Prisma.SortOrder
-  firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   novel?: Prisma.NovelOrderByWithRelationInput
   outgoingRelationships?: Prisma.RelationshipOrderByRelationAggregateInput
   incomingRelationships?: Prisma.RelationshipOrderByRelationAggregateInput
   sceneLinks?: Prisma.SceneCharacterOrderByRelationAggregateInput
+  placeLinks?: Prisma.CharacterPlaceOrderByRelationAggregateInput
 }
 
 export type CharacterWhereUniqueInput = Prisma.AtLeast<{
@@ -316,13 +327,15 @@ export type CharacterWhereUniqueInput = Prisma.AtLeast<{
   fear?: Prisma.StringFilter<"Character"> | string
   secret?: Prisma.StringFilter<"Character"> | string
   notes?: Prisma.StringFilter<"Character"> | string
-  firstAppearance?: Prisma.StringFilter<"Character"> | string
   status?: Prisma.StringFilter<"Character"> | string
   image?: Prisma.StringFilter<"Character"> | string
+  updatedAt?: Prisma.DateTimeFilter<"Character"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Character"> | Date | string | null
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   outgoingRelationships?: Prisma.RelationshipListRelationFilter
   incomingRelationships?: Prisma.RelationshipListRelationFilter
   sceneLinks?: Prisma.SceneCharacterListRelationFilter
+  placeLinks?: Prisma.CharacterPlaceListRelationFilter
 }, "id">
 
 export type CharacterOrderByWithAggregationInput = {
@@ -339,9 +352,10 @@ export type CharacterOrderByWithAggregationInput = {
   fear?: Prisma.SortOrder
   secret?: Prisma.SortOrder
   notes?: Prisma.SortOrder
-  firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.CharacterCountOrderByAggregateInput
   _max?: Prisma.CharacterMaxOrderByAggregateInput
   _min?: Prisma.CharacterMinOrderByAggregateInput
@@ -364,9 +378,10 @@ export type CharacterScalarWhereWithAggregatesInput = {
   fear?: Prisma.StringWithAggregatesFilter<"Character"> | string
   secret?: Prisma.StringWithAggregatesFilter<"Character"> | string
   notes?: Prisma.StringWithAggregatesFilter<"Character"> | string
-  firstAppearance?: Prisma.StringWithAggregatesFilter<"Character"> | string
   status?: Prisma.StringWithAggregatesFilter<"Character"> | string
   image?: Prisma.StringWithAggregatesFilter<"Character"> | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Character"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Character"> | Date | string | null
 }
 
 export type CharacterCreateInput = {
@@ -382,13 +397,15 @@ export type CharacterCreateInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateInput = {
@@ -405,12 +422,14 @@ export type CharacterUncheckedCreateInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUpdateInput = {
@@ -426,13 +445,15 @@ export type CharacterUpdateInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateInput = {
@@ -449,12 +470,14 @@ export type CharacterUncheckedUpdateInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterCreateManyInput = {
@@ -471,9 +494,10 @@ export type CharacterCreateManyInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
 }
 
 export type CharacterUpdateManyMutationInput = {
@@ -489,9 +513,10 @@ export type CharacterUpdateManyMutationInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type CharacterUncheckedUpdateManyInput = {
@@ -508,9 +533,10 @@ export type CharacterUncheckedUpdateManyInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type CharacterListRelationFilter = {
@@ -537,9 +563,10 @@ export type CharacterCountOrderByAggregateInput = {
   fear?: Prisma.SortOrder
   secret?: Prisma.SortOrder
   notes?: Prisma.SortOrder
-  firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
 }
 
 export type CharacterMaxOrderByAggregateInput = {
@@ -556,9 +583,10 @@ export type CharacterMaxOrderByAggregateInput = {
   fear?: Prisma.SortOrder
   secret?: Prisma.SortOrder
   notes?: Prisma.SortOrder
-  firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
 }
 
 export type CharacterMinOrderByAggregateInput = {
@@ -575,9 +603,10 @@ export type CharacterMinOrderByAggregateInput = {
   fear?: Prisma.SortOrder
   secret?: Prisma.SortOrder
   notes?: Prisma.SortOrder
-  firstAppearance?: Prisma.SortOrder
   status?: Prisma.SortOrder
   image?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
 }
 
 export type CharacterScalarRelationFilter = {
@@ -627,6 +656,10 @@ export type CharacterUncheckedUpdateManyWithoutNovelNestedInput = {
   deleteMany?: Prisma.CharacterScalarWhereInput | Prisma.CharacterScalarWhereInput[]
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 export type CharacterCreateNestedOneWithoutSceneLinksInput = {
   create?: Prisma.XOR<Prisma.CharacterCreateWithoutSceneLinksInput, Prisma.CharacterUncheckedCreateWithoutSceneLinksInput>
   connectOrCreate?: Prisma.CharacterCreateOrConnectWithoutSceneLinksInput
@@ -639,6 +672,20 @@ export type CharacterUpdateOneRequiredWithoutSceneLinksNestedInput = {
   upsert?: Prisma.CharacterUpsertWithoutSceneLinksInput
   connect?: Prisma.CharacterWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterUpdateToOneWithWhereWithoutSceneLinksInput, Prisma.CharacterUpdateWithoutSceneLinksInput>, Prisma.CharacterUncheckedUpdateWithoutSceneLinksInput>
+}
+
+export type CharacterCreateNestedOneWithoutPlaceLinksInput = {
+  create?: Prisma.XOR<Prisma.CharacterCreateWithoutPlaceLinksInput, Prisma.CharacterUncheckedCreateWithoutPlaceLinksInput>
+  connectOrCreate?: Prisma.CharacterCreateOrConnectWithoutPlaceLinksInput
+  connect?: Prisma.CharacterWhereUniqueInput
+}
+
+export type CharacterUpdateOneRequiredWithoutPlaceLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.CharacterCreateWithoutPlaceLinksInput, Prisma.CharacterUncheckedCreateWithoutPlaceLinksInput>
+  connectOrCreate?: Prisma.CharacterCreateOrConnectWithoutPlaceLinksInput
+  upsert?: Prisma.CharacterUpsertWithoutPlaceLinksInput
+  connect?: Prisma.CharacterWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CharacterUpdateToOneWithWhereWithoutPlaceLinksInput, Prisma.CharacterUpdateWithoutPlaceLinksInput>, Prisma.CharacterUncheckedUpdateWithoutPlaceLinksInput>
 }
 
 export type CharacterCreateNestedOneWithoutOutgoingRelationshipsInput = {
@@ -682,12 +729,14 @@ export type CharacterCreateWithoutNovelInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutNovelInput = {
@@ -703,12 +752,14 @@ export type CharacterUncheckedCreateWithoutNovelInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutNovelInput = {
@@ -753,9 +804,10 @@ export type CharacterScalarWhereInput = {
   fear?: Prisma.StringFilter<"Character"> | string
   secret?: Prisma.StringFilter<"Character"> | string
   notes?: Prisma.StringFilter<"Character"> | string
-  firstAppearance?: Prisma.StringFilter<"Character"> | string
   status?: Prisma.StringFilter<"Character"> | string
   image?: Prisma.StringFilter<"Character"> | string
+  updatedAt?: Prisma.DateTimeFilter<"Character"> | Date | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Character"> | Date | string | null
 }
 
 export type CharacterCreateWithoutSceneLinksInput = {
@@ -771,12 +823,14 @@ export type CharacterCreateWithoutSceneLinksInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
+  placeLinks?: Prisma.CharacterPlaceCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutSceneLinksInput = {
@@ -793,11 +847,13 @@ export type CharacterUncheckedCreateWithoutSceneLinksInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutSceneLinksInput = {
@@ -829,12 +885,14 @@ export type CharacterUpdateWithoutSceneLinksInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutSceneLinksInput = {
@@ -851,11 +909,121 @@ export type CharacterUncheckedUpdateWithoutSceneLinksInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedUpdateManyWithoutCharacterNestedInput
+}
+
+export type CharacterCreateWithoutPlaceLinksInput = {
+  id: string
+  name: string
+  alias?: string
+  age?: string
+  role?: string
+  appearance?: string
+  personality?: string
+  wayOfSpeaking?: string
+  goal?: string
+  fear?: string
+  secret?: string
+  notes?: string
+  status?: string
+  image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
+  outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
+  incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
+}
+
+export type CharacterUncheckedCreateWithoutPlaceLinksInput = {
+  id: string
+  novelId: string
+  name: string
+  alias?: string
+  age?: string
+  role?: string
+  appearance?: string
+  personality?: string
+  wayOfSpeaking?: string
+  goal?: string
+  fear?: string
+  secret?: string
+  notes?: string
+  status?: string
+  image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
+  outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
+  incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
+}
+
+export type CharacterCreateOrConnectWithoutPlaceLinksInput = {
+  where: Prisma.CharacterWhereUniqueInput
+  create: Prisma.XOR<Prisma.CharacterCreateWithoutPlaceLinksInput, Prisma.CharacterUncheckedCreateWithoutPlaceLinksInput>
+}
+
+export type CharacterUpsertWithoutPlaceLinksInput = {
+  update: Prisma.XOR<Prisma.CharacterUpdateWithoutPlaceLinksInput, Prisma.CharacterUncheckedUpdateWithoutPlaceLinksInput>
+  create: Prisma.XOR<Prisma.CharacterCreateWithoutPlaceLinksInput, Prisma.CharacterUncheckedCreateWithoutPlaceLinksInput>
+  where?: Prisma.CharacterWhereInput
+}
+
+export type CharacterUpdateToOneWithWhereWithoutPlaceLinksInput = {
+  where?: Prisma.CharacterWhereInput
+  data: Prisma.XOR<Prisma.CharacterUpdateWithoutPlaceLinksInput, Prisma.CharacterUncheckedUpdateWithoutPlaceLinksInput>
+}
+
+export type CharacterUpdateWithoutPlaceLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  alias?: Prisma.StringFieldUpdateOperationsInput | string
+  age?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  appearance?: Prisma.StringFieldUpdateOperationsInput | string
+  personality?: Prisma.StringFieldUpdateOperationsInput | string
+  wayOfSpeaking?: Prisma.StringFieldUpdateOperationsInput | string
+  goal?: Prisma.StringFieldUpdateOperationsInput | string
+  fear?: Prisma.StringFieldUpdateOperationsInput | string
+  secret?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
+  outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
+  incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
+}
+
+export type CharacterUncheckedUpdateWithoutPlaceLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  alias?: Prisma.StringFieldUpdateOperationsInput | string
+  age?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.StringFieldUpdateOperationsInput | string
+  appearance?: Prisma.StringFieldUpdateOperationsInput | string
+  personality?: Prisma.StringFieldUpdateOperationsInput | string
+  wayOfSpeaking?: Prisma.StringFieldUpdateOperationsInput | string
+  goal?: Prisma.StringFieldUpdateOperationsInput | string
+  fear?: Prisma.StringFieldUpdateOperationsInput | string
+  secret?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
+  incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
+  sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterCreateWithoutOutgoingRelationshipsInput = {
@@ -871,12 +1039,14 @@ export type CharacterCreateWithoutOutgoingRelationshipsInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   incomingRelationships?: Prisma.RelationshipCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutOutgoingRelationshipsInput = {
@@ -893,11 +1063,13 @@ export type CharacterUncheckedCreateWithoutOutgoingRelationshipsInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   incomingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutToCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutOutgoingRelationshipsInput = {
@@ -918,12 +1090,14 @@ export type CharacterCreateWithoutIncomingRelationshipsInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   novel: Prisma.NovelCreateNestedOneWithoutCharactersInput
   outgoingRelationships?: Prisma.RelationshipCreateNestedManyWithoutFromCharacterInput
   sceneLinks?: Prisma.SceneCharacterCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterUncheckedCreateWithoutIncomingRelationshipsInput = {
@@ -940,11 +1114,13 @@ export type CharacterUncheckedCreateWithoutIncomingRelationshipsInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutFromCharacterInput
   sceneLinks?: Prisma.SceneCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedCreateNestedManyWithoutCharacterInput
 }
 
 export type CharacterCreateOrConnectWithoutIncomingRelationshipsInput = {
@@ -976,12 +1152,14 @@ export type CharacterUpdateWithoutOutgoingRelationshipsInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutOutgoingRelationshipsInput = {
@@ -998,11 +1176,13 @@ export type CharacterUncheckedUpdateWithoutOutgoingRelationshipsInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUpsertWithoutIncomingRelationshipsInput = {
@@ -1029,12 +1209,14 @@ export type CharacterUpdateWithoutIncomingRelationshipsInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novel?: Prisma.NovelUpdateOneRequiredWithoutCharactersNestedInput
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutIncomingRelationshipsInput = {
@@ -1051,11 +1233,13 @@ export type CharacterUncheckedUpdateWithoutIncomingRelationshipsInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterCreateManyNovelInput = {
@@ -1071,9 +1255,10 @@ export type CharacterCreateManyNovelInput = {
   fear?: string
   secret?: string
   notes?: string
-  firstAppearance?: string
   status?: string
   image?: string
+  updatedAt?: Date | string
+  archivedAt?: Date | string | null
 }
 
 export type CharacterUpdateWithoutNovelInput = {
@@ -1089,12 +1274,14 @@ export type CharacterUpdateWithoutNovelInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   outgoingRelationships?: Prisma.RelationshipUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateWithoutNovelInput = {
@@ -1110,12 +1297,14 @@ export type CharacterUncheckedUpdateWithoutNovelInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   outgoingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutFromCharacterNestedInput
   incomingRelationships?: Prisma.RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput
   sceneLinks?: Prisma.SceneCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  placeLinks?: Prisma.CharacterPlaceUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
 export type CharacterUncheckedUpdateManyWithoutNovelInput = {
@@ -1131,9 +1320,10 @@ export type CharacterUncheckedUpdateManyWithoutNovelInput = {
   fear?: Prisma.StringFieldUpdateOperationsInput | string
   secret?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.StringFieldUpdateOperationsInput | string
-  firstAppearance?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   image?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -1145,12 +1335,14 @@ export type CharacterCountOutputType = {
   outgoingRelationships: number
   incomingRelationships: number
   sceneLinks: number
+  placeLinks: number
 }
 
 export type CharacterCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   outgoingRelationships?: boolean | CharacterCountOutputTypeCountOutgoingRelationshipsArgs
   incomingRelationships?: boolean | CharacterCountOutputTypeCountIncomingRelationshipsArgs
   sceneLinks?: boolean | CharacterCountOutputTypeCountSceneLinksArgs
+  placeLinks?: boolean | CharacterCountOutputTypeCountPlaceLinksArgs
 }
 
 /**
@@ -1184,6 +1376,13 @@ export type CharacterCountOutputTypeCountSceneLinksArgs<ExtArgs extends runtime.
   where?: Prisma.SceneCharacterWhereInput
 }
 
+/**
+ * CharacterCountOutputType without action
+ */
+export type CharacterCountOutputTypeCountPlaceLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CharacterPlaceWhereInput
+}
+
 
 export type CharacterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1199,13 +1398,15 @@ export type CharacterSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   fear?: boolean
   secret?: boolean
   notes?: boolean
-  firstAppearance?: boolean
   status?: boolean
   image?: boolean
+  updatedAt?: boolean
+  archivedAt?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   outgoingRelationships?: boolean | Prisma.Character$outgoingRelationshipsArgs<ExtArgs>
   incomingRelationships?: boolean | Prisma.Character$incomingRelationshipsArgs<ExtArgs>
   sceneLinks?: boolean | Prisma.Character$sceneLinksArgs<ExtArgs>
+  placeLinks?: boolean | Prisma.Character$placeLinksArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["character"]>
 
@@ -1223,9 +1424,10 @@ export type CharacterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   fear?: boolean
   secret?: boolean
   notes?: boolean
-  firstAppearance?: boolean
   status?: boolean
   image?: boolean
+  updatedAt?: boolean
+  archivedAt?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["character"]>
 
@@ -1243,9 +1445,10 @@ export type CharacterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   fear?: boolean
   secret?: boolean
   notes?: boolean
-  firstAppearance?: boolean
   status?: boolean
   image?: boolean
+  updatedAt?: boolean
+  archivedAt?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["character"]>
 
@@ -1263,17 +1466,19 @@ export type CharacterSelectScalar = {
   fear?: boolean
   secret?: boolean
   notes?: boolean
-  firstAppearance?: boolean
   status?: boolean
   image?: boolean
+  updatedAt?: boolean
+  archivedAt?: boolean
 }
 
-export type CharacterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "name" | "alias" | "age" | "role" | "appearance" | "personality" | "wayOfSpeaking" | "goal" | "fear" | "secret" | "notes" | "firstAppearance" | "status" | "image", ExtArgs["result"]["character"]>
+export type CharacterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "name" | "alias" | "age" | "role" | "appearance" | "personality" | "wayOfSpeaking" | "goal" | "fear" | "secret" | "notes" | "status" | "image" | "updatedAt" | "archivedAt", ExtArgs["result"]["character"]>
 export type CharacterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   outgoingRelationships?: boolean | Prisma.Character$outgoingRelationshipsArgs<ExtArgs>
   incomingRelationships?: boolean | Prisma.Character$incomingRelationshipsArgs<ExtArgs>
   sceneLinks?: boolean | Prisma.Character$sceneLinksArgs<ExtArgs>
+  placeLinks?: boolean | Prisma.Character$placeLinksArgs<ExtArgs>
   _count?: boolean | Prisma.CharacterCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CharacterIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1290,6 +1495,7 @@ export type $CharacterPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     outgoingRelationships: Prisma.$RelationshipPayload<ExtArgs>[]
     incomingRelationships: Prisma.$RelationshipPayload<ExtArgs>[]
     sceneLinks: Prisma.$SceneCharacterPayload<ExtArgs>[]
+    placeLinks: Prisma.$CharacterPlacePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1305,9 +1511,10 @@ export type $CharacterPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     fear: string
     secret: string
     notes: string
-    firstAppearance: string
     status: string
     image: string
+    updatedAt: Date
+    archivedAt: Date | null
   }, ExtArgs["result"]["character"]>
   composites: {}
 }
@@ -1706,6 +1913,7 @@ export interface Prisma__CharacterClient<T, Null = never, ExtArgs extends runtim
   outgoingRelationships<T extends Prisma.Character$outgoingRelationshipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$outgoingRelationshipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   incomingRelationships<T extends Prisma.Character$incomingRelationshipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$incomingRelationshipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RelationshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sceneLinks<T extends Prisma.Character$sceneLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$sceneLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SceneCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  placeLinks<T extends Prisma.Character$placeLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Character$placeLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterPlacePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1748,9 +1956,10 @@ export interface CharacterFieldRefs {
   readonly fear: Prisma.FieldRef<"Character", 'String'>
   readonly secret: Prisma.FieldRef<"Character", 'String'>
   readonly notes: Prisma.FieldRef<"Character", 'String'>
-  readonly firstAppearance: Prisma.FieldRef<"Character", 'String'>
   readonly status: Prisma.FieldRef<"Character", 'String'>
   readonly image: Prisma.FieldRef<"Character", 'String'>
+  readonly updatedAt: Prisma.FieldRef<"Character", 'DateTime'>
+  readonly archivedAt: Prisma.FieldRef<"Character", 'DateTime'>
 }
     
 
@@ -2219,6 +2428,30 @@ export type Character$sceneLinksArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.SceneCharacterScalarFieldEnum | Prisma.SceneCharacterScalarFieldEnum[]
+}
+
+/**
+ * Character.placeLinks
+ */
+export type Character$placeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CharacterPlace
+   */
+  select?: Prisma.CharacterPlaceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CharacterPlace
+   */
+  omit?: Prisma.CharacterPlaceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CharacterPlaceInclude<ExtArgs> | null
+  where?: Prisma.CharacterPlaceWhereInput
+  orderBy?: Prisma.CharacterPlaceOrderByWithRelationInput | Prisma.CharacterPlaceOrderByWithRelationInput[]
+  cursor?: Prisma.CharacterPlaceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CharacterPlaceScalarFieldEnum | Prisma.CharacterPlaceScalarFieldEnum[]
 }
 
 /**
