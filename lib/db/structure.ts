@@ -1,5 +1,6 @@
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { setScenePlaces, setLegacyScenePlace, scenePlaceLinksInclude } from "@/lib/db/scene-places";
 import type { ChapterStatus } from "@/lib/studio-domain";
 import { insertStructureItem, type StructureMovePosition } from "@/lib/structure-move";
 
@@ -170,11 +171,11 @@ export async function createStructureItem(input: CreateStructureInput) {
         status: input.status ?? "Idea",
         objective: input.objective ?? "",
         content,
-        locationId: input.locationId?.trim() || null,
         wordCount: countWords(content),
         sortOrder: (last._max.sortOrder ?? 0) + 1
       }
     });
+    if (input.locationId?.trim()) await setScenePlaces(tx, input.novelId, id, [input.locationId.trim()]);
     await recalculateWordCounts(tx, chapter.volume.novelId);
     return { selection: { type: input.type, id } satisfies StructureSelection };
   });
@@ -224,11 +225,10 @@ export async function updateStructureItem(
           status: input.status,
           objective: input.objective,
           content: input.content,
-          locationId:
-            input.locationId === undefined ? undefined : input.locationId.trim() || null,
           wordCount: countWords(nextContent)
         }
       });
+      if (input.locationId !== undefined) await setLegacyScenePlace(tx, current.chapter.volume.novelId, id, input.locationId.trim());
       await recalculateWordCounts(tx, current.chapter.volume.novelId);
     }
 
@@ -392,6 +392,7 @@ export async function mutateStructureItem(
               include: {
                 scenes: {
                   where: { archived: false },
+                  include: scenePlaceLinksInclude,
                   orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
                 }
               }
@@ -433,7 +434,7 @@ export async function mutateStructureItem(
                 content: scene.content,
                 summary: scene.summary,
                 status: scene.status,
-                locationId: scene.locationId,
+                placeLinks: { create: scene.placeLinks.map((link) => ({ locationId: link.locationId })) },
                 sortOrder: scene.sortOrder,
                 wordCount: scene.wordCount,
                 objective: scene.objective
@@ -452,6 +453,7 @@ export async function mutateStructureItem(
             volume: true,
             scenes: {
               where: { archived: false },
+              include: scenePlaceLinksInclude,
               orderBy: [{ sortOrder: "asc" }, { id: "asc" }]
             }
           }
@@ -480,7 +482,7 @@ export async function mutateStructureItem(
               content: scene.content,
               summary: scene.summary,
               status: scene.status,
-              locationId: scene.locationId,
+              placeLinks: { create: scene.placeLinks.map((link) => ({ locationId: link.locationId })) },
               sortOrder: scene.sortOrder,
               wordCount: scene.wordCount,
               objective: scene.objective
@@ -493,7 +495,7 @@ export async function mutateStructureItem(
 
       const source = await tx.scene.findUniqueOrThrow({
         where: { id },
-        include: { chapter: { include: { volume: true } } }
+        include: { ...scenePlaceLinksInclude, chapter: { include: { volume: true } } }
       });
       await tx.scene.updateMany({
         where: { chapterId: source.chapterId, sortOrder: { gt: source.sortOrder } },
@@ -508,7 +510,7 @@ export async function mutateStructureItem(
           content: source.content,
           summary: source.summary,
           status: source.status,
-          locationId: source.locationId,
+          placeLinks: { create: source.placeLinks.map((link) => ({ locationId: link.locationId })) },
           sortOrder: source.sortOrder + 1,
           wordCount: source.wordCount,
           objective: source.objective

@@ -1,9 +1,4 @@
-export const readerThemes = ["Light", "Sepia", "Dark"] as const;
-
-export type ReaderTheme = (typeof readerThemes)[number];
-
 export const defaultReaderPreferences = {
-  theme: "Sepia" as ReaderTheme,
   fontSize: 18,
   width: 720
 };
@@ -51,6 +46,3 @@ export function parseReaderWidth(value: unknown) {
   return normalized ? Number.parseInt(normalized, 10) : defaultReaderPreferences.width;
 }
 
-export function isReaderTheme(value: unknown): value is ReaderTheme {
-  return typeof value === "string" && readerThemes.includes(value as ReaderTheme);
-}

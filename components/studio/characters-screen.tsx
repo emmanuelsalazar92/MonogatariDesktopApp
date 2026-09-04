@@ -1,4 +1,6 @@
 "use client";
+import { AddStoryNoteButton } from "./note-capture";
+import { StoryNotes } from "./story-notes";
 
 import * as React from "react";
 import Link from "next/link";
@@ -51,6 +53,7 @@ type CharacterDeleteImpact = {
   linkedScenes: number;
   linkedPlaces: number;
   relationships: number;
+  linkedEvents?: number;
   canDelete: boolean;
 };
 
@@ -532,7 +535,7 @@ function CharacterDetailPanel({
     setPlaceLinkError("");
     try {
       const response = await fetch(
-        `/api/characters/${encodeURIComponent(character.id)}/places`,
+        `/api/characters/${encodeURIComponent(character.id)}/places?novelId=${encodeURIComponent(character.novelId)}`,
         { cache: "no-store" }
       );
       if (!response.ok) throw new Error("Could not load linked places");
@@ -542,7 +545,7 @@ function CharacterDetailPanel({
     } finally {
       setPlaceLinksLoading(false);
     }
-  }, [character.id]);
+  }, [character.id, character.novelId]);
 
   React.useEffect(() => { void loadLinkedPlaces(); }, [loadLinkedPlaces]);
 
@@ -576,7 +579,7 @@ function CharacterDetailPanel({
     setPlaceLinkError("");
     try {
       const response = await fetch(
-        `/api/characters/${encodeURIComponent(character.id)}/places`,
+        `/api/characters/${encodeURIComponent(character.id)}/places?novelId=${encodeURIComponent(character.novelId)}`,
         {
           method,
           headers: { "Content-Type": "application/json" },
@@ -673,6 +676,7 @@ function CharacterDetailPanel({
             <div className="flex items-start justify-between gap-3">
               <CardTitle ref={titleRef} tabIndex={-1}>{character.name}</CardTitle>
               <div className="flex flex-wrap justify-end gap-2">
+                <AddStoryNoteButton target={{ novelId: character.novelId, type: "Character", id: character.id, title: character.name }} disabled={lifecyclePending} />
                 {character.status === "Archived" ? (
                   <Button type="button" size="sm" variant="outline" disabled={lifecyclePending} onClick={() => void runLifecycleAction("restore")}>
                     <ArchiveRestore className="size-4" /> {translate("Restore")}
@@ -701,6 +705,7 @@ function CharacterDetailPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <StoryNotes target={{ novelId: character.novelId, type: "Character", id: character.id, title: character.name }} />
         <DetailSection title={translate("Identity")}>
           <div className="grid gap-3 sm:grid-cols-2">
             <FieldLine label={translate("Age")} value={valueOrFallback(character.age)} />
@@ -890,10 +895,11 @@ function CharacterDetailPanel({
             <FieldLine label={translate("Linked scenes")} value={deleteImpact.linkedScenes} />
             <FieldLine label={translate("Linked places")} value={deleteImpact.linkedPlaces} />
             <FieldLine label={translate("Relationships")} value={deleteImpact.relationships} />
+            <FieldLine label="Timeline events" value={deleteImpact.linkedEvents ?? 0} />
           </div>
         ) : null}
         {deleteImpact && !deleteImpact.canDelete ? (
-          <div className="flex gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <div className="flex gap-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <p>{translate("This character is referenced and cannot be permanently deleted. Archive it instead.")}</p>
           </div>

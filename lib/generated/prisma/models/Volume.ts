@@ -224,6 +224,7 @@ export type VolumeWhereInput = {
   sortOrder?: Prisma.IntFilter<"Volume"> | number
   summary?: Prisma.StringFilter<"Volume"> | string
   archived?: Prisma.BoolFilter<"Volume"> | boolean
+  noteLinks?: Prisma.NoteVolumeListRelationFilter
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   chapters?: Prisma.ChapterListRelationFilter
 }
@@ -235,6 +236,7 @@ export type VolumeOrderByWithRelationInput = {
   sortOrder?: Prisma.SortOrder
   summary?: Prisma.SortOrder
   archived?: Prisma.SortOrder
+  noteLinks?: Prisma.NoteVolumeOrderByRelationAggregateInput
   novel?: Prisma.NovelOrderByWithRelationInput
   chapters?: Prisma.ChapterOrderByRelationAggregateInput
 }
@@ -249,6 +251,7 @@ export type VolumeWhereUniqueInput = Prisma.AtLeast<{
   sortOrder?: Prisma.IntFilter<"Volume"> | number
   summary?: Prisma.StringFilter<"Volume"> | string
   archived?: Prisma.BoolFilter<"Volume"> | boolean
+  noteLinks?: Prisma.NoteVolumeListRelationFilter
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   chapters?: Prisma.ChapterListRelationFilter
 }, "id">
@@ -285,6 +288,7 @@ export type VolumeCreateInput = {
   sortOrder?: number
   summary?: string
   archived?: boolean
+  noteLinks?: Prisma.NoteVolumeCreateNestedManyWithoutTargetInput
   novel: Prisma.NovelCreateNestedOneWithoutVolumesInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutVolumeInput
 }
@@ -296,6 +300,7 @@ export type VolumeUncheckedCreateInput = {
   sortOrder?: number
   summary?: string
   archived?: boolean
+  noteLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutTargetInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutVolumeInput
 }
 
@@ -305,6 +310,7 @@ export type VolumeUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteVolumeUpdateManyWithoutTargetNestedInput
   novel?: Prisma.NovelUpdateOneRequiredWithoutVolumesNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutVolumeNestedInput
 }
@@ -316,6 +322,7 @@ export type VolumeUncheckedUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutTargetNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutVolumeNestedInput
 }
 
@@ -455,12 +462,27 @@ export type VolumeUpdateOneRequiredWithoutChaptersNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.VolumeUpdateToOneWithWhereWithoutChaptersInput, Prisma.VolumeUpdateWithoutChaptersInput>, Prisma.VolumeUncheckedUpdateWithoutChaptersInput>
 }
 
+export type VolumeCreateNestedOneWithoutNoteLinksInput = {
+  create?: Prisma.XOR<Prisma.VolumeCreateWithoutNoteLinksInput, Prisma.VolumeUncheckedCreateWithoutNoteLinksInput>
+  connectOrCreate?: Prisma.VolumeCreateOrConnectWithoutNoteLinksInput
+  connect?: Prisma.VolumeWhereUniqueInput
+}
+
+export type VolumeUpdateOneRequiredWithoutNoteLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.VolumeCreateWithoutNoteLinksInput, Prisma.VolumeUncheckedCreateWithoutNoteLinksInput>
+  connectOrCreate?: Prisma.VolumeCreateOrConnectWithoutNoteLinksInput
+  upsert?: Prisma.VolumeUpsertWithoutNoteLinksInput
+  connect?: Prisma.VolumeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.VolumeUpdateToOneWithWhereWithoutNoteLinksInput, Prisma.VolumeUpdateWithoutNoteLinksInput>, Prisma.VolumeUncheckedUpdateWithoutNoteLinksInput>
+}
+
 export type VolumeCreateWithoutNovelInput = {
   id: string
   title: string
   sortOrder?: number
   summary?: string
   archived?: boolean
+  noteLinks?: Prisma.NoteVolumeCreateNestedManyWithoutTargetInput
   chapters?: Prisma.ChapterCreateNestedManyWithoutVolumeInput
 }
 
@@ -470,6 +492,7 @@ export type VolumeUncheckedCreateWithoutNovelInput = {
   sortOrder?: number
   summary?: string
   archived?: boolean
+  noteLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutTargetInput
   chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutVolumeInput
 }
 
@@ -516,6 +539,7 @@ export type VolumeCreateWithoutChaptersInput = {
   sortOrder?: number
   summary?: string
   archived?: boolean
+  noteLinks?: Prisma.NoteVolumeCreateNestedManyWithoutTargetInput
   novel: Prisma.NovelCreateNestedOneWithoutVolumesInput
 }
 
@@ -526,6 +550,7 @@ export type VolumeUncheckedCreateWithoutChaptersInput = {
   sortOrder?: number
   summary?: string
   archived?: boolean
+  noteLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutTargetInput
 }
 
 export type VolumeCreateOrConnectWithoutChaptersInput = {
@@ -550,6 +575,7 @@ export type VolumeUpdateWithoutChaptersInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteVolumeUpdateManyWithoutTargetNestedInput
   novel?: Prisma.NovelUpdateOneRequiredWithoutVolumesNestedInput
 }
 
@@ -560,6 +586,63 @@ export type VolumeUncheckedUpdateWithoutChaptersInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutTargetNestedInput
+}
+
+export type VolumeCreateWithoutNoteLinksInput = {
+  id: string
+  title: string
+  sortOrder?: number
+  summary?: string
+  archived?: boolean
+  novel: Prisma.NovelCreateNestedOneWithoutVolumesInput
+  chapters?: Prisma.ChapterCreateNestedManyWithoutVolumeInput
+}
+
+export type VolumeUncheckedCreateWithoutNoteLinksInput = {
+  id: string
+  novelId: string
+  title: string
+  sortOrder?: number
+  summary?: string
+  archived?: boolean
+  chapters?: Prisma.ChapterUncheckedCreateNestedManyWithoutVolumeInput
+}
+
+export type VolumeCreateOrConnectWithoutNoteLinksInput = {
+  where: Prisma.VolumeWhereUniqueInput
+  create: Prisma.XOR<Prisma.VolumeCreateWithoutNoteLinksInput, Prisma.VolumeUncheckedCreateWithoutNoteLinksInput>
+}
+
+export type VolumeUpsertWithoutNoteLinksInput = {
+  update: Prisma.XOR<Prisma.VolumeUpdateWithoutNoteLinksInput, Prisma.VolumeUncheckedUpdateWithoutNoteLinksInput>
+  create: Prisma.XOR<Prisma.VolumeCreateWithoutNoteLinksInput, Prisma.VolumeUncheckedCreateWithoutNoteLinksInput>
+  where?: Prisma.VolumeWhereInput
+}
+
+export type VolumeUpdateToOneWithWhereWithoutNoteLinksInput = {
+  where?: Prisma.VolumeWhereInput
+  data: Prisma.XOR<Prisma.VolumeUpdateWithoutNoteLinksInput, Prisma.VolumeUncheckedUpdateWithoutNoteLinksInput>
+}
+
+export type VolumeUpdateWithoutNoteLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  novel?: Prisma.NovelUpdateOneRequiredWithoutVolumesNestedInput
+  chapters?: Prisma.ChapterUpdateManyWithoutVolumeNestedInput
+}
+
+export type VolumeUncheckedUpdateWithoutNoteLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  summary?: Prisma.StringFieldUpdateOperationsInput | string
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  chapters?: Prisma.ChapterUncheckedUpdateManyWithoutVolumeNestedInput
 }
 
 export type VolumeCreateManyNovelInput = {
@@ -576,6 +659,7 @@ export type VolumeUpdateWithoutNovelInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteVolumeUpdateManyWithoutTargetNestedInput
   chapters?: Prisma.ChapterUpdateManyWithoutVolumeNestedInput
 }
 
@@ -585,6 +669,7 @@ export type VolumeUncheckedUpdateWithoutNovelInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   summary?: Prisma.StringFieldUpdateOperationsInput | string
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutTargetNestedInput
   chapters?: Prisma.ChapterUncheckedUpdateManyWithoutVolumeNestedInput
 }
 
@@ -602,10 +687,12 @@ export type VolumeUncheckedUpdateManyWithoutNovelInput = {
  */
 
 export type VolumeCountOutputType = {
+  noteLinks: number
   chapters: number
 }
 
 export type VolumeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteLinks?: boolean | VolumeCountOutputTypeCountNoteLinksArgs
   chapters?: boolean | VolumeCountOutputTypeCountChaptersArgs
 }
 
@@ -617,6 +704,13 @@ export type VolumeCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exten
    * Select specific fields to fetch from the VolumeCountOutputType
    */
   select?: Prisma.VolumeCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * VolumeCountOutputType without action
+ */
+export type VolumeCountOutputTypeCountNoteLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteVolumeWhereInput
 }
 
 /**
@@ -634,6 +728,7 @@ export type VolumeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   sortOrder?: boolean
   summary?: boolean
   archived?: boolean
+  noteLinks?: boolean | Prisma.Volume$noteLinksArgs<ExtArgs>
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapters?: boolean | Prisma.Volume$chaptersArgs<ExtArgs>
   _count?: boolean | Prisma.VolumeCountOutputTypeDefaultArgs<ExtArgs>
@@ -670,6 +765,7 @@ export type VolumeSelectScalar = {
 
 export type VolumeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "title" | "sortOrder" | "summary" | "archived", ExtArgs["result"]["volume"]>
 export type VolumeInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteLinks?: boolean | Prisma.Volume$noteLinksArgs<ExtArgs>
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapters?: boolean | Prisma.Volume$chaptersArgs<ExtArgs>
   _count?: boolean | Prisma.VolumeCountOutputTypeDefaultArgs<ExtArgs>
@@ -684,6 +780,7 @@ export type VolumeIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type $VolumePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Volume"
   objects: {
+    noteLinks: Prisma.$NoteVolumePayload<ExtArgs>[]
     novel: Prisma.$NovelPayload<ExtArgs>
     chapters: Prisma.$ChapterPayload<ExtArgs>[]
   }
@@ -1088,6 +1185,7 @@ readonly fields: VolumeFieldRefs;
  */
 export interface Prisma__VolumeClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  noteLinks<T extends Prisma.Volume$noteLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Volume$noteLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteVolumePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   novel<T extends Prisma.NovelDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NovelDefaultArgs<ExtArgs>>): Prisma.Prisma__NovelClient<runtime.Types.Result.GetResult<Prisma.$NovelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chapters<T extends Prisma.Volume$chaptersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Volume$chaptersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChapterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1521,6 +1619,30 @@ export type VolumeDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Volumes to delete.
    */
   limit?: number
+}
+
+/**
+ * Volume.noteLinks
+ */
+export type Volume$noteLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteVolume
+   */
+  select?: Prisma.NoteVolumeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteVolume
+   */
+  omit?: Prisma.NoteVolumeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteVolumeInclude<ExtArgs> | null
+  where?: Prisma.NoteVolumeWhereInput
+  orderBy?: Prisma.NoteVolumeOrderByWithRelationInput | Prisma.NoteVolumeOrderByWithRelationInput[]
+  cursor?: Prisma.NoteVolumeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteVolumeScalarFieldEnum | Prisma.NoteVolumeScalarFieldEnum[]
 }
 
 /**

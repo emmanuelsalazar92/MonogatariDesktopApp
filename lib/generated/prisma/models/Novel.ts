@@ -256,6 +256,7 @@ export type NovelWhereInput = {
   wordCount?: Prisma.IntFilter<"Novel"> | number
   createdAt?: Prisma.DateTimeFilter<"Novel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Novel"> | Date | string
+  noteTags?: Prisma.TagListRelationFilter
   volumes?: Prisma.VolumeListRelationFilter
   characters?: Prisma.CharacterListRelationFilter
   locations?: Prisma.LocationListRelationFilter
@@ -278,6 +279,7 @@ export type NovelOrderByWithRelationInput = {
   wordCount?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  noteTags?: Prisma.TagOrderByRelationAggregateInput
   volumes?: Prisma.VolumeOrderByRelationAggregateInput
   characters?: Prisma.CharacterOrderByRelationAggregateInput
   locations?: Prisma.LocationOrderByRelationAggregateInput
@@ -303,6 +305,7 @@ export type NovelWhereUniqueInput = Prisma.AtLeast<{
   wordCount?: Prisma.IntFilter<"Novel"> | number
   createdAt?: Prisma.DateTimeFilter<"Novel"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Novel"> | Date | string
+  noteTags?: Prisma.TagListRelationFilter
   volumes?: Prisma.VolumeListRelationFilter
   characters?: Prisma.CharacterListRelationFilter
   locations?: Prisma.LocationListRelationFilter
@@ -359,6 +362,7 @@ export type NovelCreateInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -381,6 +385,7 @@ export type NovelUncheckedCreateInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -403,6 +408,7 @@ export type NovelUpdateInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -425,6 +431,7 @@ export type NovelUncheckedUpdateInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
@@ -660,6 +667,20 @@ export type NovelUpdateOneRequiredWithoutNotesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.NovelUpdateToOneWithWhereWithoutNotesInput, Prisma.NovelUpdateWithoutNotesInput>, Prisma.NovelUncheckedUpdateWithoutNotesInput>
 }
 
+export type NovelCreateNestedOneWithoutNoteTagsInput = {
+  create?: Prisma.XOR<Prisma.NovelCreateWithoutNoteTagsInput, Prisma.NovelUncheckedCreateWithoutNoteTagsInput>
+  connectOrCreate?: Prisma.NovelCreateOrConnectWithoutNoteTagsInput
+  connect?: Prisma.NovelWhereUniqueInput
+}
+
+export type NovelUpdateOneRequiredWithoutNoteTagsNestedInput = {
+  create?: Prisma.XOR<Prisma.NovelCreateWithoutNoteTagsInput, Prisma.NovelUncheckedCreateWithoutNoteTagsInput>
+  connectOrCreate?: Prisma.NovelCreateOrConnectWithoutNoteTagsInput
+  upsert?: Prisma.NovelUpsertWithoutNoteTagsInput
+  connect?: Prisma.NovelWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NovelUpdateToOneWithWhereWithoutNoteTagsInput, Prisma.NovelUpdateWithoutNoteTagsInput>, Prisma.NovelUncheckedUpdateWithoutNoteTagsInput>
+}
+
 export type NovelCreateNestedOneWithoutBackupsInput = {
   create?: Prisma.XOR<Prisma.NovelCreateWithoutBackupsInput, Prisma.NovelUncheckedCreateWithoutBackupsInput>
   connectOrCreate?: Prisma.NovelCreateOrConnectWithoutBackupsInput
@@ -687,6 +708,7 @@ export type NovelCreateWithoutReadingProgressInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -708,6 +730,7 @@ export type NovelUncheckedCreateWithoutReadingProgressInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -745,6 +768,7 @@ export type NovelUpdateWithoutReadingProgressInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -766,6 +790,7 @@ export type NovelUncheckedUpdateWithoutReadingProgressInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
@@ -787,6 +812,7 @@ export type NovelCreateWithoutVolumesInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
   relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
@@ -808,6 +834,7 @@ export type NovelUncheckedCreateWithoutVolumesInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
   relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
@@ -845,6 +872,7 @@ export type NovelUpdateWithoutVolumesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
@@ -866,6 +894,7 @@ export type NovelUncheckedUpdateWithoutVolumesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
@@ -887,6 +916,7 @@ export type NovelCreateWithoutWritingActivitiesInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -908,6 +938,7 @@ export type NovelUncheckedCreateWithoutWritingActivitiesInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -945,6 +976,7 @@ export type NovelUpdateWithoutWritingActivitiesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -966,6 +998,7 @@ export type NovelUncheckedUpdateWithoutWritingActivitiesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
@@ -987,6 +1020,7 @@ export type NovelCreateWithoutCharactersInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
   relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
@@ -1008,6 +1042,7 @@ export type NovelUncheckedCreateWithoutCharactersInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
   relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
@@ -1045,6 +1080,7 @@ export type NovelUpdateWithoutCharactersInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
@@ -1066,6 +1102,7 @@ export type NovelUncheckedUpdateWithoutCharactersInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
@@ -1087,6 +1124,7 @@ export type NovelCreateWithoutLocationsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
@@ -1108,6 +1146,7 @@ export type NovelUncheckedCreateWithoutLocationsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
@@ -1145,6 +1184,7 @@ export type NovelUpdateWithoutLocationsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
@@ -1166,6 +1206,7 @@ export type NovelUncheckedUpdateWithoutLocationsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
@@ -1187,6 +1228,7 @@ export type NovelCreateWithoutRelationshipsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -1208,6 +1250,7 @@ export type NovelUncheckedCreateWithoutRelationshipsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -1245,6 +1288,7 @@ export type NovelUpdateWithoutRelationshipsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -1266,6 +1310,7 @@ export type NovelUncheckedUpdateWithoutRelationshipsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
@@ -1287,6 +1332,7 @@ export type NovelCreateWithoutTimelineEventsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -1308,6 +1354,7 @@ export type NovelUncheckedCreateWithoutTimelineEventsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -1345,6 +1392,7 @@ export type NovelUpdateWithoutTimelineEventsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -1366,6 +1414,7 @@ export type NovelUncheckedUpdateWithoutTimelineEventsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
@@ -1387,6 +1436,7 @@ export type NovelCreateWithoutNotesInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -1408,6 +1458,7 @@ export type NovelUncheckedCreateWithoutNotesInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -1445,6 +1496,7 @@ export type NovelUpdateWithoutNotesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -1466,11 +1518,116 @@ export type NovelUncheckedUpdateWithoutNotesInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
   relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
+  backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
+}
+
+export type NovelCreateWithoutNoteTagsInput = {
+  id: string
+  title: string
+  synopsis?: string
+  status?: string
+  coverImage?: string
+  genre?: string
+  tags?: string
+  wordCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
+  characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
+  locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
+  relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
+  timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
+  notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
+  backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
+}
+
+export type NovelUncheckedCreateWithoutNoteTagsInput = {
+  id: string
+  title: string
+  synopsis?: string
+  status?: string
+  coverImage?: string
+  genre?: string
+  tags?: string
+  wordCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
+  characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
+  locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
+  relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
+  timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
+  backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
+}
+
+export type NovelCreateOrConnectWithoutNoteTagsInput = {
+  where: Prisma.NovelWhereUniqueInput
+  create: Prisma.XOR<Prisma.NovelCreateWithoutNoteTagsInput, Prisma.NovelUncheckedCreateWithoutNoteTagsInput>
+}
+
+export type NovelUpsertWithoutNoteTagsInput = {
+  update: Prisma.XOR<Prisma.NovelUpdateWithoutNoteTagsInput, Prisma.NovelUncheckedUpdateWithoutNoteTagsInput>
+  create: Prisma.XOR<Prisma.NovelCreateWithoutNoteTagsInput, Prisma.NovelUncheckedCreateWithoutNoteTagsInput>
+  where?: Prisma.NovelWhereInput
+}
+
+export type NovelUpdateToOneWithWhereWithoutNoteTagsInput = {
+  where?: Prisma.NovelWhereInput
+  data: Prisma.XOR<Prisma.NovelUpdateWithoutNoteTagsInput, Prisma.NovelUncheckedUpdateWithoutNoteTagsInput>
+}
+
+export type NovelUpdateWithoutNoteTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  coverImage?: Prisma.StringFieldUpdateOperationsInput | string
+  genre?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
+  characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
+  locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
+  relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
+  timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
+  backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
+}
+
+export type NovelUncheckedUpdateWithoutNoteTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  coverImage?: Prisma.StringFieldUpdateOperationsInput | string
+  genre?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
+  characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
+  locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
+  relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
+  timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
@@ -1487,6 +1644,7 @@ export type NovelCreateWithoutBackupsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
@@ -1508,6 +1666,7 @@ export type NovelUncheckedCreateWithoutBackupsInput = {
   wordCount?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
   volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
   characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
   locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
@@ -1545,6 +1704,7 @@ export type NovelUpdateWithoutBackupsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
@@ -1566,6 +1726,7 @@ export type NovelUncheckedUpdateWithoutBackupsInput = {
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
   volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
   characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
   locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
@@ -1582,6 +1743,7 @@ export type NovelUncheckedUpdateWithoutBackupsInput = {
  */
 
 export type NovelCountOutputType = {
+  noteTags: number
   volumes: number
   characters: number
   locations: number
@@ -1593,6 +1755,7 @@ export type NovelCountOutputType = {
 }
 
 export type NovelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteTags?: boolean | NovelCountOutputTypeCountNoteTagsArgs
   volumes?: boolean | NovelCountOutputTypeCountVolumesArgs
   characters?: boolean | NovelCountOutputTypeCountCharactersArgs
   locations?: boolean | NovelCountOutputTypeCountLocationsArgs
@@ -1611,6 +1774,13 @@ export type NovelCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
    * Select specific fields to fetch from the NovelCountOutputType
    */
   select?: Prisma.NovelCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * NovelCountOutputType without action
+ */
+export type NovelCountOutputTypeCountNoteTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TagWhereInput
 }
 
 /**
@@ -1681,6 +1851,7 @@ export type NovelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   wordCount?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  noteTags?: boolean | Prisma.Novel$noteTagsArgs<ExtArgs>
   volumes?: boolean | Prisma.Novel$volumesArgs<ExtArgs>
   characters?: boolean | Prisma.Novel$charactersArgs<ExtArgs>
   locations?: boolean | Prisma.Novel$locationsArgs<ExtArgs>
@@ -1734,6 +1905,7 @@ export type NovelSelectScalar = {
 
 export type NovelOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "synopsis" | "status" | "coverImage" | "genre" | "tags" | "wordCount" | "createdAt" | "updatedAt", ExtArgs["result"]["novel"]>
 export type NovelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteTags?: boolean | Prisma.Novel$noteTagsArgs<ExtArgs>
   volumes?: boolean | Prisma.Novel$volumesArgs<ExtArgs>
   characters?: boolean | Prisma.Novel$charactersArgs<ExtArgs>
   locations?: boolean | Prisma.Novel$locationsArgs<ExtArgs>
@@ -1751,6 +1923,7 @@ export type NovelIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
 export type $NovelPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Novel"
   objects: {
+    noteTags: Prisma.$TagPayload<ExtArgs>[]
     volumes: Prisma.$VolumePayload<ExtArgs>[]
     characters: Prisma.$CharacterPayload<ExtArgs>[]
     locations: Prisma.$LocationPayload<ExtArgs>[]
@@ -2166,6 +2339,7 @@ readonly fields: NovelFieldRefs;
  */
 export interface Prisma__NovelClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  noteTags<T extends Prisma.Novel$noteTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$noteTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   volumes<T extends Prisma.Novel$volumesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$volumesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VolumePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   characters<T extends Prisma.Novel$charactersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$charactersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   locations<T extends Prisma.Novel$locationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$locationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2602,6 +2776,30 @@ export type NovelDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Novels to delete.
    */
   limit?: number
+}
+
+/**
+ * Novel.noteTags
+ */
+export type Novel$noteTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Tag
+   */
+  select?: Prisma.TagSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Tag
+   */
+  omit?: Prisma.TagOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TagInclude<ExtArgs> | null
+  where?: Prisma.TagWhereInput
+  orderBy?: Prisma.TagOrderByWithRelationInput | Prisma.TagOrderByWithRelationInput[]
+  cursor?: Prisma.TagWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TagScalarFieldEnum | Prisma.TagScalarFieldEnum[]
 }
 
 /**

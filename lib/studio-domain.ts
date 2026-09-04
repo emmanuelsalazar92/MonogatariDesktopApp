@@ -102,6 +102,7 @@ export interface Scene {
   summary: string;
   status: ChapterStatus;
   locationId: string;
+  locationIds?: string[];
   sortOrder: number;
   wordCount: number;
   objective: string;
@@ -135,6 +136,7 @@ export interface Character {
   firstAppearance: string;
   status: "Active" | "Inactive" | "Archived";
   narrativeStatus: "Secondary" | "Missing" | "Deceased" | "Spoiler" | "";
+  isSpoiler?: boolean;
   image: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -160,8 +162,19 @@ export interface Location {
   atmosphere: string;
   parentPlaceId: string | null;
   revision: number;
+  updatedAt?: string | null;
   sceneCount?: number;
+  linkedScenes?: import("./scene-place").PlaceSceneSummary[];
 }
+
+// Catalogs and entity selectors must never carry a Place's private narrative fields.
+export type PlaceSummary = Pick<Location, "id" | "novelId" | "name" | "type" | "status" | "parentPlaceId" | "revision" | "updatedAt" | "firstAppearance" | "sceneCount"> & {
+  parent: { id: string; name: string } | null;
+  characterCount: number;
+  eventCount: number;
+  childCount: number;
+  firstAppearanceScene: import("./scene-place").PlaceSceneSummary | null;
+};
 
 export const characterPlaceRelationshipTypes = [
   "Lives at",
@@ -181,36 +194,57 @@ export interface CharacterPlaceLink {
 
 export interface Relationship {
   id: string;
+  revision?: number;
+  archivedAt?: string | null;
   novelId: string;
   fromCharacterId: string;
   toCharacterId: string;
   relationshipType: string;
-  category: "Family" | "Romance" | "Social" | "Conflict" | "Secret/Spoiler";
+  category: "Family" | "Romance" | "Social" | "Conflict" | "Secret/Spoiler" | "Unclassified";
   direction: "Directional" | "Bidirectional";
   description: string;
   isSpoiler: boolean;
   status: string;
   since: string;
+  sinceKind?: import("./character-relationship").RelationshipSince["sinceKind"];
+  sinceTargetId?: string | null;
   notes: string;
   labelFromTo: string;
   labelToFrom: string;
 }
+
+// Catalogs never contain private narrative fields, including custom Since text.
+export type RelationshipSummary = Pick<Relationship, "id" | "novelId" | "revision" | "archivedAt" | "fromCharacterId" | "toCharacterId" | "relationshipType" | "category" | "direction" | "isSpoiler" | "labelFromTo" | "labelToFrom">;
+
+export type TimelineEventSummary = Omit<TimelineEvent, "description">;
 
 export interface TimelineEvent {
   id: string;
   novelId: string;
   title: string;
   internalDate: string;
+  sortIndex: number;
+  chronologyKind: "manual" | "relative";
+  relativeDay: number | null;
+  relativeMinute: number | null;
+  positionRevision: number;
+  archivedAt?: string | null;
   volumeId: string;
   chapterId: string;
   sceneId: string;
-  locationId: string;
+  locationIds: string[];
   characterIds: string[];
   description: string;
   isSpoiler: boolean;
 }
 
 export interface Note {
+  links?: { type: "Volume" | "Chapter" | "Scene" | "Character" | "Place" | "TimelineEvent"; id: string; title: string; archived: boolean }[];
+  pinned?: boolean;
+  workflowStatus?: string;
+  archivedAt?: string | null;
+  createdAt?: string;
+  revision?: number;
   id: string;
   novelId: string;
   linkedType:
@@ -219,10 +253,12 @@ export interface Note {
     | "Chapter"
     | "Scene"
     | "Character"
-    | "Place";
+    | "Place"
+    | "TimelineEvent";
   linkedId: string;
   title: string;
   content: string;
+  quotedText?: string;
   tags: string[];
   updatedAt: string;
 }
@@ -278,53 +314,6 @@ export const exportOptions = [
   "Include timeline",
   "Include metadata"
 ];
-
-export const relationshipCategories = {
-  Family: [
-    "Father of",
-    "Mother of",
-    "Brother of",
-    "Sister of",
-    "Cousin of",
-    "Uncle of",
-    "Grandparent of",
-    "Descendant of"
-  ],
-  Romance: [
-    "In love with",
-    "Has romantic interest in",
-    "Ex partner of",
-    "Partner of",
-    "Fiance of",
-    "Unrequited love",
-    "Romantic rival of"
-  ],
-  Social: [
-    "Friend of",
-    "Best friend of",
-    "Classmate of",
-    "Mentor of",
-    "Student of",
-    "Protector of",
-    "Servant of",
-    "Boss of"
-  ],
-  Conflict: [
-    "Enemy of",
-    "Rival of",
-    "Betrayed",
-    "Wants revenge on",
-    "Distrusts",
-    "Fears"
-  ],
-  "Secret/Spoiler": [
-    "Knows the secret of",
-    "Is hidden identity of",
-    "Is manipulated by",
-    "Is heir of",
-    "Is reincarnation of"
-  ]
-} as const;
 
 export { placeTypes } from "./place-classification";
 

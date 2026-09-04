@@ -27,16 +27,13 @@ import {
   serializeExportDefaults
 } from "@/lib/studio-settings";
 
-type ThemeMode = "light" | "dark" | "system";
 type NotionConnectionState = "idle" | "testing" | "success" | "error";
 
 export function SettingsScreen({
-  theme,
   language,
   sidebarState,
   settings,
   translate,
-  onThemeChange,
   onLanguageChange,
   onSidebarStateChange,
   onSettingChange,
@@ -46,12 +43,10 @@ export function SettingsScreen({
   notionAutosyncStatus,
   notionAutosyncRetryAt
 }: {
-  theme: ThemeMode;
   language: Language;
   sidebarState: SidebarState;
   settings: PersistedStudioSettings;
   translate: (value: string) => string;
-  onThemeChange: (value: ThemeMode) => void;
   onLanguageChange: (value: Language) => void;
   onSidebarStateChange: (value: SidebarState) => void;
   onSettingChange: (key: keyof PersistedStudioSettings, value: string | boolean) => void;
@@ -210,17 +205,6 @@ export function SettingsScreen({
               </p>
             </div>
             <SettingsSelect
-              label={copy.theme}
-              value={theme}
-              values={[
-                { value: "light", label: copy.light },
-                { value: "dark", label: copy.dark },
-                { value: "system", label: copy.system }
-              ]}
-              onChange={(value) => onThemeChange(value as ThemeMode)}
-              disabled={settingsAreSaving}
-            />
-            <SettingsSelect
               label={copy.sidebarDefaultState}
               value={sidebarState}
               values={[
@@ -269,14 +253,6 @@ export function SettingsScreen({
               value={settings.defaultFocusMode}
               values={["Writing", "Reading", "Off"]}
               onChange={(value) => onSettingChange("defaultFocusMode", value)}
-              translate={translate}
-              disabled={settingsAreSaving}
-            />
-            <SettingsSelect
-              label={translate("Default reading mode")}
-              value={settings.defaultReadingMode}
-              values={["Light", "Dark", "Sepia"]}
-              onChange={(value) => onSettingChange("defaultReadingMode", value)}
               translate={translate}
               disabled={settingsAreSaving}
             />

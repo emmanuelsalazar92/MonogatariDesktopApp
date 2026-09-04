@@ -1,6 +1,11 @@
 "use client";
+import { AddStoryNoteButton } from "./note-capture";
+import { StoryNotes } from "./story-notes";
 
 import * as React from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { relationshipSinceOptions, relationshipStructureSelection } from "@/lib/relationship-since";
+import { routeForPage } from "@/lib/studio-routes";
 import {
   Archive,
   ArchiveRestore,
@@ -104,8 +109,13 @@ export function StructureScreen({
   onNotify: (message: string) => void;
 }) {
   const currentNovel = getCurrentNovel(data);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const linkedSelection = React.useMemo(() => relationshipStructureSelection(searchParams,
+    relationshipSinceOptions(currentNovel.id, data.volumes, data.chapters, data.scenes)), [searchParams, currentNovel.id, data.volumes, data.chapters, data.scenes]);
   const [showArchived, setShowArchived] = React.useState(false);
   const [selection, setSelection] = React.useState<StructureSelection | null>(() => {
+    if (linkedSelection) return linkedSelection;
     const type = data.settings.activeStructureType;
     const id = data.settings.activeStructureId;
     return isStructureType(type) && id ? { type, id } : null;
@@ -187,11 +197,12 @@ export function StructureScreen({
 
   const choose = React.useCallback(
     (next: StructureSelection) => {
+      if (linkedSelection) router.replace(routeForPage("structure", currentNovel.id), { scroll: false });
       setSelection(next);
       revealSelection(next);
       onSelectItem(next);
     },
-    [onSelectItem, revealSelection]
+    [onSelectItem, revealSelection, linkedSelection, router, currentNovel.id]
   );
 
   const registerStructureNode = React.useCallback((item: StructureSelection, node: HTMLButtonElement | null) => {
@@ -219,6 +230,7 @@ export function StructureScreen({
   }, [choose]);
 
   React.useEffect(() => {
+    if (linkedSelection) { setSelection(linkedSelection); return; }
     const type = data.settings.activeStructureType;
     const id = data.settings.activeStructureId;
     if (!isStructureType(type) || !id) return;
@@ -228,7 +240,7 @@ export function StructureScreen({
     }
     if (selection?.type === type && selection.id === id) return;
     setSelection({ type, id });
-  }, [chapters, data.settings.activeStructureId, data.settings.activeStructureType, scenes, selection?.id, selection?.type, volumes]);
+  }, [linkedSelection, chapters, data.settings.activeStructureId, data.settings.activeStructureType, scenes, selection?.id, selection?.type, volumes]);
 
   React.useEffect(() => {
     if (selection) revealSelection(selection);
@@ -240,6 +252,7 @@ export function StructureScreen({
   }, [currentNovel.id]);
 
   React.useEffect(() => {
+    if (linkedSelection) return; // Following a Since link is read-only; do not persist a fallback selection.
     if (selected && (showArchived || !selected.archived)) return;
     const first = firstSelection(visibleVolumes);
     if (first && (selection?.id !== first.id || selection.type !== first.type)) {
@@ -247,7 +260,7 @@ export function StructureScreen({
     } else if (!first) {
       setSelection(null);
     }
-  }, [choose, selected, selection, showArchived, visibleChapters, visibleScenes, visibleVolumes]);
+  }, [linkedSelection, choose, selected, selection, showArchived, visibleChapters, visibleScenes, visibleVolumes]);
 
   React.useEffect(() => {
     if (!draggedItem) return;
@@ -673,6 +686,8 @@ export function StructureScreen({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            {selected ? <AddStoryNoteButton target={{ novelId: currentNovel.id, type: ({ volume: "Volume", chapter: "Chapter", scene: "Scene" } as const)[selected.type], id: selected.id, title: selected.title }} disabled={busy} /> : null}
+            {selected ? <StoryNotes target={{ novelId: currentNovel.id, type: ({ volume: "Volume", chapter: "Chapter", scene: "Scene" } as const)[selected.type], id: selected.id, title: selected.title }} /> : null}
             {selected ? <InspectorMetadata
               item={selected}
               currentNovelTitle={currentNovel.title}

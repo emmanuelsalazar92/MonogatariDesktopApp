@@ -1,9 +1,14 @@
 ﻿import { prisma } from "@/lib/db/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
-import { createHash } from "node:crypto";
 import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-preview";
 import { deriveCharacterFirstAppearanceDetails } from "@/lib/character-first-appearance";
 import { listPlaces } from "@/lib/db/places";
+import { writeNote } from "@/lib/db/notes";
+import { parseCharacterPlaceRelationshipType } from "@/lib/character-place";
+import { timelineLinksInclude, setTimelineLinks, TimelinePlaceError } from "@/lib/db/timeline-places";
+import { positionForCreate } from "@/lib/db/timeline-position";
+import { readTimelineEvent } from "@/lib/timeline-event";
+import { scenePlaceLinksInclude, setScenePlaces, setLegacyScenePlace } from "@/lib/db/scene-places";
 import type { ReaderOutline, ReaderScope } from "@/lib/reader-document";
 import {
   clampReadingRatio,
@@ -21,8 +26,7 @@ import type {
   ChapterStatus,
   CharacterPlaceRelationshipType,
   Note,
-  NovelStatus,
-  Relationship as StoryRelationship
+  NovelStatus
 } from "@/lib/studio-domain";
 import {
   normalizeStoredCharacterRole,
@@ -35,7 +39,11 @@ import {
   getRelationshipDefinition,
   charactersBelongToNovel,
   relationshipIdentity,
+  canonicalRelationship,
   resolveRelationshipSemantics,
+  readRelationshipSince,
+  relationshipIsVisible,
+  type RelationshipSince,
   type RelationshipTypeKey
 } from "@/lib/character-relationship";
 
@@ -72,17 +80,20 @@ function serializeScene(scene: {
   content?: string;
   summary: string;
   status: string;
-  locationId: string | null;
+  placeLinks?: Array<{ locationId: string }>;
   sortOrder: number;
   wordCount: number;
   objective: string;
   revision: number;
 }) {
+  const { placeLinks, ...metadata } = scene;
+  const locationIds = placeLinks?.map((link) => link.locationId) ?? [];
   return {
-    ...scene,
+    ...metadata,
     content: scene.content ?? "",
     status: scene.status as ChapterStatus,
-    locationId: scene.locationId ?? ""
+    locationId: locationIds[0] ?? "",
+    locationIds
   };
 }
 
@@ -148,12 +159,13 @@ function serializeCharacterSummary(character: {
     outgoingRelationships: number;
     incomingRelationships: number;
   };
-}, firstAppearance = "", firstAppearanceOrder: number | null = null) {
+}, firstAppearance = "", firstAppearanceOrder: number | null = null, visibleRelationshipCount = 0) {
   const storedStatus = parseStoredCharacterStatus(character.status);
   return {
     id: character.id,
     novelId: character.novelId,
     name: character.name,
+    isSpoiler: storedStatus.narrative === "Spoiler",
     role: normalizeStoredCharacterRole(character.role),
     status: character.archivedAt || storedStatus.lifecycle === "Archived"
       ? "Archived"
@@ -164,8 +176,7 @@ function serializeCharacterSummary(character: {
     firstAppearanceOrder,
     scenes: character._count.sceneLinks,
     places: character._count.placeLinks,
-    relationships:
-      character._count.outgoingRelationships + character._count.incomingRelationships
+    relationships: visibleRelationshipCount
   };
 }
 
@@ -190,46 +201,81 @@ function serializeNovel(novel: {
   };
 }
 
-function serializeNote(note: {
-  id: string;
-  novelId: string;
-  linkedType: string;
-  linkedId: string;
-  title: string;
-  content: string;
-  tags: string;
-  updatedAt: Date;
-}) {
-  return {
-    ...note,
-    linkedType: note.linkedType as Note["linkedType"],
-    tags: parseList(note.tags),
-    updatedAt: dateOnly(note.updatedAt)
-  };
-}
-
 function serializeRelationship(relationship: {
   id: string;
+  revision?: number;
+  archivedAt?: Date | null;
   novelId: string;
   fromCharacterId: string;
   toCharacterId: string;
   relationshipType: string;
   category: string;
   direction: string;
-  description: string;
+  description?: string;
   isSpoiler: boolean;
-  status: string;
-  since: string;
-  notes: string;
+  status?: string;
+  since?: string;
+  sinceKind?: string;
+  sinceTargetId?: string | null;
+  notes?: string;
 }) {
   const semantics = resolveRelationshipSemantics(relationship.relationshipType, relationship.direction);
   return {
     ...relationship,
-    category: relationship.category as StoryRelationship["category"],
-    direction: relationship.direction as StoryRelationship["direction"],
+    archivedAt: relationship.archivedAt?.toISOString() ?? null,
+    category: semantics.category,
+    direction: semantics.direction,
     labelFromTo: semantics.labelFromTo,
     labelToFrom: semantics.labelToFrom
   };
+}
+
+const relationshipCatalogSelect = {
+  id: true, novelId: true, revision: true, archivedAt: true, fromCharacterId: true, toCharacterId: true,
+  relationshipType: true, category: true, direction: true, isSpoiler: true
+} satisfies Prisma.RelationshipSelect;
+
+async function relationshipPeople(ids: string[]) {
+  const rows = await prisma.character.findMany({ where: { id: { in: [...new Set(ids)] } }, select: { id: true, novelId: true, status: true } });
+  return new Map(rows.map((person) => [person.id, { novelId: person.novelId, isSpoiler: parseStoredCharacterStatus(person.status).narrative === "Spoiler" }]));
+}
+
+function readableRelationship(row: { novelId: string; isSpoiler: boolean; fromCharacterId: string; toCharacterId: string },
+  people: Map<string, { novelId: string; isSpoiler: boolean }>, showSpoilers: boolean) {
+  return row.fromCharacterId !== row.toCharacterId && relationshipIsVisible(row,
+    people.get(row.fromCharacterId), people.get(row.toCharacterId), showSpoilers);
+}
+
+export async function listRelationshipSummaries(novelId?: string, showSpoilers = false, lifecycle: "active" | "archived" | "all" = "active") {
+  const rows = await prisma.relationship.findMany({
+    where: { ...(novelId ? { novelId } : {}), ...(!showSpoilers ? { isSpoiler: false } : {}),
+      ...(lifecycle === "all" ? {} : { archivedAt: lifecycle === "active" ? null : { not: null } }) },
+    select: relationshipCatalogSelect, orderBy: { id: "asc" }
+  });
+  const people = await relationshipPeople(rows.flatMap((row) => [row.fromCharacterId, row.toCharacterId]));
+  return rows.filter((row) => readableRelationship(row, people, showSpoilers)).map(serializeRelationship);
+}
+
+export async function getRelationshipDetail(novelId: string, id: string, showSpoilers = false) {
+  const row = await prisma.relationship.findFirst({ where: { id, novelId, ...(!showSpoilers ? { isSpoiler: false } : {}) } });
+  if (!row) return null;
+  const people = await relationshipPeople([row.fromCharacterId, row.toCharacterId]);
+  return readableRelationship(row, people, showSpoilers) ? serializeRelationship(row) : null;
+}
+
+export async function getTimelineEventDetail(novelId: string, id: string, showSpoilers = false) {
+  const event = await prisma.timelineEvent.findFirst({ where: { id, novelId, ...(!showSpoilers ? { isSpoiler: false } : {}) }, include: timelineLinksInclude });
+  return event ? serializeTimelineEvent(event) : null;
+}
+
+export async function listTimelineEventSummaries(novelId?: string, showSpoilers = false, lifecycle: "active" | "archived" | "all" = "active", selectedId?: string) {
+  const rows = await prisma.timelineEvent.findMany({ select: {
+    id: true, novelId: true, title: true, internalDate: true, sortIndex: true,
+    chronologyKind: true, relativeDay: true, relativeMinute: true, positionRevision: true,
+    volumeId: true, chapterId: true, sceneId: true, isSpoiler: true, archivedAt: true, ...timelineLinksInclude
+  }, where: { ...(novelId ? { novelId } : {}), ...(!showSpoilers ? { isSpoiler: false } : {}), ...(lifecycle === "all" ? {} : { OR: [{ archivedAt: lifecycle === "archived" ? { not: null } : null }, ...(novelId && selectedId ? [{ id: selectedId }] : [])] }) },
+    orderBy: [{ novelId: "asc" }, { sortIndex: "asc" }, { id: "asc" }] });
+  return rows.map(serializeTimelineEvent);
 }
 
 function serializeTimelineEvent(event: {
@@ -237,21 +283,30 @@ function serializeTimelineEvent(event: {
   novelId: string;
   title: string;
   internalDate: string;
+  sortIndex: number;
+  chronologyKind: string;
+  relativeDay: number | null;
+  relativeMinute: number | null;
+  positionRevision: number;
   volumeId: string | null;
   chapterId: string | null;
   sceneId: string | null;
-  locationId: string | null;
-  characterIds: string;
-  description: string;
+  characterLinks: Array<{ characterId: string; character: { novelId: string } }>;
+  placeLinks: Array<{ locationId: string; location: { novelId: string } }>;
+  description?: string;
+  archivedAt?: Date | null;
   isSpoiler: boolean;
 }) {
+  const { characterLinks, placeLinks, ...metadata } = event;
   return {
-    ...event,
+    ...metadata,
+    archivedAt: event.archivedAt?.toISOString() ?? null,
+    chronologyKind: event.chronologyKind === "relative" ? "relative" as const : "manual" as const,
     volumeId: event.volumeId ?? "",
     chapterId: event.chapterId ?? "",
     sceneId: event.sceneId ?? "",
-    locationId: event.locationId ?? "",
-    characterIds: parseList(event.characterIds)
+    locationIds: placeLinks.filter(link => link.location.novelId === event.novelId).map(link => link.locationId),
+    characterIds: characterLinks.filter(link => link.character.novelId === event.novelId).map(link => link.characterId)
   };
 }
 
@@ -284,7 +339,7 @@ export async function getStudioSnapshot() {
         title: true,
         summary: true,
         status: true,
-        locationId: true,
+        ...scenePlaceLinksInclude,
         sortOrder: true,
         wordCount: true,
         objective: true,
@@ -319,9 +374,9 @@ export async function getStudioSnapshot() {
     }),
     prisma.characterPlace.findMany({ orderBy: [{ characterId: "asc" }, { locationId: "asc" }] }),
     listPlaces(),
-    prisma.relationship.findMany({ orderBy: { id: "asc" } }),
-    prisma.timelineEvent.findMany({ orderBy: { id: "asc" } }),
-    prisma.note.findMany({ orderBy: { updatedAt: "desc" } }),
+    listRelationshipSummaries(),
+    listTimelineEventSummaries(),
+    Promise.resolve([]), // Notes catalog/detail are fetched on demand, scoped to the active Novel.
     prisma.backup.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.writingActivity.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.appSetting.findMany({ orderBy: { key: "asc" } }),
@@ -342,6 +397,10 @@ export async function getStudioSnapshot() {
     scenes,
     characterSceneLinks
   );
+  const visibleRelationshipCounts = new Map<string, number>();
+  for (const relationship of relationships) for (const id of [relationship.fromCharacterId, relationship.toCharacterId]) {
+    visibleRelationshipCounts.set(id, (visibleRelationshipCounts.get(id) ?? 0) + 1);
+  }
 
   return {
     novels: novels.map((novel) => serializeNovel(novel)),
@@ -358,7 +417,8 @@ export async function getStudioSnapshot() {
       serializeCharacterSummary(
         character,
         characterFirstAppearances.get(character.id)?.label ?? "",
-        characterFirstAppearances.get(character.id)?.order ?? null
+        characterFirstAppearances.get(character.id)?.order ?? null,
+        visibleRelationshipCounts.get(character.id) ?? 0
       )
     ),
     characterPlaceLinks: characterPlaceLinks.map((link) => ({
@@ -366,9 +426,9 @@ export async function getStudioSnapshot() {
       relationshipType: link.relationshipType as CharacterPlaceRelationshipType
     })),
     locations,
-    relationships: relationships.map((relationship) => serializeRelationship(relationship)),
-    timelineEvents: timelineEvents.map((event) => serializeTimelineEvent(event)),
-    notes: notes.map((note) => serializeNote(note)),
+    relationships,
+    timelineEvents,
+    notes,
     backups: backups.map((backup) => ({
       ...backup,
       date: dateOnly(backup.createdAt),
@@ -461,6 +521,7 @@ export async function createNovel(input: {
 export async function createCharacter(input: {
   novelId: string;
   metadata: CharacterMetadataInput;
+  markExternalDirty?: boolean;
 }) {
   const id = `char-${crypto.randomUUID()}`;
 
@@ -489,7 +550,7 @@ export async function createCharacter(input: {
       where: { id: input.novelId },
       data: { updatedAt: new Date() }
     });
-    await markNotionDirty(tx, input.novelId);
+    if (input.markExternalDirty !== false) await markNotionDirty(tx, input.novelId);
 
     return createdCharacter;
   });
@@ -533,6 +594,7 @@ export type CharacterDeleteImpact = {
   linkedScenes: number;
   linkedPlaces: number;
   relationships: number;
+  linkedEvents: number;
   canDelete: boolean;
 };
 
@@ -553,12 +615,13 @@ async function readCharacterDeleteImpact(
   });
   if (!character) throw new CharacterLifecycleConflictError("Character was not found");
 
-  const [linkedScenes, linkedPlaces, relationships] = await Promise.all([
+  const [linkedScenes, linkedPlaces, relationships, linkedEvents] = await Promise.all([
     tx.sceneCharacter.count({ where: { characterId } }),
     tx.characterPlace.count({ where: { characterId } }),
     tx.relationship.count({
       where: { OR: [{ fromCharacterId: characterId }, { toCharacterId: characterId }] }
-    })
+    }),
+    tx.timelineEventCharacter.count({ where: { characterId } })
   ]);
   return {
     characterId: character.id,
@@ -566,7 +629,8 @@ async function readCharacterDeleteImpact(
     linkedScenes,
     linkedPlaces,
     relationships,
-    canDelete: linkedScenes + linkedPlaces + relationships === 0
+    linkedEvents,
+    canDelete: linkedScenes + linkedPlaces + relationships + linkedEvents === 0
   };
 }
 
@@ -812,10 +876,11 @@ export class CharacterPlaceConflictError extends Error {
   }
 }
 
-export async function listCharacterPlaces(characterId: string) {
+export async function listCharacterPlaces(characterId: string, novelId?: string) {
   const character = await prisma.character.findUnique({
-    where: { id: characterId },
+    where: { id: characterId, ...(novelId ? { novelId } : {}) },
     select: {
+      novelId: true,
       placeLinks: {
         select: {
           relationshipType: true,
@@ -827,13 +892,14 @@ export async function listCharacterPlaces(characterId: string) {
   if (!character) throw new CharacterPlaceConflictError("Character was not found");
 
   return character.placeLinks
+    .filter(({ location }) => location.novelId === character.novelId)
     .map(({ location, relationshipType }) => ({
       locationId: location.id,
       name: location.name,
       type: location.type,
       region: location.region,
       novelId: location.novelId,
-      relationshipType: relationshipType as CharacterPlaceRelationshipType
+      relationshipType: parseCharacterPlaceRelationshipType(relationshipType) ?? "Associated with"
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
 }
@@ -841,9 +907,13 @@ export async function listCharacterPlaces(characterId: string) {
 export async function linkCharacterPlace(
   characterId: string,
   locationId: string,
-  relationshipType: CharacterPlaceRelationshipType
+  relationshipType: CharacterPlaceRelationshipType,
+  novelId?: string
 ) {
+  if (!parseCharacterPlaceRelationshipType(relationshipType)) throw new CharacterPlaceConflictError("relationshipType is invalid");
   return prisma.$transaction(async (tx) => {
+    const lock = await tx.location.updateMany({ where: { id: locationId, ...(novelId ? { novelId } : {}) }, data: { revision: { increment: 0 } } });
+    if (!lock.count) throw new CharacterPlaceConflictError("Place was not found in this novel");
     const [character, location] = await Promise.all([
       tx.character.findUnique({ where: { id: characterId }, select: { novelId: true } }),
       tx.location.findUnique({ where: { id: locationId }, select: { novelId: true } })
@@ -871,8 +941,10 @@ export async function linkCharacterPlace(
   });
 }
 
-export async function unlinkCharacterPlace(characterId: string, locationId: string) {
+export async function unlinkCharacterPlace(characterId: string, locationId: string, novelId?: string) {
   return prisma.$transaction(async (tx) => {
+    const lock = await tx.location.updateMany({ where: { id: locationId, ...(novelId ? { novelId } : {}) }, data: { revision: { increment: 0 } } });
+    if (!lock.count) throw new CharacterPlaceConflictError("Place was not found in this novel");
     const [character, location] = await Promise.all([
       tx.character.findUnique({ where: { id: characterId }, select: { novelId: true } }),
       tx.location.findUnique({ where: { id: locationId }, select: { novelId: true } })
@@ -898,7 +970,7 @@ export class RelationshipConflictError extends Error {
   }
 }
 
-export async function createRelationship(input: {
+type RelationshipWriteInput = {
   novelId: string;
   fromCharacterId: string;
   toCharacterId: string;
@@ -907,14 +979,48 @@ export async function createRelationship(input: {
   isSpoiler?: boolean;
   status?: string;
   since?: string;
+  sinceKind?: RelationshipSince["sinceKind"];
+  sinceTargetId?: string | null;
   notes?: string;
-}) {
+};
+
+export async function createRelationship(input: RelationshipWriteInput) {
+  return writeRelationship(input);
+}
+
+export async function updateRelationship(id: string, revision: number, input: RelationshipWriteInput) {
+  return writeRelationship(input, { id, revision });
+}
+
+async function writeRelationship(input: RelationshipWriteInput, previous?: { id: string; revision: number }) {
   const definition = getRelationshipDefinition(input.relationshipType);
-  if (!definition) throw new RelationshipConflictError("Relationship type is invalid");
+  if (!definition?.active) throw new RelationshipConflictError("Relationship type is invalid");
+  const canonical = canonicalRelationship(input.fromCharacterId, input.toCharacterId, input.relationshipType);
+  const since = readRelationshipSince(input);
+  if (!since) throw new RelationshipConflictError("Since must be an explicit text fallback or a valid Structure reference");
   const identity = relationshipIdentity(input.novelId, input.fromCharacterId, input.toCharacterId, input.relationshipType);
-  const id = `rel-${createHash("sha256").update(identity).digest("hex").slice(0, 32)}`;
+  // Identity survives edits. Logical uniqueness is checked under SQLite's write lock.
+  const id = previous?.id ?? `rel-${crypto.randomUUID()}`;
 
   const relationship = await prisma.$transaction(async (tx) => {
+    // Acquire SQLite's write lock before validating Structure and character ownership.
+    if (!(await tx.novel.updateMany({ where: { id: input.novelId }, data: { updatedAt: new Date() } })).count) throw new RelationshipConflictError("Novel was not found");
+    const existing = previous ? await tx.relationship.findFirst({ where: { id, novelId: input.novelId, revision: previous.revision } }) : null;
+    if (previous && !existing) throw new RelationshipConflictError("Relationship changed or is unavailable. Reload before saving.");
+    if (since.sinceTargetId) {
+      const id = since.sinceTargetId;
+      const owned = since.sinceKind === "volume"
+        ? await tx.volume.count({ where: { id, novelId: input.novelId, archived: false } })
+        : since.sinceKind === "chapter"
+          ? await tx.chapter.count({ where: { id, archived: false, volume: { novelId: input.novelId, archived: false } } })
+          : await tx.scene.count({ where: { id, archived: false, chapter: { archived: false, volume: { novelId: input.novelId, archived: false } } } });
+      // An unchanged historical Since reference may remain archived, but never foreign/missing.
+      const retained = !owned && existing?.sinceKind === since.sinceKind && existing.sinceTargetId === id
+        ? since.sinceKind === "volume" ? await tx.volume.count({ where: { id, novelId: input.novelId } })
+          : since.sinceKind === "chapter" ? await tx.chapter.count({ where: { id, volume: { novelId: input.novelId } } })
+            : await tx.scene.count({ where: { id, chapter: { volume: { novelId: input.novelId } } } }) : 0;
+      if (!owned && !retained) throw new RelationshipConflictError("Since target must be active Structure in the same novel");
+    }
     const characters = await tx.character.findMany({
       where: { id: { in: [input.fromCharacterId, input.toCharacterId] } },
       select: { id: true, novelId: true }
@@ -922,39 +1028,36 @@ export async function createRelationship(input: {
     if (!charactersBelongToNovel(characters, input.novelId, [input.fromCharacterId, input.toCharacterId])) {
       throw new RelationshipConflictError("Both characters must belong to the active novel");
     }
-    const duplicate = await tx.relationship.findFirst({
+    // Include aliases/inverse legacy rows before migration; never equate two
+    // opposite directional edges (e.g. independently reciprocated love).
+    const candidates = await tx.relationship.findMany({
       where: {
         novelId: input.novelId,
-        relationshipType: input.relationshipType,
+        id: { not: id },
         OR: [
           { fromCharacterId: input.fromCharacterId, toCharacterId: input.toCharacterId },
           { fromCharacterId: input.toCharacterId, toCharacterId: input.fromCharacterId }
         ]
       },
-      select: { id: true }
+      select: { fromCharacterId: true, toCharacterId: true, relationshipType: true }
     });
+    const duplicate = candidates.some((candidate) => relationshipIdentity(input.novelId, candidate.fromCharacterId, candidate.toCharacterId, candidate.relationshipType) === identity);
     if (duplicate) throw new RelationshipConflictError("An equivalent relationship already exists; edit it instead");
-    const createdRelationship = await tx.relationship.create({
-      data: {
-        id,
+    const data = {
         novelId: input.novelId,
-        fromCharacterId: input.fromCharacterId,
-        toCharacterId: input.toCharacterId,
-        relationshipType: input.relationshipType,
+        ...canonical,
         category: definition.category,
         direction: definition.direction,
         description: input.description ?? "",
         isSpoiler: input.isSpoiler ?? false,
-        status: input.status ?? "Growing",
-        since: input.since ?? "",
+        status: input.status ?? "",
+        ...since,
         notes: input.notes ?? ""
-      }
-    });
+    };
+    const createdRelationship = previous
+      ? await tx.relationship.update({ where: { id }, data: { ...data, revision: { increment: 1 } } })
+      : await tx.relationship.create({ data: { id, ...data } });
 
-    await tx.novel.update({
-      where: { id: input.novelId },
-      data: { updatedAt: new Date() }
-    });
     await markNotionDirty(tx, input.novelId);
 
     return createdRelationship;
@@ -963,53 +1066,65 @@ export async function createRelationship(input: {
   return serializeRelationship(relationship);
 }
 
-export async function deleteRelationship(relationshipId: string) {
+export async function changeRelationshipLifecycle(relationshipId: string, novelId: string, revision: number, action: "archive" | "restore" | "delete") {
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.relationship.findUniqueOrThrow({ where: { id: relationshipId } });
-    await tx.relationship.delete({ where: { id: relationshipId } });
-    await tx.novel.update({ where: { id: existing.novelId }, data: { updatedAt: new Date() } });
+    if (!(await tx.novel.updateMany({ where: { id: novelId }, data: { updatedAt: new Date() } })).count) throw new RelationshipConflictError("Novel was not found");
+    const existing = await tx.relationship.findFirst({ where: { id: relationshipId, novelId, revision } });
+    if (!existing) throw new RelationshipConflictError("Relationship changed or is unavailable. Reload before continuing.");
+    const result = action === "delete"
+      ? await tx.relationship.delete({ where: { id: relationshipId } })
+      : await tx.relationship.update({ where: { id: relationshipId }, data: { archivedAt: action === "archive" ? new Date() : null, revision: { increment: 1 } } });
     await markNotionDirty(tx, existing.novelId);
-    return { id: relationshipId };
+    return action === "delete" ? { id: relationshipId } : serializeRelationship(result);
   });
 }
 
-export async function createTimelineEvent(input: {
+type TimelineEventWrite = {
   novelId: string;
   title: string;
-  internalDate: string;
+  internalDate?: string;
+  sortIndex?: number;
+  chronologyKind?: "manual" | "relative";
+  relativeDay?: number | null;
+  relativeMinute?: number | null;
   volumeId?: string;
   chapterId?: string;
   sceneId?: string;
   locationId?: string;
+  locationIds?: string[];
   characterIds?: string[];
   description?: string;
   isSpoiler?: boolean;
-}) {
-  const id = `event-${crypto.randomUUID()}`;
+};
+
+export async function createTimelineEvent(input: TimelineEventWrite) {
+  return writeTimelineEvent(input);
+}
+
+export async function updateTimelineEvent(id: string, revision: number, input: TimelineEventWrite) {
+  return writeTimelineEvent(input, id, revision);
+}
+
+async function writeTimelineEvent(input: TimelineEventWrite, existingId?: string, revision?: number) {
+  const validation = readTimelineEvent(input);
+  if (!validation.ok) throw new TimelinePlaceError(validation.error, 400);
+  const metadata = validation.data;
+  if (existingId && metadata.sortIndex === undefined) throw new TimelinePlaceError("Order is required", 400);
+  const id = existingId ?? `event-${crypto.randomUUID()}`;
 
   const event = await prisma.$transaction(async (tx) => {
-    const createdEvent = await tx.timelineEvent.create({
-      data: {
-        id,
-        novelId: input.novelId,
-        title: input.title,
-        internalDate: input.internalDate,
-        volumeId: input.volumeId?.trim() || null,
-        chapterId: input.chapterId?.trim() || null,
-        sceneId: input.sceneId?.trim() || null,
-        locationId: input.locationId?.trim() || null,
-        characterIds: JSON.stringify(input.characterIds ?? []),
-        description: input.description ?? "",
-        isSpoiler: input.isSpoiler ?? false
-      }
-    });
-
-    await tx.novel.update({
-      where: { id: input.novelId },
-      data: { updatedAt: new Date() }
-    });
-
-    return createdEvent;
+    const lock = await tx.novel.updateMany({ where: { id: input.novelId }, data: { updatedAt: new Date() } });
+    if (!lock.count) throw new TimelinePlaceError("Novel not found", 404);
+    const existing = existingId ? await tx.timelineEvent.findFirst({ where: { id, novelId: input.novelId, positionRevision: revision }, include: timelineLinksInclude }) : null;
+    if (existingId && !existing) throw new TimelinePlaceError("Event changed or is unavailable. Reload before saving.");
+    const position = await positionForCreate(tx, input.novelId, metadata);
+    const data = { ...position, title: metadata.title, description: metadata.description, isSpoiler: metadata.isSpoiler };
+    if (existingId) await tx.timelineEvent.update({ where: { id }, data: { ...data, positionRevision: { increment: 1 } } });
+    else await tx.timelineEvent.create({ data: { id, novelId: input.novelId, ...data } });
+    await setTimelineLinks(tx, input.novelId, id,
+      existing && input.characterIds === undefined ? existing.characterLinks.map(link => link.characterId) : metadata.characterIds,
+      existing && input.locationIds === undefined && input.locationId === undefined ? existing.placeLinks.map(link => link.locationId) : metadata.locationIds);
+    return tx.timelineEvent.findUniqueOrThrow({ where: { id }, include: timelineLinksInclude });
   });
 
   return serializeTimelineEvent(event);
@@ -1023,30 +1138,7 @@ export async function createNote(input: {
   linkedId?: string;
   tags?: string[];
 }) {
-  const id = `note-${crypto.randomUUID()}`;
-
-  const note = await prisma.$transaction(async (tx) => {
-    const createdNote = await tx.note.create({
-      data: {
-        id,
-        novelId: input.novelId,
-        linkedType: input.linkedType ?? "Novel",
-        linkedId: input.linkedId ?? input.novelId,
-        title: input.title,
-        content: input.content ?? "",
-        tags: JSON.stringify(input.tags ?? [])
-      }
-    });
-
-    await tx.novel.update({
-      where: { id: input.novelId },
-      data: { updatedAt: new Date() }
-    });
-
-    return createdNote;
-  });
-
-  return serializeNote(note);
+  return writeNote(input.novelId, input);
 }
 
 export async function createBackupRecord(input: {
@@ -1238,10 +1330,6 @@ export async function updateScene(
         summary: typeof input.summary === "string" ? input.summary.trim() : undefined,
         status: input.status,
         objective: typeof input.objective === "string" ? input.objective.trim() : undefined,
-        locationId:
-          typeof input.locationId === "string"
-            ? input.locationId.trim() || null
-            : undefined,
         wordCount: nextWordCount,
         revision: { increment: 1 }
       }
@@ -1249,7 +1337,8 @@ export async function updateScene(
     if (update.count === 0) {
       throw new SceneRevisionConflictError();
     }
-    const scene = await tx.scene.findUniqueOrThrow({ where: { id: sceneId } });
+    if (typeof input.locationId === "string") await setLegacyScenePlace(tx, existing.chapter.volume.novelId, sceneId, input.locationId.trim());
+    const scene = await tx.scene.findUniqueOrThrow({ where: { id: sceneId }, include: scenePlaceLinksInclude });
 
     const chapterWords = await tx.scene.aggregate({
       where: { chapterId: existing.chapterId },
@@ -1302,17 +1391,19 @@ export class SceneInspectorValidationError extends Error {
 export async function getSceneInspector(sceneId: string) {
   const scene = await prisma.scene.findUniqueOrThrow({
     where: { id: sceneId },
-    include: {
+    select: {
+      ...scenePlaceLinksInclude,
       sceneCharacters: { select: { characterId: true } },
       timelineEvents: { select: { id: true }, take: 1 },
       chapter: { include: { volume: { select: { novelId: true } } } }
     }
   });
   const note = await prisma.note.findFirst({
-    where: { novelId: scene.chapter.volume.novelId, linkedType: "Scene", linkedId: sceneId },
+    where: { novelId: scene.chapter.volume.novelId, sceneLinks: { some: { sceneId } }, archivedAt: null },
     select: { content: true }
   });
   return {
+    locationIds: scene.placeLinks.map((link) => link.locationId),
     characterIds: scene.sceneCharacters.map((link) => link.characterId),
     timelineEventId: scene.timelineEvents[0]?.id ?? null,
     notes: note?.content ?? ""
@@ -1321,7 +1412,7 @@ export async function getSceneInspector(sceneId: string) {
 
 export async function updateSceneInspector(
   sceneId: string,
-  input: { summary: string; objective: string; notes: string; characterIds: string[]; locationId: string | null; timelineEventId: string | null }
+  input: { summary: string; objective: string; notes: string; characterIds: string[]; locationIds: string[]; expectedLocationIds?: string[]; timelineEventId: string | null }
 ) {
   const characterIds = [...new Set(input.characterIds)].slice(0, 50);
   return prisma.$transaction(async (tx) => {
@@ -1330,28 +1421,29 @@ export async function updateSceneInspector(
       include: { chapter: { include: { volume: { select: { novelId: true } } } } }
     });
     const novelId = scene.chapter.volume.novelId;
-    const [characterCount, location, timeline] = await Promise.all([
+    const [characterCount, timeline] = await Promise.all([
       tx.character.count({ where: { id: { in: characterIds }, novelId } }),
-      input.locationId ? tx.location.findFirst({ where: { id: input.locationId, novelId }, select: { id: true } }) : Promise.resolve(null),
       input.timelineEventId ? tx.timelineEvent.findFirst({ where: { id: input.timelineEventId, novelId }, select: { id: true } }) : Promise.resolve(null)
     ]);
-    if (characterCount !== characterIds.length || (input.locationId && !location) || (input.timelineEventId && !timeline)) {
+    if (characterCount !== characterIds.length || (input.timelineEventId && !timeline)) {
       throw new SceneInspectorValidationError();
     }
     await tx.scene.update({
       where: { id: sceneId },
-      data: { summary: input.summary.trim(), objective: input.objective.trim(), locationId: input.locationId }
+      data: { summary: input.summary.trim(), objective: input.objective.trim() }
     });
+    await setScenePlaces(tx, novelId, sceneId, input.locationIds, input.expectedLocationIds);
     await tx.sceneCharacter.deleteMany({ where: { sceneId } });
     if (characterIds.length) await tx.sceneCharacter.createMany({ data: characterIds.map((characterId) => ({ sceneId, characterId })) });
-    await tx.timelineEvent.updateMany({ where: { sceneId }, data: { sceneId: null } });
-    if (input.timelineEventId) await tx.timelineEvent.update({ where: { id: input.timelineEventId }, data: { sceneId } });
-    const note = await tx.note.findFirst({ where: { novelId, linkedType: "Scene", linkedId: sceneId }, select: { id: true } });
-    if (note) await tx.note.update({ where: { id: note.id }, data: { content: input.notes } });
-    else if (input.notes) await tx.note.create({ data: { id: `note-${crypto.randomUUID()}`, novelId, linkedType: "Scene", linkedId: sceneId, title: "Scene notes", content: input.notes, tags: "[]" } });
+    await tx.timelineEvent.updateMany({ where: { sceneId, ...(input.timelineEventId ? { id: { not: input.timelineEventId } } : {}) }, data: { sceneId: null, positionRevision: { increment: 1 } } });
+    if (input.timelineEventId) await tx.timelineEvent.update({ where: { id: input.timelineEventId }, data: { sceneId, chapterId: scene.chapterId, volumeId: scene.chapter.volumeId, positionRevision: { increment: 1 } } });
+    const note = await tx.note.findFirst({ where: { novelId, sceneLinks: { some: { sceneId } }, archivedAt: null }, select: { id: true, title: true } });
+    if (note) await tx.note.update({ where: { id: note.id }, data: { content: input.notes, searchText: `${note.title}\n${input.notes}`.normalize("NFC").toLowerCase(), revision: { increment: 1 } } });
+    else if (input.notes) await tx.note.create({ data: { id: `note-${crypto.randomUUID()}`, novelId, linkedType: "Novel", linkedId: novelId, title: "Scene notes", workflowStatus: "informational", content: input.notes, searchText: `Scene notes\n${input.notes}`.normalize("NFC").toLowerCase(), tags: "[]", createdAt: new Date(), sceneLinks: { create: { sceneId } } } });
     await tx.novel.update({ where: { id: novelId }, data: { updatedAt: new Date() } });
     await markNotionDirty(tx, novelId);
     return {
+      locationIds: input.locationIds,
       characterIds,
       timelineEventId: input.timelineEventId,
       notes: input.notes
@@ -1394,7 +1486,7 @@ export async function restoreSceneVersion(sceneId: string, versionId: string) {
     const version = await tx.sceneVersion.findFirst({ where: { id: versionId, sceneId } });
     if (!version) throw new SceneVersionValidationError();
     await tx.sceneVersion.create({ data: { id: `scene-version-${crypto.randomUUID()}`, sceneId, title: current.title, content: current.content, wordCount: current.wordCount, label: "", origin: "before restore" } });
-    const restored = await tx.scene.update({ where: { id: sceneId }, data: { title: version.title, content: version.content, wordCount: version.wordCount, revision: { increment: 1 } } });
+    const restored = await tx.scene.update({ where: { id: sceneId }, data: { title: version.title, content: version.content, wordCount: version.wordCount, revision: { increment: 1 } }, include: scenePlaceLinksInclude });
     await markNotionDirty(tx, current.chapter.volume.novelId);
     return restored;
   });
@@ -1402,8 +1494,12 @@ export async function restoreSceneVersion(sceneId: string, versionId: string) {
 }
 
 export async function getScene(sceneId: string) {
-  const scene = await prisma.scene.findUniqueOrThrow({ where: { id: sceneId } });
+  const scene = await prisma.scene.findUniqueOrThrow({ where: { id: sceneId }, include: scenePlaceLinksInclude });
   return serializeScene(scene);
+}
+
+export async function sceneBelongsToNovel(sceneId: string, novelId: string) {
+  return Boolean(await prisma.scene.findFirst({ where: { id: sceneId, chapter: { volume: { novelId } } }, select: { id: true } }));
 }
 
 export async function getChapterPreview(chapterId: string) {

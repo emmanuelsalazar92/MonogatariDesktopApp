@@ -26,7 +26,6 @@ export {
   genreFilters,
   navigationItems,
   placeTypes,
-  relationshipCategories,
   shortcutHints,
   statusFilters
 } from "@/lib/studio-domain";
@@ -442,39 +441,42 @@ export const relationships: Relationship[] = [
 export const timelineEvents: TimelineEvent[] = [
   {
     id: "event-1",
+    sortIndex: 1024, chronologyKind: "manual", relativeDay: null, relativeMinute: null, positionRevision: 0,
     novelId: "novel-eco-azul",
     title: "Akira arrives at the academy.",
     internalDate: "Day 1",
     volumeId: "vol-1",
     chapterId: "ch-1",
     sceneId: "scene-1",
-    locationId: "place-academia",
+    locationIds: ["place-academia"],
     characterIds: ["char-akira"],
     description: "Akira reaches Seiryu just before the evening bell.",
     isSpoiler: false
   },
   {
     id: "event-2",
+    sortIndex: 2048, chronologyKind: "manual", relativeDay: null, relativeMinute: null, positionRevision: 0,
     novelId: "novel-eco-azul",
     title: "Akira meets Reina.",
     internalDate: "Day 1",
     volumeId: "vol-1",
     chapterId: "ch-1",
     sceneId: "scene-1",
-    locationId: "place-torre",
+    locationIds: ["place-torre"],
     characterIds: ["char-akira", "char-reina"],
     description: "Reina catches Akira near the forbidden door.",
     isSpoiler: false
   },
   {
     id: "event-3",
+    sortIndex: 3072, chronologyKind: "manual", relativeDay: null, relativeMinute: null, positionRevision: 0,
     novelId: "novel-eco-azul",
     title: "Reina notices the forbidden symbol.",
     internalDate: "Day 1",
     volumeId: "vol-1",
     chapterId: "ch-1",
     sceneId: "scene-2",
-    locationId: "place-torre",
+    locationIds: ["place-torre"],
     characterIds: ["char-reina", "char-akira"],
     description: "A blue sigil appears near the stairs after Akira opens the door.",
     isSpoiler: true

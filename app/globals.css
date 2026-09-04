@@ -2,44 +2,130 @@
 @tailwind components;
 @tailwind utilities;
 
+.relationship-detail-drawer {
+  width: calc(100% - 1rem);
+  max-width: 48rem;
+  height: calc(100dvh - 1rem);
+  max-height: calc(100dvh - 1rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.relationship-graph [role="button"]:focus-visible { outline: none; }
+.relationship-graph .graph-node:focus-visible rect,
+.relationship-graph .graph-edge:focus-visible rect { stroke: rgb(var(--ring)); stroke-width: 4px; }
+.relationship-graph .graph-edge:hover .graph-edge-line,
+.relationship-graph .graph-edge:focus-visible .graph-edge-line { stroke: rgb(var(--primary)); stroke-width: 4px; }
+
 /* Modal panels stay opaque; only their separate overlay may use transparency. */
 .dialog-surface {
-  background-color: hsl(var(--popover) / 1);
+  background-color: rgb(var(--popover));
+}
+
+/* Header/footer stay outside the only scrollport, including at browser zoom. */
+.relationship-dialog {
+  width: calc(100% - 1rem);
+  max-width: 42rem;
+  height: auto;
+  max-height: calc(100dvh - 1rem);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: rgb(var(--popover));
+  overflow-wrap: anywhere;
+}
+
+.relationship-dialog-header {
+  padding: 1rem 3.5rem 1rem 1rem;
+  border-bottom: 1px solid rgb(var(--border));
+}
+
+.relationship-dialog-body {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  scroll-padding-block: 1rem;
+}
+
+.relationship-dialog-footer {
+  flex-direction: row;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgb(var(--border));
+}
+
+@media (min-width: 640px) {
+  .relationship-dialog {
+    width: calc(100% - 2rem);
+    height: auto;
+    max-height: calc(100dvh - 2rem);
+  }
+}
+
+/* On narrow screens filters are a native, keyboard-accessible disclosure. */
+@media (min-width: 768px) {
+  .note-filters > summary { display: none; }
+  .note-filters > .note-filter-fields { display: grid; }
 }
 
 :root {
-  --background: 40 50% 95%;
-  --foreground: 26 30% 15%;
-  --surface: 38 40% 96%;
-  --surface-elevated: 38 55% 98%;
-  --surface-muted: 36 32% 92%;
-  --card: 38 48% 97%;
-  --card-foreground: 26 30% 15%;
-  --popover: 38 55% 98%;
-  --popover-foreground: 26 30% 15%;
-  --primary: 27 40% 35%;
-  --primary-foreground: 40 65% 97%;
-  --secondary: 37 31% 88%;
-  --secondary-foreground: 26 30% 18%;
-  --muted: 35 24% 90%;
-  --muted-foreground: 25 18% 39%;
-  --accent: 32 54% 50%;
-  --accent-foreground: 37 40% 97%;
-  --destructive: 8 62% 43%;
-  --destructive-foreground: 42 61% 95%;
-  --success: 147 34% 39%;
-  --success-foreground: 40 65% 97%;
-  --warning: 33 67% 50%;
-  --warning-foreground: 26 30% 15%;
-  --border: 31 28% 82%;
-  --input: 31 28% 82%;
-  --ring: 31 54% 52%;
-  --editor: 38 54% 97%;
-  --editor-foreground: 26 30% 15%;
+  --background: 247 246 242;
+  --surface: 255 255 255;
+  --surface-secondary: 241 242 244;
+  --border: 217 220 225;
+  --border-subtle: 231 232 235;
+  --text-primary: 37 40 45;
+  --text-secondary: 98 104 114;
+  --text-muted: 133 139 148;
+  --primary: 53 74 103;
+  --primary-hover: 44 62 87;
+  --primary-active: 36 51 72;
+  --primary-subtle: 232 237 243;
+  --primary-subtle-hover: 221 229 238;
+  --focus-ring: 111 135 165;
+  --selection-background: 201 216 234;
+  --selection-text: 24 36 51;
+  --danger: 180 71 71;
+  --success: 71 122 91;
+  --warning: 164 119 50;
+  --icon-default: 98 104 114;
+  --icon-active: 53 74 103;
+
+  /* Semantic aliases keep components decoupled from this fixed identity. */
+  --foreground: var(--text-primary);
+  --surface-elevated: var(--surface);
+  --surface-muted: var(--surface-secondary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface);
+  --popover-foreground: var(--text-primary);
+  --primary-foreground: 255 255 255;
+  --secondary: var(--surface-secondary);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-secondary);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--primary);
+  --accent-foreground: 255 255 255;
+  --destructive: var(--danger);
+  --destructive-foreground: 255 255 255;
+  --success-foreground: 255 255 255;
+  --warning-foreground: var(--text-primary);
+  --input: var(--border);
+  --ring: var(--focus-ring);
+  --editor: var(--surface);
+  --editor-foreground: var(--text-primary);
   --radius: 0.5rem;
-  --shadow-soft: 0 1px 1px rgba(58, 42, 28, 0.03), 0 12px 28px rgba(58, 42, 28, 0.05);
-  --shadow-paper: 0 10px 24px rgba(58, 42, 28, 0.06);
-  --shadow-lift: 0 18px 42px rgba(58, 42, 28, 0.08);
+  --shadow-soft: 0 1px 1px rgba(37, 40, 45, 0.03), 0 12px 28px rgba(37, 40, 45, 0.05);
+  --shadow-paper: 0 10px 24px rgba(37, 40, 45, 0.06);
+  --shadow-lift: 0 18px 42px rgba(37, 40, 45, 0.09);
   --space-2xs: 0.25rem;
   --space-xs: 0.5rem;
   --space-sm: 0.75rem;
@@ -49,39 +135,8 @@
   --space-2xl: 3rem;
 }
 
-.dark {
-  --background: 28 18% 9%;
-  --foreground: 39 34% 88%;
-  --surface: 28 18% 11%;
-  --surface-elevated: 28 18% 14%;
-  --surface-muted: 28 14% 16%;
-  --card: 28 18% 12%;
-  --card-foreground: 39 34% 88%;
-  --popover: 28 18% 14%;
-  --popover-foreground: 39 34% 88%;
-  --primary: 34 60% 60%;
-  --primary-foreground: 26 22% 10%;
-  --secondary: 28 14% 18%;
-  --secondary-foreground: 39 34% 88%;
-  --muted: 28 12% 19%;
-  --muted-foreground: 35 18% 67%;
-  --accent: 34 54% 58%;
-  --accent-foreground: 26 22% 10%;
-  --destructive: 8 62% 43%;
-  --destructive-foreground: 39 34% 88%;
-  --success: 147 40% 48%;
-  --success-foreground: 26 22% 10%;
-  --warning: 34 65% 56%;
-  --warning-foreground: 26 22% 10%;
-  --border: 29 12% 22%;
-  --input: 29 12% 22%;
-  --ring: 34 54% 58%;
-  --editor: 28 16% 10%;
-  --editor-foreground: 39 34% 88%;
-}
-
 * {
-  border-color: hsl(var(--border));
+  border-color: rgb(var(--border));
 }
 
 html {
@@ -89,12 +144,8 @@ html {
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(201, 148, 82, 0.16), transparent 30rem),
-    radial-gradient(circle at 100% 0%, rgba(151, 107, 62, 0.06), transparent 22rem),
-    linear-gradient(180deg, rgba(255, 253, 248, 0.86) 0%, rgba(245, 238, 226, 0.78) 100%),
-    hsl(var(--background));
-  color: hsl(var(--foreground));
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
   font-family: Inter, system-ui, sans-serif;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
@@ -113,8 +164,14 @@ textarea {
 }
 
 ::selection {
-  background: hsla(var(--accent), 0.22);
-  color: hsl(var(--foreground));
+  background: rgb(var(--selection-background));
+  color: rgb(var(--selection-text));
+  text-shadow: none;
+}
+
+.manuscript-editor::selection {
+  background: rgb(var(--selection-background));
+  color: rgb(var(--selection-text));
 }
 
 .paper-texture {
@@ -153,7 +210,7 @@ textarea {
   ::-webkit-scrollbar-thumb {
     border: 2px solid transparent;
     border-radius: 999px;
-    background: rgba(123, 93, 61, 0.26);
+    background: rgb(var(--text-muted) / 0.35);
     background-clip: padding-box;
   }
 
@@ -164,28 +221,28 @@ textarea {
 
 @layer utilities {
   .surface-shell {
-    background: linear-gradient(180deg, rgba(255, 252, 246, 0.94), rgba(250, 244, 235, 0.92));
+    background: linear-gradient(180deg, rgb(var(--surface) / 0.96), rgb(var(--background) / 0.94));
     box-shadow: var(--shadow-soft);
   }
 
   .surface-panel {
-    background: hsla(var(--surface), 0.92);
+    background: rgb(var(--surface) / 0.96);
     box-shadow: var(--shadow-paper);
   }
 
   .surface-elevated {
-    background: hsla(var(--surface-elevated), 0.96);
+    background: rgb(var(--surface-elevated) / 0.98);
     box-shadow: var(--shadow-lift);
   }
 
   .soft-divider {
-    border-color: hsla(var(--border), 0.6);
+    border-color: rgb(var(--border) / 0.6);
   }
 
   .editor-grid {
     background-image:
-      linear-gradient(rgba(126, 97, 67, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(126, 97, 67, 0.03) 1px, transparent 1px);
+      linear-gradient(rgb(var(--primary) / 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--primary) / 0.025) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 }

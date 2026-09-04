@@ -57,6 +57,7 @@ export const ModelName = {
   Chapter: 'Chapter',
   Scene: 'Scene',
   SceneVersion: 'SceneVersion',
+  ScenePlace: 'ScenePlace',
   WritingActivity: 'WritingActivity',
   Character: 'Character',
   SceneCharacter: 'SceneCharacter',
@@ -64,9 +65,20 @@ export const ModelName = {
   Location: 'Location',
   Relationship: 'Relationship',
   TimelineEvent: 'TimelineEvent',
+  TimelineEventCharacter: 'TimelineEventCharacter',
+  TimelineEventPlace: 'TimelineEventPlace',
   Note: 'Note',
+  Tag: 'Tag',
+  NoteTag: 'NoteTag',
+  NoteVolume: 'NoteVolume',
+  NoteChapter: 'NoteChapter',
+  NoteScene: 'NoteScene',
+  NoteCharacter: 'NoteCharacter',
+  NotePlace: 'NotePlace',
+  NoteTimelineEvent: 'NoteTimelineEvent',
   Backup: 'Backup',
   AppSetting: 'AppSetting',
+  LocalDataMigration: 'LocalDataMigration',
   StudioConfiguration: 'StudioConfiguration',
   NotionMapping: 'NotionMapping',
   NotionSyncState: 'NotionSyncState'
@@ -148,7 +160,6 @@ export const SceneScalarFieldEnum = {
   content: 'content',
   summary: 'summary',
   status: 'status',
-  locationId: 'locationId',
   sortOrder: 'sortOrder',
   wordCount: 'wordCount',
   objective: 'objective',
@@ -171,6 +182,14 @@ export const SceneVersionScalarFieldEnum = {
 } as const
 
 export type SceneVersionScalarFieldEnum = (typeof SceneVersionScalarFieldEnum)[keyof typeof SceneVersionScalarFieldEnum]
+
+
+export const ScenePlaceScalarFieldEnum = {
+  sceneId: 'sceneId',
+  locationId: 'locationId'
+} as const
+
+export type ScenePlaceScalarFieldEnum = (typeof ScenePlaceScalarFieldEnum)[keyof typeof ScenePlaceScalarFieldEnum]
 
 
 export const WritingActivityScalarFieldEnum = {
@@ -239,6 +258,7 @@ export const LocationScalarFieldEnum = {
   status: 'status',
   atmosphere: 'atmosphere',
   revision: 'revision',
+  updatedAt: 'updatedAt',
   parentPlaceId: 'parentPlaceId'
 } as const
 
@@ -247,6 +267,8 @@ export type LocationScalarFieldEnum = (typeof LocationScalarFieldEnum)[keyof typ
 
 export const RelationshipScalarFieldEnum = {
   id: 'id',
+  revision: 'revision',
+  archivedAt: 'archivedAt',
   novelId: 'novelId',
   fromCharacterId: 'fromCharacterId',
   toCharacterId: 'toCharacterId',
@@ -257,6 +279,8 @@ export const RelationshipScalarFieldEnum = {
   isSpoiler: 'isSpoiler',
   status: 'status',
   since: 'since',
+  sinceKind: 'sinceKind',
+  sinceTargetId: 'sinceTargetId',
   notes: 'notes'
 } as const
 
@@ -268,11 +292,15 @@ export const TimelineEventScalarFieldEnum = {
   novelId: 'novelId',
   title: 'title',
   internalDate: 'internalDate',
+  sortIndex: 'sortIndex',
+  chronologyKind: 'chronologyKind',
+  relativeDay: 'relativeDay',
+  relativeMinute: 'relativeMinute',
+  positionRevision: 'positionRevision',
+  archivedAt: 'archivedAt',
   volumeId: 'volumeId',
   chapterId: 'chapterId',
   sceneId: 'sceneId',
-  locationId: 'locationId',
-  characterIds: 'characterIds',
   description: 'description',
   isSpoiler: 'isSpoiler'
 } as const
@@ -280,7 +308,30 @@ export const TimelineEventScalarFieldEnum = {
 export type TimelineEventScalarFieldEnum = (typeof TimelineEventScalarFieldEnum)[keyof typeof TimelineEventScalarFieldEnum]
 
 
+export const TimelineEventCharacterScalarFieldEnum = {
+  eventId: 'eventId',
+  characterId: 'characterId'
+} as const
+
+export type TimelineEventCharacterScalarFieldEnum = (typeof TimelineEventCharacterScalarFieldEnum)[keyof typeof TimelineEventCharacterScalarFieldEnum]
+
+
+export const TimelineEventPlaceScalarFieldEnum = {
+  eventId: 'eventId',
+  locationId: 'locationId'
+} as const
+
+export type TimelineEventPlaceScalarFieldEnum = (typeof TimelineEventPlaceScalarFieldEnum)[keyof typeof TimelineEventPlaceScalarFieldEnum]
+
+
 export const NoteScalarFieldEnum = {
+  searchText: 'searchText',
+  quotedText: 'quotedText',
+  pinned: 'pinned',
+  workflowStatus: 'workflowStatus',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt',
+  revision: 'revision',
   id: 'id',
   novelId: 'novelId',
   linkedType: 'linkedType',
@@ -292,6 +343,72 @@ export const NoteScalarFieldEnum = {
 } as const
 
 export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
+
+
+export const TagScalarFieldEnum = {
+  id: 'id',
+  novelId: 'novelId',
+  name: 'name',
+  key: 'key'
+} as const
+
+export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const NoteTagScalarFieldEnum = {
+  noteId: 'noteId',
+  tagId: 'tagId'
+} as const
+
+export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeof NoteTagScalarFieldEnum]
+
+
+export const NoteVolumeScalarFieldEnum = {
+  noteId: 'noteId',
+  volumeId: 'volumeId'
+} as const
+
+export type NoteVolumeScalarFieldEnum = (typeof NoteVolumeScalarFieldEnum)[keyof typeof NoteVolumeScalarFieldEnum]
+
+
+export const NoteChapterScalarFieldEnum = {
+  noteId: 'noteId',
+  chapterId: 'chapterId'
+} as const
+
+export type NoteChapterScalarFieldEnum = (typeof NoteChapterScalarFieldEnum)[keyof typeof NoteChapterScalarFieldEnum]
+
+
+export const NoteSceneScalarFieldEnum = {
+  noteId: 'noteId',
+  sceneId: 'sceneId'
+} as const
+
+export type NoteSceneScalarFieldEnum = (typeof NoteSceneScalarFieldEnum)[keyof typeof NoteSceneScalarFieldEnum]
+
+
+export const NoteCharacterScalarFieldEnum = {
+  noteId: 'noteId',
+  characterId: 'characterId'
+} as const
+
+export type NoteCharacterScalarFieldEnum = (typeof NoteCharacterScalarFieldEnum)[keyof typeof NoteCharacterScalarFieldEnum]
+
+
+export const NotePlaceScalarFieldEnum = {
+  noteId: 'noteId',
+  locationId: 'locationId'
+} as const
+
+export type NotePlaceScalarFieldEnum = (typeof NotePlaceScalarFieldEnum)[keyof typeof NotePlaceScalarFieldEnum]
+
+
+export const NoteTimelineEventScalarFieldEnum = {
+  noteId: 'noteId',
+  eventId: 'eventId'
+} as const
+
+export type NoteTimelineEventScalarFieldEnum = (typeof NoteTimelineEventScalarFieldEnum)[keyof typeof NoteTimelineEventScalarFieldEnum]
 
 
 export const BackupScalarFieldEnum = {
@@ -314,6 +431,13 @@ export const AppSettingScalarFieldEnum = {
 } as const
 
 export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
+
+
+export const LocalDataMigrationScalarFieldEnum = {
+  id: 'id'
+} as const
+
+export type LocalDataMigrationScalarFieldEnum = (typeof LocalDataMigrationScalarFieldEnum)[keyof typeof LocalDataMigrationScalarFieldEnum]
 
 
 export const StudioConfigurationScalarFieldEnum = {

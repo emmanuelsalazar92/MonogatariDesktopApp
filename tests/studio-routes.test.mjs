@@ -108,20 +108,20 @@ test("character classification migrates legacy values and filters canonical life
 
 test("character relationships enforce one identity and coherent inverse labels", async () => {
   const relationships = await loadTypeScriptModule("lib/character-relationship.ts");
-  const symmetric = relationships.getRelationshipDefinition("spouses");
+  const symmetric = relationships.getRelationshipDefinition("spouse_of");
   assert.equal(symmetric.direction, "Bidirectional");
-  assert.equal(symmetric.labelFromTo, "Spouse");
-  assert.equal(symmetric.labelToFrom, "Spouse");
+  assert.equal(symmetric.labelFromTo, "Spouse of");
+  assert.equal(symmetric.labelToFrom, "Spouse of");
 
-  const directed = relationships.getRelationshipDefinition("parent-child");
-  assert.equal(directed.labelFromTo, "Child");
-  assert.equal(directed.labelToFrom, "Parent");
+  const directed = relationships.getRelationshipDefinition("parent_of");
+  assert.equal(directed.labelFromTo, "Parent of");
+  assert.equal(directed.labelToFrom, "Child of");
   assert.deepEqual(
     relationships.relationshipViewForCharacter(
-      { fromCharacterId: "parent", toCharacterId: "child", labelFromTo: "Child", labelToFrom: "Parent" },
+      { fromCharacterId: "parent", toCharacterId: "child", labelFromTo: "Parent of", labelToFrom: "Child of" },
       "child"
     ),
-    { otherCharacterId: "parent", label: "Parent" }
+    { otherCharacterId: "parent", label: "Child of" }
   );
 
   assert.equal(
@@ -132,9 +132,9 @@ test("character relationships enforce one identity and coherent inverse labels",
 
 test("character relationships reject self, arbitrary types, and cross-novel ownership", async () => {
   const relationships = await loadTypeScriptModule("lib/character-relationship.ts");
-  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "a", relationshipType: "spouses" }).ok, false);
+  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "a", relationshipType: "spouse_of" }).ok, false);
   assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "b", relationshipType: "invented" }).ok, false);
-  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "b", relationshipType: "friends", labelFromTo: "hacked" }).ok, false);
+  assert.equal(relationships.validateRelationshipInput({ novelId: "n", fromCharacterId: "a", toCharacterId: "b", relationshipType: "friend_of", labelFromTo: "hacked" }).ok, false);
   assert.equal(relationships.charactersBelongToNovel([{ id: "a", novelId: "n1" }, { id: "b", novelId: "n2" }], "n1", ["a", "b"]), false);
   assert.equal(relationships.charactersBelongToNovel([{ id: "a", novelId: "n1" }, { id: "b", novelId: "n1" }], "n1", ["a", "b"]), true);
 });
@@ -329,8 +329,7 @@ test("reader preferences validate persisted values and restore safe defaults", a
   const preferences = await loadTypeScriptModule("lib/reader-preferences.ts");
   const defaults = {
     readerFontSize: "18 px",
-    readerWidth: "720 px",
-    defaultReadingMode: "Sepia"
+    readerWidth: "720 px"
   };
   const settings = await loadTypeScriptModule("lib/studio-settings.ts", (moduleId) => {
     if (moduleId === "@/lib/studio-data") return { defaultPersistedStudioSettings: defaults };
@@ -485,7 +484,9 @@ test("scene inspector persists continuity metadata without submitting manuscript
 
   assert.match(inspectorSource, /scene metadata references are not available in this novel/);
   assert.match(studioSource, /tx\.sceneCharacter\.deleteMany/);
-  assert.match(studioSource, /tx\.timelineEvent\.updateMany\(\{ where: \{ sceneId \}/);
+  assert.match(studioSource, /tx\.timelineEvent\.updateMany\(\{ where: \{ sceneId,/);
+  assert.match(studioSource, /sceneId: null, positionRevision: \{ increment: 1 \}/);
+  assert.match(studioSource, /chapterId: scene.chapterId, volumeId: scene.chapter.volumeId, positionRevision: \{ increment: 1 \}/);
   assert.doesNotMatch(inspectorSource, /content:/);
 });
 
@@ -1003,7 +1004,12 @@ test("character place links are normalized, allowlisted, novel-scoped, and navig
   assert.equal(characterPlace.parseCharacterPlaceRelationshipType("Invented"), null);
   assert.doesNotMatch(charactersSource, /timelineEvents[\s\S]*Linked places/);
   assert.match(charactersSource, /routeForPlace\(character\.novelId, place\.locationId\)/);
-  assert.match(pageSource, /characterPlaceLinks[\s\S]*link\.locationId === place\.id/);
+  assert.match(pageSource, /<PlaceCharacters[^>]*characters=\{data.characters\} links=\{data.characterPlaceLinks\}/);
+  const placesSource = await readFile(resolve(process.cwd(), "components/studio/place-characters.tsx"), "utf8");
+  assert.match(placesSource, /\/api\/characters\/\$\{encodeURIComponent\(id\)\}\/places/);
+  assert.match(placesSource, /routeForCharacter\(place.novelId, character.characterId\)/);
+  assert.match(placesSource, /mutate\("DELETE", character.characterId\)/);
+  assert.match(placesSource, /characterPlaceRelationshipTypes\.map/);
   assert.match(pageSource, /selectedPlaceId=\{activeRoute\?\.placeId \?\? null\}/);
 });
 

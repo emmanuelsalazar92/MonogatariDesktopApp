@@ -1,0 +1,11 @@
+# Canonical Notes
+
+Note owns its title/content, pinned flag, `workflowStatus` (`open`, `in_progress`, `done`), archive timestamp, creation/update timestamps and optimistic `revision`. Content and titles are plain text. Archive is independent of workflow status.
+
+Six typed join tables connect Note to Volume, Chapter, Scene, Character, Location (Place), and TimelineEvent. Composite primary keys prevent duplicate pairs. Writes validate every target against the Note's novel, inside a SQLite write transaction; Chapter/Scene ownership follows Structure. Target deletion is restricted while Notes reference it. Deleting a Note cascades only its own joins. Tags are shared per novel using a normalized lowercase key; NoteTag is separate from narrative associations. Deleting Notes preserves Tags.
+
+`POST /api/notes?novelId=A` accepts title and optional content, pinned, workflowStatus, archivedAt, `tags: ["Continuity"]`, `links: [{"type":"Character","id":"X"},{"type":"Chapter","id":"C"}]`. GET collection/detail returns canonical links with current target titles/archive flags and tag summaries. PATCH `/api/notes/{id}?novelId=A` requires revision; omitted fields/links/tags are preserved, explicit empty arrays unlink all. DELETE requires `{confirmed:true,revision}` and removes no target entities. IDs supplied for Note creation are rejected; the server generates IDs.
+
+The existing UI's linkedType/linkedId is a compatibility projection of the first canonical link (or Novel for none). Legacy create input is translated to a single join; mixing it with links is rejected. Legacy columns remain solely for recovery and are not read as association/tag truth. Scene Inspector uses the canonical Scene join.
+
+Before starting the upgraded app, back up SQLite and run `npm run db:migrate-notes`, then `npm run db:push` and `npm run db:generate` (or the existing setup workflow, which migrates before push). The migration is immediate-transaction, additive and idempotent. It preserves legacy metadata, seeds createdAt from updatedAt, copies valid same-novel links/tags, and reports only counts of skipped corrupt references. A completion marker prevents reintroducing deliberately removed joins on reruns. No GET migrates data. Existing Timeline migrations must also be applied if pending.

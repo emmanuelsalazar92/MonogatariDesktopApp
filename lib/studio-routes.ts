@@ -25,6 +25,8 @@ export type StudioRoute = {
   sceneId?: string;
   characterId?: string;
   placeId?: string;
+  eventId?: string;
+  noteId?: string;
 };
 
 export function routeForPage(page: PageId, novelId?: string, sceneId?: string) {
@@ -50,6 +52,14 @@ export function routeForPlace(novelId: string, placeId?: string) {
   return placeId ? `${baseRoute}/${encodeURIComponent(placeId)}` : baseRoute;
 }
 
+export function routeForTimelineEvent(novelId: string, eventId: string) {
+  return `${routeForPage("timeline", novelId)}/${encodeURIComponent(eventId)}`;
+}
+export function routeForNote(novelId: string, noteId?: string) {
+  const base = routeForPage("notes", novelId);
+  return noteId ? `${base}/${encodeURIComponent(noteId)}` : base;
+}
+
 export function parseStudioRoute(pathname: string): StudioRoute | null {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
   const globalRoute = (Object.entries(globalPaths) as Array<[PageId, string]>).find(
@@ -70,7 +80,7 @@ export function parseStudioRoute(pathname: string): StudioRoute | null {
     }
   }
 
-  const entityMatch = /^\/novels\/([^/]+)\/(characters|places)\/([^/]+)$/.exec(normalizedPath);
+  const entityMatch = /^\/novels\/([^/]+)\/(characters|places|timeline|notes)\/([^/]+)$/.exec(normalizedPath);
   if (entityMatch) {
     try {
       const novelId = decodeURIComponent(entityMatch[1]);
@@ -78,7 +88,11 @@ export function parseStudioRoute(pathname: string): StudioRoute | null {
       if (!isValidNovelRouteId(novelId) || !isValidNovelRouteId(entityId)) return null;
       return entityMatch[2] === "characters"
         ? { page: "characters", novelId, characterId: entityId }
-        : { page: "places", novelId, placeId: entityId };
+        : entityMatch[2] === "places"
+          ? { page: "places", novelId, placeId: entityId }
+          : entityMatch[2] === "notes"
+            ? { page: "notes", novelId, noteId: entityId }
+            : { page: "timeline", novelId, eventId: entityId };
     } catch {
       return null;
     }

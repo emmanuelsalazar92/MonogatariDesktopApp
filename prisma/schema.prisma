@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Novel {
+  noteTags Tag[]
   id                String            @id
   title             String
   synopsis          String            @default("")
@@ -42,6 +43,7 @@ model ReadingProgress {
 }
 
 model Volume {
+  noteLinks NoteVolume[]
   id        String    @id
   novelId   String
   title     String
@@ -55,6 +57,7 @@ model Volume {
 }
 
 model Chapter {
+  noteLinks NoteChapter[]
   id             String          @id
   volumeId       String
   title          String
@@ -71,20 +74,22 @@ model Chapter {
 }
 
 model Scene {
+  noteLinks NoteScene[]
   id                String            @id
   chapterId         String
   title             String
   content           String            @default("")
   summary           String            @default("")
   status            String            @default("Idea")
-  locationId        String?
+  locationId        String?           @ignore
   sortOrder         Int               @default(0)
   wordCount         Int               @default(0)
   objective         String            @default("")
   revision          Int               @default(0)
   archived          Boolean           @default(false)
   chapter           Chapter           @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  location          Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  location          Location?         @relation(fields: [locationId], references: [id], onDelete: SetNull) @ignore
+  placeLinks        ScenePlace[]
   timelineEvents    TimelineEvent[]
   writingActivities WritingActivity[]
   sceneCharacters   SceneCharacter[]
@@ -108,6 +113,16 @@ model SceneVersion {
   @@index([sceneId, createdAt])
 }
 
+model ScenePlace {
+  sceneId    String
+  locationId String
+  scene      Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([sceneId, locationId])
+  @@index([locationId])
+}
+
 model WritingActivity {
   id        String   @id @default(cuid())
   novelId   String
@@ -122,6 +137,7 @@ model WritingActivity {
 }
 
 model Character {
+  noteLinks NoteCharacter[]
   id                    String           @id
   novelId               String
   name                  String
@@ -144,6 +160,7 @@ model Character {
   incomingRelationships Relationship[]   @relation("RelationshipTo")
   sceneLinks            SceneCharacter[]
   placeLinks            CharacterPlace[]
+  eventLinks            TimelineEventCharacter[]
 
   @@index([novelId, name])
 }
@@ -170,6 +187,7 @@ model CharacterPlace {
 }
 
 model Location {
+  noteLinks NotePlace[]
   id              String           @id
   novelId         String
   name            String
@@ -184,12 +202,15 @@ model Location {
   status          String           @default("active")
   atmosphere      String           @default("")
   revision        Int              @default(0)
+  updatedAt       DateTime?
   parentPlaceId   String?
   parentPlace     Location?        @relation("PlaceHierarchy", fields: [parentPlaceId], references: [id], onDelete: SetNull)
   childPlaces     Location[]       @relation("PlaceHierarchy")
   novel           Novel            @relation(fields: [novelId], references: [id], onDelete: Cascade)
-  scenes          Scene[]
-  timelineEvents  TimelineEvent[]
+  scenes          Scene[]          @ignore
+  sceneLinks      ScenePlace[]
+  timelineEvents  TimelineEvent[] @ignore
+  eventLinks      TimelineEventPlace[]
   characterLinks  CharacterPlace[]
 
   @@index([novelId, name])
@@ -198,6 +219,8 @@ model Location {
 
 model Relationship {
   id               String    @id
+  revision         Int       @default(0)
+  archivedAt       DateTime?
   novelId          String
   fromCharacterId  String
   toCharacterId    String
@@ -208,6 +231,8 @@ model Relationship {
   isSpoiler        Boolean   @default(false)
   status           String    @default("")
   since            String    @default("")
+  sinceKind        String    @default("unknown")
+  sinceTargetId    String?
   notes            String    @default("")
   novel            Novel     @relation(fields: [novelId], references: [id], onDelete: Cascade)
   fromCharacter    Character @relation("RelationshipFrom", fields: [fromCharacterId], references: [id], onDelete: Restrict)
@@ -219,29 +244,73 @@ model Relationship {
 }
 
 model TimelineEvent {
+  noteLinks NoteTimelineEvent[]
   id           String    @id
   novelId      String
   title        String
   internalDate String    @default("")
+  sortIndex    Int       @default(0)
+  chronologyKind String  @default("manual")
+  relativeDay  Int?
+  relativeMinute Int?
+  positionRevision Int   @default(0)
+  archivedAt   DateTime?
   volumeId     String?
   chapterId    String?
   sceneId      String?
-  locationId   String?
-  characterIds String    @default("[]")
+  locationId   String?   @ignore
+  characterIds String    @default("[]") @ignore
   description  String    @default("")
   isSpoiler    Boolean   @default(false)
   novel        Novel     @relation(fields: [novelId], references: [id], onDelete: Cascade)
   chapter      Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
   scene        Scene?    @relation(fields: [sceneId], references: [id], onDelete: SetNull)
-  location     Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  location     Location? @relation(fields: [locationId], references: [id], onDelete: SetNull) @ignore
+  characterLinks TimelineEventCharacter[]
+  placeLinks     TimelineEventPlace[]
 
+  @@index([novelId, sortIndex, id])
   @@index([novelId])
   @@index([chapterId])
   @@index([sceneId])
   @@index([locationId])
 }
 
+model TimelineEventCharacter {
+  eventId     String
+  characterId String
+  event       TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  character   Character     @relation(fields: [characterId], references: [id], onDelete: Restrict)
+
+  @@id([eventId, characterId])
+  @@index([characterId])
+}
+
+model TimelineEventPlace {
+  eventId    String
+  locationId String
+  event      TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  location   Location      @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
+  @@id([eventId, locationId])
+  @@index([locationId])
+}
+
 model Note {
+  searchText     String @default("")
+  quotedText     String @default("")
+  pinned         Boolean @default(false)
+  workflowStatus String @default("open")
+  archivedAt     DateTime?
+  createdAt      DateTime @default(now())
+  revision       Int @default(0)
+  volumeLinks    NoteVolume[]
+  chapterLinks   NoteChapter[]
+  sceneLinks     NoteScene[]
+  characterLinks NoteCharacter[]
+  placeLinks     NotePlace[]
+  eventLinks     NoteTimelineEvent[]
+  tagLinks       NoteTag[]
   id         String   @id
   novelId    String
   linkedType String
@@ -254,6 +323,82 @@ model Note {
 
   @@index([novelId])
   @@index([linkedType, linkedId])
+  @@index([novelId, archivedAt, updatedAt, id])
+  @@index([novelId, workflowStatus, updatedAt])
+  @@index([novelId, pinned, updatedAt])
+}
+
+model Tag {
+  id String @id
+  novelId String
+  name String
+  key String
+  novel Novel @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  noteLinks NoteTag[]
+  @@unique([novelId, key])
+}
+
+model NoteTag {
+  noteId String
+  tagId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag Tag @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  @@id([noteId, tagId])
+  @@index([tagId])
+}
+
+model NoteVolume {
+  noteId String
+  volumeId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  target Volume @relation(fields: [volumeId], references: [id], onDelete: Restrict)
+  @@id([noteId, volumeId])
+  @@index([volumeId])
+}
+
+model NoteChapter {
+  noteId String
+  chapterId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  target Chapter @relation(fields: [chapterId], references: [id], onDelete: Restrict)
+  @@id([noteId, chapterId])
+  @@index([chapterId])
+}
+
+model NoteScene {
+  noteId String
+  sceneId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  target Scene @relation(fields: [sceneId], references: [id], onDelete: Restrict)
+  @@id([noteId, sceneId])
+  @@index([sceneId])
+}
+
+model NoteCharacter {
+  noteId String
+  characterId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  target Character @relation(fields: [characterId], references: [id], onDelete: Restrict)
+  @@id([noteId, characterId])
+  @@index([characterId])
+}
+
+model NotePlace {
+  noteId String
+  locationId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  target Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  @@id([noteId, locationId])
+  @@index([locationId])
+}
+
+model NoteTimelineEvent {
+  noteId String
+  eventId String
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  target TimelineEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  @@id([noteId, eventId])
+  @@index([eventId])
 }
 
 model Backup {
@@ -273,6 +418,10 @@ model AppSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model LocalDataMigration {
+  id String @id
 }
 
 model StudioConfiguration {

@@ -20,8 +20,24 @@ export type TimelineEventModel = runtime.Types.Result.DefaultSelection<Prisma.$T
 
 export type AggregateTimelineEvent = {
   _count: TimelineEventCountAggregateOutputType | null
+  _avg: TimelineEventAvgAggregateOutputType | null
+  _sum: TimelineEventSumAggregateOutputType | null
   _min: TimelineEventMinAggregateOutputType | null
   _max: TimelineEventMaxAggregateOutputType | null
+}
+
+export type TimelineEventAvgAggregateOutputType = {
+  sortIndex: number | null
+  relativeDay: number | null
+  relativeMinute: number | null
+  positionRevision: number | null
+}
+
+export type TimelineEventSumAggregateOutputType = {
+  sortIndex: number | null
+  relativeDay: number | null
+  relativeMinute: number | null
+  positionRevision: number | null
 }
 
 export type TimelineEventMinAggregateOutputType = {
@@ -29,11 +45,15 @@ export type TimelineEventMinAggregateOutputType = {
   novelId: string | null
   title: string | null
   internalDate: string | null
+  sortIndex: number | null
+  chronologyKind: string | null
+  relativeDay: number | null
+  relativeMinute: number | null
+  positionRevision: number | null
+  archivedAt: Date | null
   volumeId: string | null
   chapterId: string | null
   sceneId: string | null
-  locationId: string | null
-  characterIds: string | null
   description: string | null
   isSpoiler: boolean | null
 }
@@ -43,11 +63,15 @@ export type TimelineEventMaxAggregateOutputType = {
   novelId: string | null
   title: string | null
   internalDate: string | null
+  sortIndex: number | null
+  chronologyKind: string | null
+  relativeDay: number | null
+  relativeMinute: number | null
+  positionRevision: number | null
+  archivedAt: Date | null
   volumeId: string | null
   chapterId: string | null
   sceneId: string | null
-  locationId: string | null
-  characterIds: string | null
   description: string | null
   isSpoiler: boolean | null
 }
@@ -57,27 +81,49 @@ export type TimelineEventCountAggregateOutputType = {
   novelId: number
   title: number
   internalDate: number
+  sortIndex: number
+  chronologyKind: number
+  relativeDay: number
+  relativeMinute: number
+  positionRevision: number
+  archivedAt: number
   volumeId: number
   chapterId: number
   sceneId: number
-  locationId: number
-  characterIds: number
   description: number
   isSpoiler: number
   _all: number
 }
 
 
+export type TimelineEventAvgAggregateInputType = {
+  sortIndex?: true
+  relativeDay?: true
+  relativeMinute?: true
+  positionRevision?: true
+}
+
+export type TimelineEventSumAggregateInputType = {
+  sortIndex?: true
+  relativeDay?: true
+  relativeMinute?: true
+  positionRevision?: true
+}
+
 export type TimelineEventMinAggregateInputType = {
   id?: true
   novelId?: true
   title?: true
   internalDate?: true
+  sortIndex?: true
+  chronologyKind?: true
+  relativeDay?: true
+  relativeMinute?: true
+  positionRevision?: true
+  archivedAt?: true
   volumeId?: true
   chapterId?: true
   sceneId?: true
-  locationId?: true
-  characterIds?: true
   description?: true
   isSpoiler?: true
 }
@@ -87,11 +133,15 @@ export type TimelineEventMaxAggregateInputType = {
   novelId?: true
   title?: true
   internalDate?: true
+  sortIndex?: true
+  chronologyKind?: true
+  relativeDay?: true
+  relativeMinute?: true
+  positionRevision?: true
+  archivedAt?: true
   volumeId?: true
   chapterId?: true
   sceneId?: true
-  locationId?: true
-  characterIds?: true
   description?: true
   isSpoiler?: true
 }
@@ -101,11 +151,15 @@ export type TimelineEventCountAggregateInputType = {
   novelId?: true
   title?: true
   internalDate?: true
+  sortIndex?: true
+  chronologyKind?: true
+  relativeDay?: true
+  relativeMinute?: true
+  positionRevision?: true
+  archivedAt?: true
   volumeId?: true
   chapterId?: true
   sceneId?: true
-  locationId?: true
-  characterIds?: true
   description?: true
   isSpoiler?: true
   _all?: true
@@ -149,6 +203,18 @@ export type TimelineEventAggregateArgs<ExtArgs extends runtime.Types.Extensions.
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: TimelineEventAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: TimelineEventSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: TimelineEventMinAggregateInputType
@@ -179,6 +245,8 @@ export type TimelineEventGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   _count?: TimelineEventCountAggregateInputType | true
+  _avg?: TimelineEventAvgAggregateInputType
+  _sum?: TimelineEventSumAggregateInputType
   _min?: TimelineEventMinAggregateInputType
   _max?: TimelineEventMaxAggregateInputType
 }
@@ -188,14 +256,20 @@ export type TimelineEventGroupByOutputType = {
   novelId: string
   title: string
   internalDate: string
+  sortIndex: number
+  chronologyKind: string
+  relativeDay: number | null
+  relativeMinute: number | null
+  positionRevision: number
+  archivedAt: Date | null
   volumeId: string | null
   chapterId: string | null
   sceneId: string | null
-  locationId: string | null
-  characterIds: string
   description: string
   isSpoiler: boolean
   _count: TimelineEventCountAggregateOutputType | null
+  _avg: TimelineEventAvgAggregateOutputType | null
+  _sum: TimelineEventSumAggregateOutputType | null
   _min: TimelineEventMinAggregateOutputType | null
   _max: TimelineEventMaxAggregateOutputType | null
 }
@@ -223,17 +297,23 @@ export type TimelineEventWhereInput = {
   novelId?: Prisma.StringFilter<"TimelineEvent"> | string
   title?: Prisma.StringFilter<"TimelineEvent"> | string
   internalDate?: Prisma.StringFilter<"TimelineEvent"> | string
+  sortIndex?: Prisma.IntFilter<"TimelineEvent"> | number
+  chronologyKind?: Prisma.StringFilter<"TimelineEvent"> | string
+  relativeDay?: Prisma.IntNullableFilter<"TimelineEvent"> | number | null
+  relativeMinute?: Prisma.IntNullableFilter<"TimelineEvent"> | number | null
+  positionRevision?: Prisma.IntFilter<"TimelineEvent"> | number
+  archivedAt?: Prisma.DateTimeNullableFilter<"TimelineEvent"> | Date | string | null
   volumeId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
   chapterId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
   sceneId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
-  locationId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
-  characterIds?: Prisma.StringFilter<"TimelineEvent"> | string
   description?: Prisma.StringFilter<"TimelineEvent"> | string
   isSpoiler?: Prisma.BoolFilter<"TimelineEvent"> | boolean
+  noteLinks?: Prisma.NoteTimelineEventListRelationFilter
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterNullableScalarRelationFilter, Prisma.ChapterWhereInput> | null
   scene?: Prisma.XOR<Prisma.SceneNullableScalarRelationFilter, Prisma.SceneWhereInput> | null
-  location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
+  characterLinks?: Prisma.TimelineEventCharacterListRelationFilter
+  placeLinks?: Prisma.TimelineEventPlaceListRelationFilter
 }
 
 export type TimelineEventOrderByWithRelationInput = {
@@ -241,17 +321,23 @@ export type TimelineEventOrderByWithRelationInput = {
   novelId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   internalDate?: Prisma.SortOrder
+  sortIndex?: Prisma.SortOrder
+  chronologyKind?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrderInput | Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrderInput | Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   volumeId?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterId?: Prisma.SortOrderInput | Prisma.SortOrder
   sceneId?: Prisma.SortOrderInput | Prisma.SortOrder
-  locationId?: Prisma.SortOrderInput | Prisma.SortOrder
-  characterIds?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isSpoiler?: Prisma.SortOrder
+  noteLinks?: Prisma.NoteTimelineEventOrderByRelationAggregateInput
   novel?: Prisma.NovelOrderByWithRelationInput
   chapter?: Prisma.ChapterOrderByWithRelationInput
   scene?: Prisma.SceneOrderByWithRelationInput
-  location?: Prisma.LocationOrderByWithRelationInput
+  characterLinks?: Prisma.TimelineEventCharacterOrderByRelationAggregateInput
+  placeLinks?: Prisma.TimelineEventPlaceOrderByRelationAggregateInput
 }
 
 export type TimelineEventWhereUniqueInput = Prisma.AtLeast<{
@@ -262,17 +348,23 @@ export type TimelineEventWhereUniqueInput = Prisma.AtLeast<{
   novelId?: Prisma.StringFilter<"TimelineEvent"> | string
   title?: Prisma.StringFilter<"TimelineEvent"> | string
   internalDate?: Prisma.StringFilter<"TimelineEvent"> | string
+  sortIndex?: Prisma.IntFilter<"TimelineEvent"> | number
+  chronologyKind?: Prisma.StringFilter<"TimelineEvent"> | string
+  relativeDay?: Prisma.IntNullableFilter<"TimelineEvent"> | number | null
+  relativeMinute?: Prisma.IntNullableFilter<"TimelineEvent"> | number | null
+  positionRevision?: Prisma.IntFilter<"TimelineEvent"> | number
+  archivedAt?: Prisma.DateTimeNullableFilter<"TimelineEvent"> | Date | string | null
   volumeId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
   chapterId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
   sceneId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
-  locationId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
-  characterIds?: Prisma.StringFilter<"TimelineEvent"> | string
   description?: Prisma.StringFilter<"TimelineEvent"> | string
   isSpoiler?: Prisma.BoolFilter<"TimelineEvent"> | boolean
+  noteLinks?: Prisma.NoteTimelineEventListRelationFilter
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   chapter?: Prisma.XOR<Prisma.ChapterNullableScalarRelationFilter, Prisma.ChapterWhereInput> | null
   scene?: Prisma.XOR<Prisma.SceneNullableScalarRelationFilter, Prisma.SceneWhereInput> | null
-  location?: Prisma.XOR<Prisma.LocationNullableScalarRelationFilter, Prisma.LocationWhereInput> | null
+  characterLinks?: Prisma.TimelineEventCharacterListRelationFilter
+  placeLinks?: Prisma.TimelineEventPlaceListRelationFilter
 }, "id">
 
 export type TimelineEventOrderByWithAggregationInput = {
@@ -280,16 +372,22 @@ export type TimelineEventOrderByWithAggregationInput = {
   novelId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   internalDate?: Prisma.SortOrder
+  sortIndex?: Prisma.SortOrder
+  chronologyKind?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrderInput | Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrderInput | Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   volumeId?: Prisma.SortOrderInput | Prisma.SortOrder
   chapterId?: Prisma.SortOrderInput | Prisma.SortOrder
   sceneId?: Prisma.SortOrderInput | Prisma.SortOrder
-  locationId?: Prisma.SortOrderInput | Prisma.SortOrder
-  characterIds?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isSpoiler?: Prisma.SortOrder
   _count?: Prisma.TimelineEventCountOrderByAggregateInput
+  _avg?: Prisma.TimelineEventAvgOrderByAggregateInput
   _max?: Prisma.TimelineEventMaxOrderByAggregateInput
   _min?: Prisma.TimelineEventMinOrderByAggregateInput
+  _sum?: Prisma.TimelineEventSumOrderByAggregateInput
 }
 
 export type TimelineEventScalarWhereWithAggregatesInput = {
@@ -300,11 +398,15 @@ export type TimelineEventScalarWhereWithAggregatesInput = {
   novelId?: Prisma.StringWithAggregatesFilter<"TimelineEvent"> | string
   title?: Prisma.StringWithAggregatesFilter<"TimelineEvent"> | string
   internalDate?: Prisma.StringWithAggregatesFilter<"TimelineEvent"> | string
+  sortIndex?: Prisma.IntWithAggregatesFilter<"TimelineEvent"> | number
+  chronologyKind?: Prisma.StringWithAggregatesFilter<"TimelineEvent"> | string
+  relativeDay?: Prisma.IntNullableWithAggregatesFilter<"TimelineEvent"> | number | null
+  relativeMinute?: Prisma.IntNullableWithAggregatesFilter<"TimelineEvent"> | number | null
+  positionRevision?: Prisma.IntWithAggregatesFilter<"TimelineEvent"> | number
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"TimelineEvent"> | Date | string | null
   volumeId?: Prisma.StringNullableWithAggregatesFilter<"TimelineEvent"> | string | null
   chapterId?: Prisma.StringNullableWithAggregatesFilter<"TimelineEvent"> | string | null
   sceneId?: Prisma.StringNullableWithAggregatesFilter<"TimelineEvent"> | string | null
-  locationId?: Prisma.StringNullableWithAggregatesFilter<"TimelineEvent"> | string | null
-  characterIds?: Prisma.StringWithAggregatesFilter<"TimelineEvent"> | string
   description?: Prisma.StringWithAggregatesFilter<"TimelineEvent"> | string
   isSpoiler?: Prisma.BoolWithAggregatesFilter<"TimelineEvent"> | boolean
 }
@@ -313,14 +415,21 @@ export type TimelineEventCreateInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutTargetInput
   novel: Prisma.NovelCreateNestedOneWithoutTimelineEventsInput
   chapter?: Prisma.ChapterCreateNestedOneWithoutTimelineEventsInput
   scene?: Prisma.SceneCreateNestedOneWithoutTimelineEventsInput
-  location?: Prisma.LocationCreateNestedOneWithoutTimelineEventsInput
+  characterLinks?: Prisma.TimelineEventCharacterCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventUncheckedCreateInput = {
@@ -328,27 +437,41 @@ export type TimelineEventUncheckedCreateInput = {
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
   sceneId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutTargetInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUpdateManyWithoutTargetNestedInput
   novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
   chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
   scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
-  location?: Prisma.LocationUpdateOneWithoutTimelineEventsNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateInput = {
@@ -356,13 +479,20 @@ export type TimelineEventUncheckedUpdateInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutTargetNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventCreateManyInput = {
@@ -370,11 +500,15 @@ export type TimelineEventCreateManyInput = {
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
   sceneId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
 }
@@ -383,8 +517,13 @@ export type TimelineEventUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -394,11 +533,15 @@ export type TimelineEventUncheckedUpdateManyInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -418,13 +561,24 @@ export type TimelineEventCountOrderByAggregateInput = {
   novelId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   internalDate?: Prisma.SortOrder
+  sortIndex?: Prisma.SortOrder
+  chronologyKind?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   volumeId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   sceneId?: Prisma.SortOrder
-  locationId?: Prisma.SortOrder
-  characterIds?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isSpoiler?: Prisma.SortOrder
+}
+
+export type TimelineEventAvgOrderByAggregateInput = {
+  sortIndex?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
 }
 
 export type TimelineEventMaxOrderByAggregateInput = {
@@ -432,11 +586,15 @@ export type TimelineEventMaxOrderByAggregateInput = {
   novelId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   internalDate?: Prisma.SortOrder
+  sortIndex?: Prisma.SortOrder
+  chronologyKind?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   volumeId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   sceneId?: Prisma.SortOrder
-  locationId?: Prisma.SortOrder
-  characterIds?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isSpoiler?: Prisma.SortOrder
 }
@@ -446,13 +604,29 @@ export type TimelineEventMinOrderByAggregateInput = {
   novelId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   internalDate?: Prisma.SortOrder
+  sortIndex?: Prisma.SortOrder
+  chronologyKind?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   volumeId?: Prisma.SortOrder
   chapterId?: Prisma.SortOrder
   sceneId?: Prisma.SortOrder
-  locationId?: Prisma.SortOrder
-  characterIds?: Prisma.SortOrder
   description?: Prisma.SortOrder
   isSpoiler?: Prisma.SortOrder
+}
+
+export type TimelineEventSumOrderByAggregateInput = {
+  sortIndex?: Prisma.SortOrder
+  relativeDay?: Prisma.SortOrder
+  relativeMinute?: Prisma.SortOrder
+  positionRevision?: Prisma.SortOrder
+}
+
+export type TimelineEventScalarRelationFilter = {
+  is?: Prisma.TimelineEventWhereInput
+  isNot?: Prisma.TimelineEventWhereInput
 }
 
 export type TimelineEventCreateNestedManyWithoutNovelInput = {
@@ -581,72 +755,86 @@ export type TimelineEventUncheckedUpdateManyWithoutSceneNestedInput = {
   deleteMany?: Prisma.TimelineEventScalarWhereInput | Prisma.TimelineEventScalarWhereInput[]
 }
 
-export type TimelineEventCreateNestedManyWithoutLocationInput = {
-  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutLocationInput, Prisma.TimelineEventUncheckedCreateWithoutLocationInput> | Prisma.TimelineEventCreateWithoutLocationInput[] | Prisma.TimelineEventUncheckedCreateWithoutLocationInput[]
-  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutLocationInput | Prisma.TimelineEventCreateOrConnectWithoutLocationInput[]
-  createMany?: Prisma.TimelineEventCreateManyLocationInputEnvelope
-  connect?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
+export type TimelineEventCreateNestedOneWithoutCharacterLinksInput = {
+  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutCharacterLinksInput, Prisma.TimelineEventUncheckedCreateWithoutCharacterLinksInput>
+  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutCharacterLinksInput
+  connect?: Prisma.TimelineEventWhereUniqueInput
 }
 
-export type TimelineEventUncheckedCreateNestedManyWithoutLocationInput = {
-  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutLocationInput, Prisma.TimelineEventUncheckedCreateWithoutLocationInput> | Prisma.TimelineEventCreateWithoutLocationInput[] | Prisma.TimelineEventUncheckedCreateWithoutLocationInput[]
-  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutLocationInput | Prisma.TimelineEventCreateOrConnectWithoutLocationInput[]
-  createMany?: Prisma.TimelineEventCreateManyLocationInputEnvelope
-  connect?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
+export type TimelineEventUpdateOneRequiredWithoutCharacterLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutCharacterLinksInput, Prisma.TimelineEventUncheckedCreateWithoutCharacterLinksInput>
+  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutCharacterLinksInput
+  upsert?: Prisma.TimelineEventUpsertWithoutCharacterLinksInput
+  connect?: Prisma.TimelineEventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TimelineEventUpdateToOneWithWhereWithoutCharacterLinksInput, Prisma.TimelineEventUpdateWithoutCharacterLinksInput>, Prisma.TimelineEventUncheckedUpdateWithoutCharacterLinksInput>
 }
 
-export type TimelineEventUpdateManyWithoutLocationNestedInput = {
-  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutLocationInput, Prisma.TimelineEventUncheckedCreateWithoutLocationInput> | Prisma.TimelineEventCreateWithoutLocationInput[] | Prisma.TimelineEventUncheckedCreateWithoutLocationInput[]
-  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutLocationInput | Prisma.TimelineEventCreateOrConnectWithoutLocationInput[]
-  upsert?: Prisma.TimelineEventUpsertWithWhereUniqueWithoutLocationInput | Prisma.TimelineEventUpsertWithWhereUniqueWithoutLocationInput[]
-  createMany?: Prisma.TimelineEventCreateManyLocationInputEnvelope
-  set?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  disconnect?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  delete?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  connect?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  update?: Prisma.TimelineEventUpdateWithWhereUniqueWithoutLocationInput | Prisma.TimelineEventUpdateWithWhereUniqueWithoutLocationInput[]
-  updateMany?: Prisma.TimelineEventUpdateManyWithWhereWithoutLocationInput | Prisma.TimelineEventUpdateManyWithWhereWithoutLocationInput[]
-  deleteMany?: Prisma.TimelineEventScalarWhereInput | Prisma.TimelineEventScalarWhereInput[]
+export type TimelineEventCreateNestedOneWithoutPlaceLinksInput = {
+  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutPlaceLinksInput, Prisma.TimelineEventUncheckedCreateWithoutPlaceLinksInput>
+  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutPlaceLinksInput
+  connect?: Prisma.TimelineEventWhereUniqueInput
 }
 
-export type TimelineEventUncheckedUpdateManyWithoutLocationNestedInput = {
-  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutLocationInput, Prisma.TimelineEventUncheckedCreateWithoutLocationInput> | Prisma.TimelineEventCreateWithoutLocationInput[] | Prisma.TimelineEventUncheckedCreateWithoutLocationInput[]
-  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutLocationInput | Prisma.TimelineEventCreateOrConnectWithoutLocationInput[]
-  upsert?: Prisma.TimelineEventUpsertWithWhereUniqueWithoutLocationInput | Prisma.TimelineEventUpsertWithWhereUniqueWithoutLocationInput[]
-  createMany?: Prisma.TimelineEventCreateManyLocationInputEnvelope
-  set?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  disconnect?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  delete?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  connect?: Prisma.TimelineEventWhereUniqueInput | Prisma.TimelineEventWhereUniqueInput[]
-  update?: Prisma.TimelineEventUpdateWithWhereUniqueWithoutLocationInput | Prisma.TimelineEventUpdateWithWhereUniqueWithoutLocationInput[]
-  updateMany?: Prisma.TimelineEventUpdateManyWithWhereWithoutLocationInput | Prisma.TimelineEventUpdateManyWithWhereWithoutLocationInput[]
-  deleteMany?: Prisma.TimelineEventScalarWhereInput | Prisma.TimelineEventScalarWhereInput[]
+export type TimelineEventUpdateOneRequiredWithoutPlaceLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutPlaceLinksInput, Prisma.TimelineEventUncheckedCreateWithoutPlaceLinksInput>
+  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutPlaceLinksInput
+  upsert?: Prisma.TimelineEventUpsertWithoutPlaceLinksInput
+  connect?: Prisma.TimelineEventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TimelineEventUpdateToOneWithWhereWithoutPlaceLinksInput, Prisma.TimelineEventUpdateWithoutPlaceLinksInput>, Prisma.TimelineEventUncheckedUpdateWithoutPlaceLinksInput>
+}
+
+export type TimelineEventCreateNestedOneWithoutNoteLinksInput = {
+  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutNoteLinksInput, Prisma.TimelineEventUncheckedCreateWithoutNoteLinksInput>
+  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutNoteLinksInput
+  connect?: Prisma.TimelineEventWhereUniqueInput
+}
+
+export type TimelineEventUpdateOneRequiredWithoutNoteLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.TimelineEventCreateWithoutNoteLinksInput, Prisma.TimelineEventUncheckedCreateWithoutNoteLinksInput>
+  connectOrCreate?: Prisma.TimelineEventCreateOrConnectWithoutNoteLinksInput
+  upsert?: Prisma.TimelineEventUpsertWithoutNoteLinksInput
+  connect?: Prisma.TimelineEventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TimelineEventUpdateToOneWithWhereWithoutNoteLinksInput, Prisma.TimelineEventUpdateWithoutNoteLinksInput>, Prisma.TimelineEventUncheckedUpdateWithoutNoteLinksInput>
 }
 
 export type TimelineEventCreateWithoutNovelInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutTargetInput
   chapter?: Prisma.ChapterCreateNestedOneWithoutTimelineEventsInput
   scene?: Prisma.SceneCreateNestedOneWithoutTimelineEventsInput
-  location?: Prisma.LocationCreateNestedOneWithoutTimelineEventsInput
+  characterLinks?: Prisma.TimelineEventCharacterCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventUncheckedCreateWithoutNovelInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
   sceneId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutTargetInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventCreateOrConnectWithoutNovelInput = {
@@ -682,11 +870,15 @@ export type TimelineEventScalarWhereInput = {
   novelId?: Prisma.StringFilter<"TimelineEvent"> | string
   title?: Prisma.StringFilter<"TimelineEvent"> | string
   internalDate?: Prisma.StringFilter<"TimelineEvent"> | string
+  sortIndex?: Prisma.IntFilter<"TimelineEvent"> | number
+  chronologyKind?: Prisma.StringFilter<"TimelineEvent"> | string
+  relativeDay?: Prisma.IntNullableFilter<"TimelineEvent"> | number | null
+  relativeMinute?: Prisma.IntNullableFilter<"TimelineEvent"> | number | null
+  positionRevision?: Prisma.IntFilter<"TimelineEvent"> | number
+  archivedAt?: Prisma.DateTimeNullableFilter<"TimelineEvent"> | Date | string | null
   volumeId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
   chapterId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
   sceneId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
-  locationId?: Prisma.StringNullableFilter<"TimelineEvent"> | string | null
-  characterIds?: Prisma.StringFilter<"TimelineEvent"> | string
   description?: Prisma.StringFilter<"TimelineEvent"> | string
   isSpoiler?: Prisma.BoolFilter<"TimelineEvent"> | boolean
 }
@@ -695,13 +887,20 @@ export type TimelineEventCreateWithoutChapterInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutTargetInput
   novel: Prisma.NovelCreateNestedOneWithoutTimelineEventsInput
   scene?: Prisma.SceneCreateNestedOneWithoutTimelineEventsInput
-  location?: Prisma.LocationCreateNestedOneWithoutTimelineEventsInput
+  characterLinks?: Prisma.TimelineEventCharacterCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventUncheckedCreateWithoutChapterInput = {
@@ -709,12 +908,19 @@ export type TimelineEventUncheckedCreateWithoutChapterInput = {
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   sceneId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutTargetInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventCreateOrConnectWithoutChapterInput = {
@@ -746,13 +952,20 @@ export type TimelineEventCreateWithoutSceneInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutTargetInput
   novel: Prisma.NovelCreateNestedOneWithoutTimelineEventsInput
   chapter?: Prisma.ChapterCreateNestedOneWithoutTimelineEventsInput
-  location?: Prisma.LocationCreateNestedOneWithoutTimelineEventsInput
+  characterLinks?: Prisma.TimelineEventCharacterCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventUncheckedCreateWithoutSceneInput = {
@@ -760,12 +973,19 @@ export type TimelineEventUncheckedCreateWithoutSceneInput = {
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutTargetInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type TimelineEventCreateOrConnectWithoutSceneInput = {
@@ -793,66 +1013,307 @@ export type TimelineEventUpdateManyWithWhereWithoutSceneInput = {
   data: Prisma.XOR<Prisma.TimelineEventUpdateManyMutationInput, Prisma.TimelineEventUncheckedUpdateManyWithoutSceneInput>
 }
 
-export type TimelineEventCreateWithoutLocationInput = {
+export type TimelineEventCreateWithoutCharacterLinksInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
-  characterIds?: string
+  description?: string
+  isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutTargetInput
+  novel: Prisma.NovelCreateNestedOneWithoutTimelineEventsInput
+  chapter?: Prisma.ChapterCreateNestedOneWithoutTimelineEventsInput
+  scene?: Prisma.SceneCreateNestedOneWithoutTimelineEventsInput
+  placeLinks?: Prisma.TimelineEventPlaceCreateNestedManyWithoutEventInput
+}
+
+export type TimelineEventUncheckedCreateWithoutCharacterLinksInput = {
+  id: string
+  novelId: string
+  title: string
+  internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
+  volumeId?: string | null
+  chapterId?: string | null
+  sceneId?: string | null
+  description?: string
+  isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutTargetInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type TimelineEventCreateOrConnectWithoutCharacterLinksInput = {
+  where: Prisma.TimelineEventWhereUniqueInput
+  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutCharacterLinksInput, Prisma.TimelineEventUncheckedCreateWithoutCharacterLinksInput>
+}
+
+export type TimelineEventUpsertWithoutCharacterLinksInput = {
+  update: Prisma.XOR<Prisma.TimelineEventUpdateWithoutCharacterLinksInput, Prisma.TimelineEventUncheckedUpdateWithoutCharacterLinksInput>
+  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutCharacterLinksInput, Prisma.TimelineEventUncheckedCreateWithoutCharacterLinksInput>
+  where?: Prisma.TimelineEventWhereInput
+}
+
+export type TimelineEventUpdateToOneWithWhereWithoutCharacterLinksInput = {
+  where?: Prisma.TimelineEventWhereInput
+  data: Prisma.XOR<Prisma.TimelineEventUpdateWithoutCharacterLinksInput, Prisma.TimelineEventUncheckedUpdateWithoutCharacterLinksInput>
+}
+
+export type TimelineEventUpdateWithoutCharacterLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUpdateManyWithoutTargetNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
+  chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
+  scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUpdateManyWithoutEventNestedInput
+}
+
+export type TimelineEventUncheckedUpdateWithoutCharacterLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutTargetNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type TimelineEventCreateWithoutPlaceLinksInput = {
+  id: string
+  title: string
+  internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
+  volumeId?: string | null
+  description?: string
+  isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutTargetInput
+  novel: Prisma.NovelCreateNestedOneWithoutTimelineEventsInput
+  chapter?: Prisma.ChapterCreateNestedOneWithoutTimelineEventsInput
+  scene?: Prisma.SceneCreateNestedOneWithoutTimelineEventsInput
+  characterLinks?: Prisma.TimelineEventCharacterCreateNestedManyWithoutEventInput
+}
+
+export type TimelineEventUncheckedCreateWithoutPlaceLinksInput = {
+  id: string
+  novelId: string
+  title: string
+  internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
+  volumeId?: string | null
+  chapterId?: string | null
+  sceneId?: string | null
+  description?: string
+  isSpoiler?: boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutTargetInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedCreateNestedManyWithoutEventInput
+}
+
+export type TimelineEventCreateOrConnectWithoutPlaceLinksInput = {
+  where: Prisma.TimelineEventWhereUniqueInput
+  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutPlaceLinksInput, Prisma.TimelineEventUncheckedCreateWithoutPlaceLinksInput>
+}
+
+export type TimelineEventUpsertWithoutPlaceLinksInput = {
+  update: Prisma.XOR<Prisma.TimelineEventUpdateWithoutPlaceLinksInput, Prisma.TimelineEventUncheckedUpdateWithoutPlaceLinksInput>
+  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutPlaceLinksInput, Prisma.TimelineEventUncheckedCreateWithoutPlaceLinksInput>
+  where?: Prisma.TimelineEventWhereInput
+}
+
+export type TimelineEventUpdateToOneWithWhereWithoutPlaceLinksInput = {
+  where?: Prisma.TimelineEventWhereInput
+  data: Prisma.XOR<Prisma.TimelineEventUpdateWithoutPlaceLinksInput, Prisma.TimelineEventUncheckedUpdateWithoutPlaceLinksInput>
+}
+
+export type TimelineEventUpdateWithoutPlaceLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUpdateManyWithoutTargetNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
+  chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
+  scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUpdateManyWithoutEventNestedInput
+}
+
+export type TimelineEventUncheckedUpdateWithoutPlaceLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutTargetNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type TimelineEventCreateWithoutNoteLinksInput = {
+  id: string
+  title: string
+  internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
+  volumeId?: string | null
   description?: string
   isSpoiler?: boolean
   novel: Prisma.NovelCreateNestedOneWithoutTimelineEventsInput
   chapter?: Prisma.ChapterCreateNestedOneWithoutTimelineEventsInput
   scene?: Prisma.SceneCreateNestedOneWithoutTimelineEventsInput
+  characterLinks?: Prisma.TimelineEventCharacterCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceCreateNestedManyWithoutEventInput
 }
 
-export type TimelineEventUncheckedCreateWithoutLocationInput = {
+export type TimelineEventUncheckedCreateWithoutNoteLinksInput = {
   id: string
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
   sceneId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedCreateNestedManyWithoutEventInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedCreateNestedManyWithoutEventInput
 }
 
-export type TimelineEventCreateOrConnectWithoutLocationInput = {
+export type TimelineEventCreateOrConnectWithoutNoteLinksInput = {
   where: Prisma.TimelineEventWhereUniqueInput
-  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutLocationInput, Prisma.TimelineEventUncheckedCreateWithoutLocationInput>
+  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutNoteLinksInput, Prisma.TimelineEventUncheckedCreateWithoutNoteLinksInput>
 }
 
-export type TimelineEventCreateManyLocationInputEnvelope = {
-  data: Prisma.TimelineEventCreateManyLocationInput | Prisma.TimelineEventCreateManyLocationInput[]
+export type TimelineEventUpsertWithoutNoteLinksInput = {
+  update: Prisma.XOR<Prisma.TimelineEventUpdateWithoutNoteLinksInput, Prisma.TimelineEventUncheckedUpdateWithoutNoteLinksInput>
+  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutNoteLinksInput, Prisma.TimelineEventUncheckedCreateWithoutNoteLinksInput>
+  where?: Prisma.TimelineEventWhereInput
 }
 
-export type TimelineEventUpsertWithWhereUniqueWithoutLocationInput = {
-  where: Prisma.TimelineEventWhereUniqueInput
-  update: Prisma.XOR<Prisma.TimelineEventUpdateWithoutLocationInput, Prisma.TimelineEventUncheckedUpdateWithoutLocationInput>
-  create: Prisma.XOR<Prisma.TimelineEventCreateWithoutLocationInput, Prisma.TimelineEventUncheckedCreateWithoutLocationInput>
+export type TimelineEventUpdateToOneWithWhereWithoutNoteLinksInput = {
+  where?: Prisma.TimelineEventWhereInput
+  data: Prisma.XOR<Prisma.TimelineEventUpdateWithoutNoteLinksInput, Prisma.TimelineEventUncheckedUpdateWithoutNoteLinksInput>
 }
 
-export type TimelineEventUpdateWithWhereUniqueWithoutLocationInput = {
-  where: Prisma.TimelineEventWhereUniqueInput
-  data: Prisma.XOR<Prisma.TimelineEventUpdateWithoutLocationInput, Prisma.TimelineEventUncheckedUpdateWithoutLocationInput>
+export type TimelineEventUpdateWithoutNoteLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
+  chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
+  scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUpdateManyWithoutEventNestedInput
 }
 
-export type TimelineEventUpdateManyWithWhereWithoutLocationInput = {
-  where: Prisma.TimelineEventScalarWhereInput
-  data: Prisma.XOR<Prisma.TimelineEventUpdateManyMutationInput, Prisma.TimelineEventUncheckedUpdateManyWithoutLocationInput>
+export type TimelineEventUncheckedUpdateWithoutNoteLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventCreateManyNovelInput = {
   id: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
   sceneId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
 }
@@ -861,37 +1322,55 @@ export type TimelineEventUpdateWithoutNovelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUpdateManyWithoutTargetNestedInput
   chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
   scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
-  location?: Prisma.LocationUpdateOneWithoutTimelineEventsNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateWithoutNovelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutTargetNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateManyWithoutNovelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -901,10 +1380,14 @@ export type TimelineEventCreateManyChapterInput = {
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   sceneId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
 }
@@ -913,13 +1396,20 @@ export type TimelineEventUpdateWithoutChapterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUpdateManyWithoutTargetNestedInput
   novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
   scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
-  location?: Prisma.LocationUpdateOneWithoutTimelineEventsNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateWithoutChapterInput = {
@@ -927,12 +1417,19 @@ export type TimelineEventUncheckedUpdateWithoutChapterInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutTargetNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateManyWithoutChapterInput = {
@@ -940,10 +1437,14 @@ export type TimelineEventUncheckedUpdateManyWithoutChapterInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -953,10 +1454,14 @@ export type TimelineEventCreateManySceneInput = {
   novelId: string
   title: string
   internalDate?: string
+  sortIndex?: number
+  chronologyKind?: string
+  relativeDay?: number | null
+  relativeMinute?: number | null
+  positionRevision?: number
+  archivedAt?: Date | string | null
   volumeId?: string | null
   chapterId?: string | null
-  locationId?: string | null
-  characterIds?: string
   description?: string
   isSpoiler?: boolean
 }
@@ -965,13 +1470,20 @@ export type TimelineEventUpdateWithoutSceneInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUpdateManyWithoutTargetNestedInput
   novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
   chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
-  location?: Prisma.LocationUpdateOneWithoutTimelineEventsNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateWithoutSceneInput = {
@@ -979,12 +1491,19 @@ export type TimelineEventUncheckedUpdateWithoutSceneInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutTargetNestedInput
+  characterLinks?: Prisma.TimelineEventCharacterUncheckedUpdateManyWithoutEventNestedInput
+  placeLinks?: Prisma.TimelineEventPlaceUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type TimelineEventUncheckedUpdateManyWithoutSceneInput = {
@@ -992,66 +1511,65 @@ export type TimelineEventUncheckedUpdateManyWithoutSceneInput = {
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   internalDate?: Prisma.StringFieldUpdateOperationsInput | string
+  sortIndex?: Prisma.IntFieldUpdateOperationsInput | number
+  chronologyKind?: Prisma.StringFieldUpdateOperationsInput | string
+  relativeDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  relativeMinute?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  positionRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  locationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
-export type TimelineEventCreateManyLocationInput = {
-  id: string
-  novelId: string
-  title: string
-  internalDate?: string
-  volumeId?: string | null
-  chapterId?: string | null
-  sceneId?: string | null
-  characterIds?: string
-  description?: string
-  isSpoiler?: boolean
+
+/**
+ * Count Type TimelineEventCountOutputType
+ */
+
+export type TimelineEventCountOutputType = {
+  noteLinks: number
+  characterLinks: number
+  placeLinks: number
 }
 
-export type TimelineEventUpdateWithoutLocationInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.StringFieldUpdateOperationsInput | string
-  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
-  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
-  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  novel?: Prisma.NovelUpdateOneRequiredWithoutTimelineEventsNestedInput
-  chapter?: Prisma.ChapterUpdateOneWithoutTimelineEventsNestedInput
-  scene?: Prisma.SceneUpdateOneWithoutTimelineEventsNestedInput
+export type TimelineEventCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteLinks?: boolean | TimelineEventCountOutputTypeCountNoteLinksArgs
+  characterLinks?: boolean | TimelineEventCountOutputTypeCountCharacterLinksArgs
+  placeLinks?: boolean | TimelineEventCountOutputTypeCountPlaceLinksArgs
 }
 
-export type TimelineEventUncheckedUpdateWithoutLocationInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  novelId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.StringFieldUpdateOperationsInput | string
-  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
-  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
-  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+/**
+ * TimelineEventCountOutputType without action
+ */
+export type TimelineEventCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TimelineEventCountOutputType
+   */
+  select?: Prisma.TimelineEventCountOutputTypeSelect<ExtArgs> | null
 }
 
-export type TimelineEventUncheckedUpdateManyWithoutLocationInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  novelId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.StringFieldUpdateOperationsInput | string
-  internalDate?: Prisma.StringFieldUpdateOperationsInput | string
-  volumeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  chapterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  sceneId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  characterIds?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
-  isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
+/**
+ * TimelineEventCountOutputType without action
+ */
+export type TimelineEventCountOutputTypeCountNoteLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteTimelineEventWhereInput
 }
 
+/**
+ * TimelineEventCountOutputType without action
+ */
+export type TimelineEventCountOutputTypeCountCharacterLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TimelineEventCharacterWhereInput
+}
+
+/**
+ * TimelineEventCountOutputType without action
+ */
+export type TimelineEventCountOutputTypeCountPlaceLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TimelineEventPlaceWhereInput
+}
 
 
 export type TimelineEventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1059,17 +1577,24 @@ export type TimelineEventSelect<ExtArgs extends runtime.Types.Extensions.Interna
   novelId?: boolean
   title?: boolean
   internalDate?: boolean
+  sortIndex?: boolean
+  chronologyKind?: boolean
+  relativeDay?: boolean
+  relativeMinute?: boolean
+  positionRevision?: boolean
+  archivedAt?: boolean
   volumeId?: boolean
   chapterId?: boolean
   sceneId?: boolean
-  locationId?: boolean
-  characterIds?: boolean
   description?: boolean
   isSpoiler?: boolean
+  noteLinks?: boolean | Prisma.TimelineEvent$noteLinksArgs<ExtArgs>
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.TimelineEvent$chapterArgs<ExtArgs>
   scene?: boolean | Prisma.TimelineEvent$sceneArgs<ExtArgs>
-  location?: boolean | Prisma.TimelineEvent$locationArgs<ExtArgs>
+  characterLinks?: boolean | Prisma.TimelineEvent$characterLinksArgs<ExtArgs>
+  placeLinks?: boolean | Prisma.TimelineEvent$placeLinksArgs<ExtArgs>
+  _count?: boolean | Prisma.TimelineEventCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["timelineEvent"]>
 
 export type TimelineEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1077,17 +1602,20 @@ export type TimelineEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   novelId?: boolean
   title?: boolean
   internalDate?: boolean
+  sortIndex?: boolean
+  chronologyKind?: boolean
+  relativeDay?: boolean
+  relativeMinute?: boolean
+  positionRevision?: boolean
+  archivedAt?: boolean
   volumeId?: boolean
   chapterId?: boolean
   sceneId?: boolean
-  locationId?: boolean
-  characterIds?: boolean
   description?: boolean
   isSpoiler?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.TimelineEvent$chapterArgs<ExtArgs>
   scene?: boolean | Prisma.TimelineEvent$sceneArgs<ExtArgs>
-  location?: boolean | Prisma.TimelineEvent$locationArgs<ExtArgs>
 }, ExtArgs["result"]["timelineEvent"]>
 
 export type TimelineEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1095,17 +1623,20 @@ export type TimelineEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   novelId?: boolean
   title?: boolean
   internalDate?: boolean
+  sortIndex?: boolean
+  chronologyKind?: boolean
+  relativeDay?: boolean
+  relativeMinute?: boolean
+  positionRevision?: boolean
+  archivedAt?: boolean
   volumeId?: boolean
   chapterId?: boolean
   sceneId?: boolean
-  locationId?: boolean
-  characterIds?: boolean
   description?: boolean
   isSpoiler?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.TimelineEvent$chapterArgs<ExtArgs>
   scene?: boolean | Prisma.TimelineEvent$sceneArgs<ExtArgs>
-  location?: boolean | Prisma.TimelineEvent$locationArgs<ExtArgs>
 }, ExtArgs["result"]["timelineEvent"]>
 
 export type TimelineEventSelectScalar = {
@@ -1113,53 +1644,64 @@ export type TimelineEventSelectScalar = {
   novelId?: boolean
   title?: boolean
   internalDate?: boolean
+  sortIndex?: boolean
+  chronologyKind?: boolean
+  relativeDay?: boolean
+  relativeMinute?: boolean
+  positionRevision?: boolean
+  archivedAt?: boolean
   volumeId?: boolean
   chapterId?: boolean
   sceneId?: boolean
-  locationId?: boolean
-  characterIds?: boolean
   description?: boolean
   isSpoiler?: boolean
 }
 
-export type TimelineEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "title" | "internalDate" | "volumeId" | "chapterId" | "sceneId" | "locationId" | "characterIds" | "description" | "isSpoiler", ExtArgs["result"]["timelineEvent"]>
+export type TimelineEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "title" | "internalDate" | "sortIndex" | "chronologyKind" | "relativeDay" | "relativeMinute" | "positionRevision" | "archivedAt" | "volumeId" | "chapterId" | "sceneId" | "description" | "isSpoiler", ExtArgs["result"]["timelineEvent"]>
 export type TimelineEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteLinks?: boolean | Prisma.TimelineEvent$noteLinksArgs<ExtArgs>
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.TimelineEvent$chapterArgs<ExtArgs>
   scene?: boolean | Prisma.TimelineEvent$sceneArgs<ExtArgs>
-  location?: boolean | Prisma.TimelineEvent$locationArgs<ExtArgs>
+  characterLinks?: boolean | Prisma.TimelineEvent$characterLinksArgs<ExtArgs>
+  placeLinks?: boolean | Prisma.TimelineEvent$placeLinksArgs<ExtArgs>
+  _count?: boolean | Prisma.TimelineEventCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TimelineEventIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.TimelineEvent$chapterArgs<ExtArgs>
   scene?: boolean | Prisma.TimelineEvent$sceneArgs<ExtArgs>
-  location?: boolean | Prisma.TimelineEvent$locationArgs<ExtArgs>
 }
 export type TimelineEventIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   chapter?: boolean | Prisma.TimelineEvent$chapterArgs<ExtArgs>
   scene?: boolean | Prisma.TimelineEvent$sceneArgs<ExtArgs>
-  location?: boolean | Prisma.TimelineEvent$locationArgs<ExtArgs>
 }
 
 export type $TimelineEventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "TimelineEvent"
   objects: {
+    noteLinks: Prisma.$NoteTimelineEventPayload<ExtArgs>[]
     novel: Prisma.$NovelPayload<ExtArgs>
     chapter: Prisma.$ChapterPayload<ExtArgs> | null
     scene: Prisma.$ScenePayload<ExtArgs> | null
-    location: Prisma.$LocationPayload<ExtArgs> | null
+    characterLinks: Prisma.$TimelineEventCharacterPayload<ExtArgs>[]
+    placeLinks: Prisma.$TimelineEventPlacePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     novelId: string
     title: string
     internalDate: string
+    sortIndex: number
+    chronologyKind: string
+    relativeDay: number | null
+    relativeMinute: number | null
+    positionRevision: number
+    archivedAt: Date | null
     volumeId: string | null
     chapterId: string | null
     sceneId: string | null
-    locationId: string | null
-    characterIds: string
     description: string
     isSpoiler: boolean
   }, ExtArgs["result"]["timelineEvent"]>
@@ -1556,10 +2098,12 @@ readonly fields: TimelineEventFieldRefs;
  */
 export interface Prisma__TimelineEventClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  noteLinks<T extends Prisma.TimelineEvent$noteLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TimelineEvent$noteLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteTimelineEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   novel<T extends Prisma.NovelDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NovelDefaultArgs<ExtArgs>>): Prisma.Prisma__NovelClient<runtime.Types.Result.GetResult<Prisma.$NovelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   chapter<T extends Prisma.TimelineEvent$chapterArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TimelineEvent$chapterArgs<ExtArgs>>): Prisma.Prisma__ChapterClient<runtime.Types.Result.GetResult<Prisma.$ChapterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   scene<T extends Prisma.TimelineEvent$sceneArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TimelineEvent$sceneArgs<ExtArgs>>): Prisma.Prisma__SceneClient<runtime.Types.Result.GetResult<Prisma.$ScenePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  location<T extends Prisma.TimelineEvent$locationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TimelineEvent$locationArgs<ExtArgs>>): Prisma.Prisma__LocationClient<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  characterLinks<T extends Prisma.TimelineEvent$characterLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TimelineEvent$characterLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TimelineEventCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  placeLinks<T extends Prisma.TimelineEvent$placeLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TimelineEvent$placeLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TimelineEventPlacePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1593,11 +2137,15 @@ export interface TimelineEventFieldRefs {
   readonly novelId: Prisma.FieldRef<"TimelineEvent", 'String'>
   readonly title: Prisma.FieldRef<"TimelineEvent", 'String'>
   readonly internalDate: Prisma.FieldRef<"TimelineEvent", 'String'>
+  readonly sortIndex: Prisma.FieldRef<"TimelineEvent", 'Int'>
+  readonly chronologyKind: Prisma.FieldRef<"TimelineEvent", 'String'>
+  readonly relativeDay: Prisma.FieldRef<"TimelineEvent", 'Int'>
+  readonly relativeMinute: Prisma.FieldRef<"TimelineEvent", 'Int'>
+  readonly positionRevision: Prisma.FieldRef<"TimelineEvent", 'Int'>
+  readonly archivedAt: Prisma.FieldRef<"TimelineEvent", 'DateTime'>
   readonly volumeId: Prisma.FieldRef<"TimelineEvent", 'String'>
   readonly chapterId: Prisma.FieldRef<"TimelineEvent", 'String'>
   readonly sceneId: Prisma.FieldRef<"TimelineEvent", 'String'>
-  readonly locationId: Prisma.FieldRef<"TimelineEvent", 'String'>
-  readonly characterIds: Prisma.FieldRef<"TimelineEvent", 'String'>
   readonly description: Prisma.FieldRef<"TimelineEvent", 'String'>
   readonly isSpoiler: Prisma.FieldRef<"TimelineEvent", 'Boolean'>
 }
@@ -1999,6 +2547,30 @@ export type TimelineEventDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
+ * TimelineEvent.noteLinks
+ */
+export type TimelineEvent$noteLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteTimelineEvent
+   */
+  select?: Prisma.NoteTimelineEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteTimelineEvent
+   */
+  omit?: Prisma.NoteTimelineEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteTimelineEventInclude<ExtArgs> | null
+  where?: Prisma.NoteTimelineEventWhereInput
+  orderBy?: Prisma.NoteTimelineEventOrderByWithRelationInput | Prisma.NoteTimelineEventOrderByWithRelationInput[]
+  cursor?: Prisma.NoteTimelineEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteTimelineEventScalarFieldEnum | Prisma.NoteTimelineEventScalarFieldEnum[]
+}
+
+/**
  * TimelineEvent.chapter
  */
 export type TimelineEvent$chapterArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2037,22 +2609,51 @@ export type TimelineEvent$sceneArgs<ExtArgs extends runtime.Types.Extensions.Int
 }
 
 /**
- * TimelineEvent.location
+ * TimelineEvent.characterLinks
  */
-export type TimelineEvent$locationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type TimelineEvent$characterLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the Location
+   * Select specific fields to fetch from the TimelineEventCharacter
    */
-  select?: Prisma.LocationSelect<ExtArgs> | null
+  select?: Prisma.TimelineEventCharacterSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the Location
+   * Omit specific fields from the TimelineEventCharacter
    */
-  omit?: Prisma.LocationOmit<ExtArgs> | null
+  omit?: Prisma.TimelineEventCharacterOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.LocationInclude<ExtArgs> | null
-  where?: Prisma.LocationWhereInput
+  include?: Prisma.TimelineEventCharacterInclude<ExtArgs> | null
+  where?: Prisma.TimelineEventCharacterWhereInput
+  orderBy?: Prisma.TimelineEventCharacterOrderByWithRelationInput | Prisma.TimelineEventCharacterOrderByWithRelationInput[]
+  cursor?: Prisma.TimelineEventCharacterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TimelineEventCharacterScalarFieldEnum | Prisma.TimelineEventCharacterScalarFieldEnum[]
+}
+
+/**
+ * TimelineEvent.placeLinks
+ */
+export type TimelineEvent$placeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TimelineEventPlace
+   */
+  select?: Prisma.TimelineEventPlaceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TimelineEventPlace
+   */
+  omit?: Prisma.TimelineEventPlaceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TimelineEventPlaceInclude<ExtArgs> | null
+  where?: Prisma.TimelineEventPlaceWhereInput
+  orderBy?: Prisma.TimelineEventPlaceOrderByWithRelationInput | Prisma.TimelineEventPlaceOrderByWithRelationInput[]
+  cursor?: Prisma.TimelineEventPlaceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TimelineEventPlaceScalarFieldEnum | Prisma.TimelineEventPlaceScalarFieldEnum[]
 }
 
 /**

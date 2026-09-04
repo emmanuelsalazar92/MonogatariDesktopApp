@@ -2,7 +2,33 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { placeTypeLabels, placeStatusLabels, placeStatuses, matchesPlaceClassification } from "@/lib/place-classification";
+import { PlaceScenes } from "@/components/studio/place-scenes";
+import { PlaceCharacters } from "@/components/studio/place-characters";
+import { PlaceStoryEvents } from "@/components/studio/place-story-events";
+import { PlaceCatalogEmptyState } from "@/components/studio/place-catalog-empty-state";
+import { PlaceLifecycle } from "@/components/studio/place-lifecycle";
+import { defaultPlaceCatalogState, filterAndSortPlaces, parsePlaceCatalogState, placeSortLabels, resolvePlaceSelection, routeForPlaceCatalog, serializePlaceCatalogState, type PlaceCatalogState, type PlaceSort } from "@/lib/place-catalog";
+import { resolveTimelinePlaces } from "@/lib/timeline-place";
+import { TimelineCatalogLoader } from "@/components/studio/timeline-catalog-loader";
+import { TimelineEmptyState } from "@/components/studio/timeline-empty-state";
+import { TimelineLifecycle } from "@/components/studio/timeline-lifecycle";
+import { TimelineStoryLink } from "@/components/studio/timeline-story-link";
+import { defaultTimelineCatalog, parseTimelineCatalog, normalizeTimelineCatalog, timelineCatalogQuery, timelineCatalogRoute, filterTimelineEvents, type TimelineCatalogState } from "@/lib/timeline-catalog";
+import { TimelineEventDialog } from "@/components/studio/timeline-event-dialog";
+import { NoteFormDialog } from "@/components/studio/note-form-dialog";
+import { NoteCaptureContext, NoteUpdatesContext, AddStoryNoteButton } from "@/components/studio/note-capture";
+import { SelectionCaptureMenu, type ManuscriptSelection } from "@/components/studio/selection-capture-menu";
+import { CharacterHighlightPreview } from "@/components/studio/character-highlight-preview";
+import { SceneAnnotations } from "@/components/studio/scene-annotations";
+import { StoryNotes } from "@/components/studio/story-notes";
+import { createNoteCapture, type NoteCaptureDraft, type NoteCaptureTarget } from "@/lib/note-capture";
+import { NotesCatalog } from "@/components/studio/notes-catalog";
+import { TimelinePositionEditor } from "@/components/studio/timeline-position-editor";
+import { TimelineWindow } from "@/components/studio/timeline-window";
+import { TimelineDetailPanel, TimelineFilters } from "@/components/studio/timeline-detail-panel";
+import { TimelineDetailLoader } from "@/components/studio/timeline-detail-loader";
+import { getPlaceHierarchy } from "@/lib/place-hierarchy";
+import { placeTypeLabels, placeStatusLabels, placeStatuses } from "@/lib/place-classification";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArchiveRestore,
@@ -12,10 +38,8 @@ import {
   ChevronRight,
   ChevronsRight,
   Circle,
-  Clock,
   Download,
   Eye,
-  EyeOff,
   FileArchive,
   History,
   Keyboard,
@@ -28,10 +52,8 @@ import {
   Save,
   Search,
   SlidersHorizontal,
-  Tag,
   Trash2,
   Upload,
-  UserRound,
   X
 } from "lucide-react";
 
@@ -72,18 +94,23 @@ import {
 import { clampReadingRatio, type ResolvedReadingProgress } from "@/lib/reader-progress";
 import {
   defaultReaderPreferences,
-  isReaderTheme,
   normalizeReaderFontSize,
   normalizeReaderWidth,
   parseReaderFontSize,
   parseReaderWidth,
-  readerPreferenceRanges,
-  readerThemes,
-  type ReaderTheme
+  readerPreferenceRanges
 } from "@/lib/reader-preferences";
 import { CharactersScreen } from "@/components/studio/characters-screen";
 import { CharacterFormDialog } from "@/components/studio/character-form-dialog";
 import { PlaceFormDialog } from "@/components/studio/place-form-dialog";
+import { PlaceDetailLoader } from "@/components/studio/place-detail-loader";
+import { RelationshipFields, type RelationshipFormValues } from "@/components/studio/relationship-fields";
+import { relationshipSinceOptions } from "@/lib/relationship-since";
+import { RelationshipExplorer } from "@/components/studio/relationship-explorer";
+import { RelationshipCatalogLoader } from "@/components/studio/relationship-loaders";
+import { RelationshipLibrary } from "@/components/studio/relationship-library";
+import { defaultRelationshipCatalog, parseRelationshipCatalog, serializeRelationshipCatalog, relationshipCatalogRoute, filterRelationships, relationshipCategories, type RelationshipCatalogState } from "@/lib/relationship-catalog";
+import { visibleGraphCharacters } from "@/lib/relationship-graph";
 import {
   characterSortOptions,
   defaultCharacterCatalogState,
@@ -98,8 +125,6 @@ import {
 } from "@/lib/character-metadata";
 import {
   relationshipDefinitions,
-  relationshipViewForCharacter,
-  resolveRelationshipSemantics
 } from "@/lib/character-relationship";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
@@ -122,8 +147,6 @@ import {
 import { Sidebar } from "@/components/studio/sidebar";
 import { TopBar } from "@/components/studio/top-bar";
 import {
-  characterName,
-  chapterTitle,
   DataStatus,
   defaultPersistedStudioSettings,
   emptyStudioData,
@@ -134,10 +157,7 @@ import {
   getScopedStudioData,
   normalizeStudioData,
   PersistedStudioSettings,
-  placeName,
-  StudioData,
-  uniqueStrings,
-  volumeTitle
+  StudioData
 } from "@/lib/studio-data";
 import {
   pageLabelsByLanguage,
@@ -181,13 +201,12 @@ import {
   type ChapterStatus,
   type FocusMode,
   type Location,
+  type PlaceSummary,
   type Note,
   type Novel,
   type PageId,
-  type Relationship,
   type Scene,
   type SidebarState,
-  type TimelineEvent,
 } from "@/lib/studio-domain";
 
 type SceneSaveInput = {
@@ -207,30 +226,7 @@ type CreateNovelInput = {
   synopsis: string;
 };
 
-type CreateNoteInput = {
-  title: string;
-  content: string;
-};
-
-type CreateRelationshipInput = {
-  fromCharacterId: string;
-  toCharacterId: string;
-  relationshipType: string;
-  status: string;
-  since: string;
-  description: string;
-  notes: string;
-  isSpoiler: boolean;
-};
-
-type CreateTimelineEventInput = {
-  title: string;
-  internalDate: string;
-  chapterId: string;
-  locationId: string;
-  description: string;
-  isSpoiler: boolean;
-};
+type CreateRelationshipInput = RelationshipFormValues;
 
 type NovelMetricSummary = {
   volumeCount: number;
@@ -242,11 +238,6 @@ const StudioDataContext = React.createContext<StudioData>(emptyStudioData);
 function useStudioData() {
   return React.useContext(StudioDataContext);
 }
-
-const relationshipFilterTypes = [
-  "All relationships",
-  ...relationshipDefinitions.map((definition) => definition.name)
-];
 
 const chapterStatusOptions = narrativeStatuses;
 
@@ -288,7 +279,6 @@ function PrivateNovelStudioContent() {
   const activePage = activeRoute?.page ?? "dashboard";
   const [sidebarState, setSidebarState] = React.useState<SidebarState>("expanded");
   const [mobileDrawerOpen, setMobileDrawerOpen] = React.useState(false);
-  const [theme, setTheme] = React.useState<"light" | "dark" | "system">("light");
   const [language, setLanguage] = React.useState<Language>("en");
   const [focusMode, setFocusMode] = React.useState<FocusMode>("none");
   const [readerFocusOverlayOpen, setReaderFocusOverlayOpen] = React.useState(false);
@@ -298,6 +288,10 @@ function PrivateNovelStudioContent() {
   >(null);
   const [editingCharacter, setEditingCharacter] = React.useState<Character | null>(null);
   const [editingPlace, setEditingPlace] = React.useState<Location | null>(null);
+  const [editingNote, setEditingNote] = React.useState<Note | null>(null);
+  const [noteCapture, setNoteCapture] = React.useState<NoteCaptureDraft | null>(null);
+  const [noteCatalogVersion, setNoteCatalogVersion] = React.useState(0);
+  const [noteTagOptions, setNoteTagOptions] = React.useState<{ novelId: string; tags: string[] }>({ novelId: "", tags: [] });
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved locally");
   const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
   const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
@@ -309,17 +303,8 @@ function PrivateNovelStudioContent() {
   const [resolvingNotionConflict, setResolvingNotionConflict] = React.useState(false);
   const [toast, setToast] = React.useState("");
   const [libraryQuery, setLibraryQuery] = React.useState("");
-  const [placeQuery, setPlaceQuery] = React.useState("");
-  const [placeType, setPlaceType] = React.useState("all");
-  const [placeStatus, setPlaceStatus] = React.useState("active");
-  const [relationshipType, setRelationshipType] = React.useState("All relationships");
-  const [relationshipCharacter, setRelationshipCharacter] = React.useState("All characters");
-  const [showSpoilers, setShowSpoilers] = React.useState(false);
-  const [timelineVolume, setTimelineVolume] = React.useState("All volumes");
-  const [timelineChapter, setTimelineChapter] = React.useState("All chapters");
-  const [timelineCharacter, setTimelineCharacter] = React.useState("All characters");
-  const [timelinePlace, setTimelinePlace] = React.useState("All places");
-  const [readerTheme, setReaderTheme] = React.useState<ReaderTheme>(defaultReaderPreferences.theme);
+  const relationshipCatalog = React.useMemo(() => parseRelationshipCatalog(searchParams), [searchParams]);
+  const [initialRelationshipType, setInitialRelationshipType] = React.useState("");
   const [readerFontSize, setReaderFontSize] = React.useState(defaultReaderPreferences.fontSize);
   const [readerWidth, setReaderWidth] = React.useState(defaultReaderPreferences.width);
   const [exportScope, setExportScope] = React.useState("Full novel");
@@ -374,6 +359,13 @@ function PrivateNovelStudioContent() {
     [routeContextData]
   );
   const currentNovel = getCurrentNovel(routeContextData);
+  const noteOptions = React.useMemo(() => [
+    ...relationshipSinceOptions(currentNovel.id, scopedStudioData.volumes, scopedStudioData.chapters, scopedStudioData.scenes).map(option => ({ type: ({ volume: "Volume", chapter: "Chapter", scene: "Scene" } as const)[option.kind], id: option.id, title: option.label, archived: option.archived, novelId: currentNovel.id })),
+    ...scopedStudioData.characters.map(character => ({ type: "Character" as const, id: character.id, title: character.name, novelId: character.novelId, archived: Boolean(character.archivedAt) })),
+    ...scopedStudioData.locations.map(place => ({ type: "Place" as const, id: place.id, title: place.name, novelId: place.novelId, archived: place.status === "archived" })),
+    ...scopedStudioData.timelineEvents.map(event => ({ type: "TimelineEvent" as const, id: event.id, title: event.title, novelId: event.novelId }))
+  ], [currentNovel.id, scopedStudioData]);
+  const noteTagsLoaded = React.useCallback((tags: string[]) => setNoteTagOptions({ novelId: currentNovel.id, tags }), [currentNovel.id]);
   const readerFallbackChapter = getActiveChapter(scopedStudioData);
   const readerFallbackNavigation = React.useMemo<ReaderNavigationState>(
     () => readerFallbackChapter.id
@@ -411,6 +403,7 @@ function PrivateNovelStudioContent() {
     () => parseCharacterCatalogState(searchParams),
     [searchParams]
   );
+  const placeCatalogState = React.useMemo(() => parsePlaceCatalogState(searchParams), [searchParams]);
   const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
   const readerFocusToggleHandlerRef = React.useRef<(() => void) | null>(null);
   const editorDirtyRef = React.useRef(false);
@@ -454,6 +447,19 @@ function PrivateNovelStudioContent() {
     [activeRoute?.characterId, activeRoute?.page, characterCatalogState, currentNovel.id, router]
   );
 
+  const updatePlaceCatalog = React.useCallback((changes: Partial<PlaceCatalogState>) => {
+    router.replace(routeForPlaceCatalog(currentNovel.id, { ...placeCatalogState, ...changes }, activeRoute?.placeId), { scroll: false });
+  }, [activeRoute?.placeId, currentNovel.id, placeCatalogState, router]);
+
+  const updateRelationshipCatalog = React.useCallback((changes: Partial<RelationshipCatalogState>) => {
+    router.replace(relationshipCatalogRoute(currentNovel.id, { ...relationshipCatalog, ...changes }), { scroll: false });
+  }, [currentNovel.id, relationshipCatalog, router]);
+  React.useEffect(() => {
+    if (activePage === "relationships" && searchParams.toString() !== serializeRelationshipCatalog(relationshipCatalog).toString()) {
+      router.replace(relationshipCatalogRoute(currentNovel.id, relationshipCatalog), { scroll: false });
+    }
+  }, [activePage, currentNovel.id, relationshipCatalog, router, searchParams]);
+
   const showToast = React.useCallback((message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2200);
@@ -494,10 +500,6 @@ function PrivateNovelStudioContent() {
       setLanguage(nextSettings.language);
     }
 
-    if (nextSettings.theme === "light" || nextSettings.theme === "dark" || nextSettings.theme === "system") {
-      setTheme(nextSettings.theme);
-    }
-
     if (
       nextSettings.sidebarState === "expanded" ||
       nextSettings.sidebarState === "compact" ||
@@ -510,11 +512,6 @@ function PrivateNovelStudioContent() {
 
     setReaderFontSize(parseReaderFontSize(nextSettings.readerFontSize));
     setReaderWidth(parseReaderWidth(nextSettings.readerWidth));
-    setReaderTheme(
-      isReaderTheme(nextSettings.defaultReadingMode)
-        ? nextSettings.defaultReadingMode
-        : defaultReaderPreferences.theme
-    );
   }, [dataStatus, studioData.studioSettings]);
 
   React.useEffect(() => {
@@ -563,6 +560,12 @@ function PrivateNovelStudioContent() {
   }, [activePage, activeRoute?.characterId, characterCatalogState, currentNovel.id, router, searchParams]);
 
   React.useEffect(() => {
+    if (activePage !== "places" || !currentNovel.id) return;
+    if (searchParams.toString() === serializePlaceCatalogState(placeCatalogState).toString()) return;
+    router.replace(routeForPlaceCatalog(currentNovel.id, placeCatalogState, activeRoute?.placeId), { scroll: false });
+  }, [activePage, activeRoute?.placeId, currentNovel.id, placeCatalogState, router, searchParams]);
+
+  React.useEffect(() => {
     const desktopMedia = window.matchMedia(
       activePage === "reader" ? "(min-width: 1024px)" : "(min-width: 768px)"
     );
@@ -587,14 +590,6 @@ function PrivateNovelStudioContent() {
     setEnabledExportOptions(new Set(defaults.options));
     exportDefaultsAppliedRef.current = true;
   }, [activePage, dataStatus, studioSettings.exportDefaults]);
-
-  React.useEffect(() => {
-    const root = document.documentElement;
-    const shouldUseDark =
-      theme === "dark" ||
-      (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    root.classList.toggle("dark", shouldUseDark);
-  }, [theme]);
 
   const registerPendingSave = React.useCallback((handler: PendingSaveHandler | null) => {
     pendingSaveHandlerRef.current = handler;
@@ -700,13 +695,8 @@ function PrivateNovelStudioContent() {
   );
 
   const updateReaderPreferences = React.useCallback(
-    (changes: Partial<{ theme: ReaderTheme; fontSize: number; width: number }>) => {
+    (changes: Partial<{ fontSize: number; width: number }>) => {
       const settingsChanges: Record<string, string> = {};
-
-      if (changes.theme !== undefined && isReaderTheme(changes.theme)) {
-        setReaderTheme(changes.theme);
-        settingsChanges.defaultReadingMode = changes.theme;
-      }
 
       if (changes.fontSize !== undefined) {
         const normalized = normalizeReaderFontSize(changes.fontSize);
@@ -781,13 +771,6 @@ function PrivateNovelStudioContent() {
     [persistSettings]
   );
 
-  const updateTheme = React.useCallback(
-    (value: "light" | "dark" | "system") => {
-      void saveSettings({ theme: value }, () => setTheme(value));
-    },
-    [saveSettings]
-  );
-
   const updateLanguage = React.useCallback(
     (value: Language) => {
       void saveSettings({ language: value }, () => setLanguage(value));
@@ -829,11 +812,6 @@ function PrivateNovelStudioContent() {
         updateReaderPreferences({ width: Number.parseInt(String(value), 10) });
         return;
       }
-      if (key === "defaultReadingMode" && isReaderTheme(value)) {
-        updateReaderPreferences({ theme: value });
-        return;
-      }
-
       void saveSettings({ [key]: String(value) });
     },
     [saveSettings, updateReaderPreferences]
@@ -1272,32 +1250,6 @@ function PrivateNovelStudioContent() {
     [refreshStudioData, setActiveNovel, showToast]
   );
 
-  const createNoteFromDialog = React.useCallback(
-    async (input: CreateNoteInput) => {
-      const response = await fetch("/api/notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          novelId: currentNovel.id,
-          title: input.title,
-          content: input.content,
-          linkedType: "Novel",
-          linkedId: currentNovel.id
-        })
-      });
-
-      if (!response.ok) {
-        const details = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(details?.error ?? `Note creation failed with ${response.status}`);
-      }
-
-      await refreshStudioData(false);
-      router.push(routeForPage("notes", currentNovel.id));
-      showToast("Note created in SQLite");
-    },
-    [currentNovel.id, refreshStudioData, router, showToast]
-  );
-
   const createRelationshipFromDialog = React.useCallback(
     async (input: CreateRelationshipInput) => {
       const response = await fetch("/api/relationships", {
@@ -1315,25 +1267,11 @@ function PrivateNovelStudioContent() {
       }
 
       await refreshStudioData(false);
-      router.push(routeForPage("relationships", currentNovel.id));
+      router.push(relationshipCatalogRoute(currentNovel.id, relationshipCatalog));
       showToast("Relationship saved to SQLite");
     },
-    [currentNovel.id, refreshStudioData, router, showToast]
+    [currentNovel.id, refreshStudioData, relationshipCatalog, router, showToast]
   );
-
-  const removeRelationship = React.useCallback(async (relationship: Relationship) => {
-    const from = characterName(relationship.fromCharacterId, studioData);
-    const to = characterName(relationship.toCharacterId, studioData);
-    if (!window.confirm(`Remove the relationship between ${from} and ${to}? Characters will not be deleted.`)) return;
-    const response = await fetch(`/api/relationships/${encodeURIComponent(relationship.id)}`, { method: "DELETE" });
-    if (!response.ok) {
-      const details = await response.json().catch(() => null) as { error?: string } | null;
-      showToast(details?.error ?? "Could not remove relationship");
-      return;
-    }
-    await refreshStudioData(false);
-    showToast("Relationship removed; characters were preserved");
-  }, [refreshStudioData, showToast, studioData]);
 
   const archiveCharacter = React.useCallback(async (character: Character) => {
     const response = await fetch(
@@ -1379,23 +1317,9 @@ function PrivateNovelStudioContent() {
     showToast("Character permanently deleted");
   }, [refreshStudioData, showToast]);
 
-  const createTimelineEventFromDialog = React.useCallback(
-    async (input: CreateTimelineEventInput) => {
-      const response = await fetch("/api/timeline-events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          novelId: currentNovel.id,
-          ...input
-        })
-      });
-
-      if (!response.ok) {
-        const details = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(details?.error ?? `Timeline event creation failed with ${response.status}`);
-      }
-
-      await refreshStudioData(false);
+  const timelineEventSaved = React.useCallback(
+    async () => {
+      if (!await refreshStudioData(false)) throw new Error("Event saved. Could not refresh; please retry.");
       router.push(routeForPage("timeline", currentNovel.id));
       showToast("Timeline event saved to SQLite");
     },
@@ -1462,6 +1386,7 @@ function PrivateNovelStudioContent() {
       }
 
       if (event.key === "Escape") {
+        if (event.defaultPrevented || document.querySelector('[role="dialog"]')) return;
         if (readerFocusOverlayOpen) return;
         if (focusMode === "reading" && readerFocusToggleHandlerRef.current) {
           readerFocusToggleHandlerRef.current();
@@ -1478,7 +1403,7 @@ function PrivateNovelStudioContent() {
   }, [activePage, changeFocusMode, cycleSidebar, flushPendingChanges, focusMode, readerFocusOverlayOpen]);
 
   const novels = studioData.novels;
-  const { characters, locations, relationships } = scopedStudioData;
+  const { characters, locations } = scopedStudioData;
 
   const filteredNovels = novels.filter((novel) => {
     const queryMatch = novel.title.toLowerCase().includes(libraryQuery.toLowerCase());
@@ -1501,22 +1426,8 @@ function PrivateNovelStudioContent() {
 
   const filteredCharacters = filterAndSortCharacters(characters, characterCatalogState);
 
-  const filteredPlaces = locations.filter((place) => {
-    const queryMatch = place.name.toLowerCase().includes(placeQuery.toLowerCase());
-    return queryMatch && matchesPlaceClassification(place, placeType, placeStatus);
-  });
+  const filteredPlaces = filterAndSortPlaces(locations, placeCatalogState);
 
-  const filteredRelationships = relationships.filter((relationship) => {
-    const typeMatch =
-      relationshipType === "All relationships" ||
-      resolveRelationshipSemantics(relationship.relationshipType, relationship.direction).name.toLowerCase() === relationshipType.toLowerCase();
-    const characterMatch =
-      relationshipCharacter === "All characters" ||
-      relationship.fromCharacterId === relationshipCharacter ||
-      relationship.toCharacterId === relationshipCharacter;
-    const spoilerMatch = showSpoilers || !relationship.isSpoiler;
-    return typeMatch && characterMatch && spoilerMatch;
-  });
   const novelMetrics = React.useMemo<Record<string, NovelMetricSummary>>(
     () =>
       Object.fromEntries(
@@ -1571,9 +1482,24 @@ function PrivateNovelStudioContent() {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")}.${exportFormat === "ZIP backup" ? "zip" : exportFormat.toLowerCase()}`;
 
+  const captureNote = (target: NoteCaptureTarget, selectedText?: string) => {
+    const capture = createNoteCapture(currentNovel.id, target, selectedText);
+    if (!capture) { showToast("Choose a valid story target and 1–100,000 characters of selected text."); return; }
+    setEditingNote(null); setNoteCapture(capture); setDialog("note");
+  };
+
+  const noteDialog = dialog === "note" ? <NoteFormDialog key={`${currentNovel.id}:${editingNote?.id ?? "new"}`} novelId={currentNovel.id} note={editingNote} capture={noteCapture}
+    options={noteOptions} availableTags={noteTagOptions.novelId === currentNovel.id ? noteTagOptions.tags : []}
+    onClose={() => { setDialog(null); setEditingNote(null); setNoteCapture(null); }}
+    onSaved={async () => {
+      setNoteCatalogVersion(value => value + 1);
+      showToast(editingNote ? "Note updated in SQLite" : "Note created in SQLite");
+    }} /> : null;
+
   if (focusMode === "writing") {
     return (
       <StudioDataContext.Provider value={scopedStudioData}>
+        <NoteCaptureContext.Provider value={captureNote}>
         <WritingFocusMode
           editorFontSize={Number.parseInt(studioSettings.editorFontSize, 10) || 18}
           autosaveDelayMs={autosaveDelay(studioSettings.autosaveInterval)}
@@ -1583,14 +1509,20 @@ function PrivateNovelStudioContent() {
           setSaveStatus={setSaveStatus}
           onRegisterPendingSave={registerPendingSave}
           onDirtyChange={setEditorDirty}
+          onRefreshMetadata={() => void refreshStudioData(false)}
+          onNotify={showToast}
           onExit={() => void changeFocusMode("none")}
         />
+        {noteDialog}
+        {toast ? <div role="status" className="fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-paper">{toast}</div> : null}
+        </NoteCaptureContext.Provider>
       </StudioDataContext.Provider>
     );
   }
-
   return (
     <StudioDataContext.Provider value={scopedStudioData}>
+      <NoteCaptureContext.Provider value={captureNote}>
+      <NoteUpdatesContext.Provider value={noteCatalogVersion}>
       <main
         className="min-h-screen bg-background text-foreground"
         data-reading-focus={focusMode === "reading" ? "active" : undefined}
@@ -1711,6 +1643,7 @@ function PrivateNovelStudioContent() {
                   onReader={() => void selectPage("reader")}
                   onNavigateScene={(sceneId) => void openSceneInEditor(sceneId)}
                   onRefreshMetadata={() => void refreshStudioData(false)}
+                  onNotify={showToast}
                   inspectorOpen={inspectorOpen}
                   setInspectorOpen={updateInspectorOpen}
                   setSaveStatus={setSaveStatus}
@@ -1719,12 +1652,10 @@ function PrivateNovelStudioContent() {
               {activePage === "reader" ? (
                 <ReaderScreen
                   navigation={readerNavigation}
-                  readerTheme={readerTheme}
                   readerFontSize={readerFontSize}
                   readerWidth={readerWidth}
                   isFocusMode={focusMode === "reading"}
                   onNavigationChange={updateReaderNavigation}
-                  onReaderThemeChange={(theme) => updateReaderPreferences({ theme })}
                   onReaderFontSizeChange={(fontSize) => updateReaderPreferences({ fontSize })}
                   onReaderWidthChange={(width) => updateReaderPreferences({ width })}
                   onResetReaderPreferences={() => updateReaderPreferences(defaultReaderPreferences)}
@@ -1786,13 +1717,11 @@ function PrivateNovelStudioContent() {
               ) : null}
               {activePage === "places" ? (
                 <PlacesScreen
+                  onScenesChanged={async () => { if (!await refreshStudioData(false)) throw new Error("Links saved, but the detail could not refresh. Please retry."); }}
                   places={filteredPlaces}
-                  query={placeQuery}
-                  type={placeType}
-                  status={placeStatus}
-                  onStatusChange={setPlaceStatus}
-                  onQueryChange={setPlaceQuery}
-                  onTypeChange={setPlaceType}
+                  catalogState={placeCatalogState}
+                  onCatalogChange={updatePlaceCatalog}
+                  onClearFilters={() => updatePlaceCatalog(defaultPlaceCatalogState)}
                   onAddPlace={() => { setEditingPlace(null); setDialog("place"); }}
                   onEditPlace={(place) => { setEditingPlace(place); setDialog("place"); }}
                   selectedPlaceId={activeRoute?.placeId ?? null}
@@ -1800,32 +1729,22 @@ function PrivateNovelStudioContent() {
               ) : null}
               {activePage === "relationships" ? (
                 <RelationshipsScreen
-                  relationships={filteredRelationships}
-                  relationshipType={relationshipType}
-                  relationshipCharacter={relationshipCharacter}
-                  showSpoilers={showSpoilers}
-                  onRelationshipTypeChange={setRelationshipType}
-                  onRelationshipCharacterChange={setRelationshipCharacter}
-                  onShowSpoilersChange={setShowSpoilers}
-                  onAddRelationship={() => setDialog("relationship")}
-                  onRemoveRelationship={(relationship) => void removeRelationship(relationship)}
+                  catalog={relationshipCatalog}
+                  onCatalogChange={updateRelationshipCatalog}
+                  onAddRelationship={(type = "") => { setInitialRelationshipType(type); setDialog("relationship"); }}
+                  onChanged={async () => { if (!await refreshStudioData(false)) throw new Error("Changes saved. Could not refresh; please retry."); }}
                 />
               ) : null}
               {activePage === "timeline" ? (
                 <TimelineScreen
-                  volumeFilter={timelineVolume}
-                  chapterFilter={timelineChapter}
-                  characterFilter={timelineCharacter}
-                  placeFilter={timelinePlace}
-                  onVolumeFilterChange={setTimelineVolume}
-                  onChapterFilterChange={setTimelineChapter}
-                  onCharacterFilterChange={setTimelineCharacter}
-                  onPlaceFilterChange={setTimelinePlace}
+                  ready={dataStatus === "ready"}
+                  eventId={activeRoute?.eventId}
                   onAddEvent={() => setDialog("event")}
+                  onChanged={async () => { if (!await refreshStudioData(false)) throw new Error("Saved; refresh failed. Please retry."); }}
                 />
               ) : null}
               {activePage === "notes" ? (
-                <NotesScreen onAddNote={() => setDialog("note")} />
+                <NotesCatalog key={currentNovel.id} novelId={currentNovel.id} selectedNoteId={activeRoute?.noteId} version={noteCatalogVersion} options={noteOptions} onTagsLoaded={noteTagsLoaded} onAddNote={() => { setEditingNote(null); setNoteCapture(null); setDialog("note"); }} onEditNote={note => { setEditingNote(note); setNoteCapture(null); setDialog("note"); }} />
               ) : null}
               {activePage === "export" ? (
                 <ExportScreen
@@ -1848,12 +1767,10 @@ function PrivateNovelStudioContent() {
               ) : null}
               {activePage === "settings" ? (
                 <SettingsScreen
-                  theme={theme}
                   language={language}
                   sidebarState={sidebarState}
                   settings={studioSettings}
                   translate={translate}
-                  onThemeChange={updateTheme}
                   onLanguageChange={updateLanguage}
                   onSidebarStateChange={updateSidebarState}
                   onSettingChange={updateStudioSetting}
@@ -1881,18 +1798,23 @@ function PrivateNovelStudioContent() {
       />
 
       <PrototypeDialog
-        dialog={dialog === "character" || dialog === "place" ? null : dialog}
+        dialog={dialog === "character" || dialog === "place" || dialog === "event" || dialog === "note" ? null : dialog}
         exportFilename={exportPreviewName}
         onCreateNovel={createNovelFromDialog}
         onCreateRelationship={createRelationshipFromDialog}
-        onCreateEvent={createTimelineEventFromDialog}
-        onCreateNote={createNoteFromDialog}
+        initialRelationshipType={initialRelationshipType}
         onNavigateReaderScene={(sceneId) => {
           updateReaderNavigation({ scope: "scene", targetId: sceneId });
           setDialog(null);
         }}
         onClose={() => setDialog(null)}
       />
+
+      {noteDialog}
+
+      {dialog === "event" ? <TimelineEventDialog novelId={currentNovel.id}
+        options={relationshipSinceOptions(currentNovel.id, scopedStudioData.volumes, scopedStudioData.chapters, scopedStudioData.scenes)}
+        characters={scopedStudioData.characters} places={scopedStudioData.locations} onSaved={timelineEventSaved} onClose={() => setDialog(null)} /> : null}
 
       {dialog === "place" ? (
         <PlaceFormDialog
@@ -1901,13 +1823,10 @@ function PrivateNovelStudioContent() {
           places={scopedStudioData.locations}
           onClose={() => { setDialog(null); setEditingPlace(null); }}
           onSaved={async (place) => {
-            setStudioData((current) => ({
-              ...current,
-              locations: [...current.locations.filter((item) => item.id !== place.id), place]
-            }));
-            router.push(routeForPlace(place.novelId, place.id));
-            showToast(editingPlace ? "Place updated in SQLite" : "Place created in SQLite");
+            // Full saved metadata belongs only in the selected detail, never the catalog.
             await refreshStudioData(false);
+            router.push(routeForPlaceCatalog(place.novelId, editingPlace ? placeCatalogState : defaultPlaceCatalogState, place.id));
+            showToast(editingPlace ? "Place updated in SQLite" : "Place created in SQLite");
           }}
         />
       ) : null}
@@ -1934,12 +1853,14 @@ function PrivateNovelStudioContent() {
       />
 
         {toast ? (
-          <div className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-lg border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-paper">
+          <div role="status" className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-lg border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-paper">
             <Check className="size-4 text-primary" />
             {toast}
           </div>
         ) : null}
       </main>
+      </NoteUpdatesContext.Provider>
+      </NoteCaptureContext.Provider>
     </StudioDataContext.Provider>
   );
 }
@@ -1957,6 +1878,7 @@ function EditorScreen({
   onReader,
   onNavigateScene,
   onRefreshMetadata,
+  onNotify,
   setInspectorOpen,
   setSaveStatus
 }: {
@@ -1972,6 +1894,7 @@ function EditorScreen({
   onReader: () => void;
   onNavigateScene: (sceneId: string) => void;
   onRefreshMetadata: () => void;
+  onNotify: (message: string) => void;
   setInspectorOpen: (open: boolean) => void;
   setSaveStatus: (status: SaveStatus) => void;
 }) {
@@ -1979,6 +1902,9 @@ function EditorScreen({
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
   const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
+  const manuscriptRef = React.useRef<HTMLTextAreaElement>(null);
+  const [manuscriptSelection, setManuscriptSelection] = React.useState<ManuscriptSelection>({ sceneId: "", start: 0, end: 0 });
+  const noteTarget: NoteCaptureTarget = { novelId: data.settings.activeNovelId, type: "Scene", id: activeScene.id, title: activeScene.title };
   const navigationScenes = React.useMemo(() => getNovelSceneNavigation(data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes]);
   const adjacentScenes = getAdjacentSceneIds(activeScene.id, navigationScenes.map((scene) => scene.id));
   const [chapterPreviewOpen, setChapterPreviewOpen] = React.useState(false);
@@ -2238,6 +2164,7 @@ function EditorScreen({
                   <Save className="size-4" />
                   {saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
                 </Button>
+                <AddStoryNoteButton target={noteTarget} disabled={!activeScene.id} />
                 <Button variant="outline" onClick={() => void openVersions()}>
                   <History className="size-4" />
                   Version history
@@ -2276,6 +2203,9 @@ function EditorScreen({
               <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
                 <Textarea
                   aria-label="Scene manuscript"
+                  ref={manuscriptRef}
+                  data-scene-id={activeScene.id}
+                  onSelect={event => { const input = event.currentTarget; setManuscriptSelection({ sceneId: activeScene.id, start: input.selectionStart, end: input.selectionEnd }); }}
                   value={content}
                   onChange={(event) => {
                     const nextContent = event.target.value;
@@ -2283,10 +2213,13 @@ function EditorScreen({
                     setContent(nextContent);
                     markDirty();
                   }}
-                  className="min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
+                  className="manuscript-editor min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
                   style={{ fontSize: `${editorFontSize}px` }}
                 />
               </div>
+              {loadedSceneIdRef.current === activeScene.id ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
+              <SceneAnnotations novelId={data.settings.activeNovelId} sceneId={activeScene.id} content={content} manuscriptRef={manuscriptRef} />
+              <CharacterHighlightPreview novelId={data.settings.activeNovelId} content={content} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-wrap justify-between gap-3 border-t bg-card/70 p-4">
@@ -2353,6 +2286,7 @@ function EditorScreen({
         {inspectorOpen ? <EditorInspector onRefresh={onRefreshMetadata} /> : null}
       </div>
 
+      <StoryNotes target={noteTarget} />
       <Dialog open={moreActionsOpen} onOpenChange={setMoreActionsOpen}>
         <DialogContent><DialogHeader><DialogTitle>More editor actions</DialogTitle><DialogDescription>Less frequent actions stay out of the writing toolbar.</DialogDescription></DialogHeader><Button variant="outline"><Download className="size-4" />Export chapter</Button><Button variant="outline" onClick={() => { setMoreActionsOpen(false); setShortcutsOpen(true); }}><Keyboard className="size-4" />Keyboard shortcuts</Button><DialogFooter><Button variant="outline" onClick={() => setMoreActionsOpen(false)}>Close</Button></DialogFooter></DialogContent>
       </Dialog>
@@ -2377,7 +2311,8 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
   const [objective, setObjective] = React.useState(activeScene.objective);
   const [notes, setNotes] = React.useState("");
   const [characterIds, setCharacterIds] = React.useState<string[]>([]);
-  const [locationId, setLocationId] = React.useState(activeScene.locationId || "none");
+  const [locationIds, setLocationIds] = React.useState<string[]>([]);
+  const [expectedLocationIds, setExpectedLocationIds] = React.useState<string[]>([]);
   const [timelineEventId, setTimelineEventId] = React.useState("none");
   const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
   const [metadataLoading, setMetadataLoading] = React.useState(true);
@@ -2390,7 +2325,7 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
     let cancelled = false;
     setSummary(activeScene.summary);
     setObjective(activeScene.objective);
-    setLocationId(activeScene.locationId || "none");
+    setLocationIds([]);
     setCharacterIds([]);
     setTimelineEventId("none");
     setNotes("");
@@ -2399,11 +2334,13 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
     void fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/inspector`)
       .then(async (response) => {
         if (!response.ok) throw new Error("Could not load scene metadata");
-        return response.json() as Promise<{ characterIds: string[]; timelineEventId: string | null; notes: string }>;
+        return response.json() as Promise<{ characterIds: string[]; locationIds: string[]; timelineEventId: string | null; notes: string }>;
       })
       .then((inspector) => {
         if (cancelled) return;
         setCharacterIds(inspector.characterIds);
+        setLocationIds(inspector.locationIds);
+        setExpectedLocationIds(inspector.locationIds);
         setTimelineEventId(inspector.timelineEventId ?? "none");
         setNotes(inspector.notes);
         setMetadataLoading(false);
@@ -2422,9 +2359,10 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
       const response = await fetch(`/api/scenes/${encodeURIComponent(activeScene.id)}/inspector`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summary, objective, notes, characterIds, locationId: locationId === "none" ? null : locationId, timelineEventId: timelineEventId === "none" ? null : timelineEventId })
+        body: JSON.stringify({ summary, objective, notes, characterIds, locationIds, expectedLocationIds, timelineEventId: timelineEventId === "none" ? null : timelineEventId })
       });
       if (!response.ok) throw new Error("Could not save scene metadata");
+      setExpectedLocationIds(locationIds);
       setSaveState("saved");
       onRefresh();
     } catch {
@@ -2441,7 +2379,7 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
       <CardContent className="space-y-4">
         <div className="grid gap-2"><Label htmlFor="scene-summary">Scene summary</Label><Textarea id="scene-summary" value={summary} onChange={(event) => setSummary(event.target.value)} /></div>
         <div className="grid gap-2"><Label>Linked characters</Label><div className="flex flex-wrap gap-2">{characterIds.map((id) => { const character = characters.find((item) => item.id === id); return character ? <Badge key={id} variant="outline" className="gap-1">{character.name}<button type="button" aria-label={`Remove ${character.name}`} onClick={() => setCharacterIds((ids) => ids.filter((item) => item !== id))}><X className="size-3" /></button></Badge> : null; })}</div><Select value="" onValueChange={(id) => setCharacterIds((ids) => ids.includes(id) ? ids : [...ids, id])}><SelectTrigger aria-label="Add linked character"><SelectValue placeholder="Add character" /></SelectTrigger><SelectContent>{characters.filter((character) => !characterIds.includes(character.id)).map((character) => <SelectItem key={character.id} value={character.id}>{character.name}</SelectItem>)}</SelectContent></Select></div>
-        <div className="grid gap-2"><Label htmlFor="scene-place">Linked place</Label><Select value={locationId} onValueChange={setLocationId}><SelectTrigger id="scene-place"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No linked place</SelectItem>{locations.map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2"><Label>Linked places</Label><div className="flex flex-wrap gap-2">{locationIds.map((id) => { const location = locations.find((item) => item.id === id); return <Badge key={id} variant="outline" className="gap-1">{location?.name ?? "Unavailable place"}<button type="button" aria-label={`Remove place ${location?.name ?? id}`} onClick={() => setLocationIds((ids) => ids.filter((item) => item !== id))}><X className="size-3" /></button></Badge>; })}</div><Select value="" onValueChange={(id) => setLocationIds((ids) => ids.includes(id) ? ids : [...ids, id])}><SelectTrigger aria-label="Add linked place"><SelectValue placeholder="Add place" /></SelectTrigger><SelectContent>{locations.filter((location) => !locationIds.includes(location.id)).map((location) => <SelectItem key={location.id} value={location.id}>{location.name}</SelectItem>)}</SelectContent></Select></div>
         <div className="grid gap-2"><Label htmlFor="scene-timeline">Timeline moment</Label><Select value={timelineEventId} onValueChange={setTimelineEventId}><SelectTrigger id="scene-timeline"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No timeline moment</SelectItem>{timelineEvents.map((event) => <SelectItem key={event.id} value={event.id}>{event.internalDate ? `${event.internalDate} · ` : ""}{event.title}</SelectItem>)}</SelectContent></Select></div>
         <div className="grid gap-2"><Label htmlFor="scene-objective">Objective</Label><Textarea id="scene-objective" value={objective} onChange={(event) => setObjective(event.target.value)} /></div>
         <div className="grid gap-2"><Label htmlFor="scene-notes">Notes</Label><Textarea id="scene-notes" value={notes} onChange={(event) => setNotes(event.target.value)} /></div>
@@ -2461,6 +2399,8 @@ function WritingFocusMode({
   setSaveStatus,
   onRegisterPendingSave,
   onDirtyChange,
+  onRefreshMetadata,
+  onNotify,
   onExit
 }: {
   editorFontSize: number;
@@ -2471,10 +2411,15 @@ function WritingFocusMode({
   setSaveStatus: (status: SaveStatus) => void;
   onRegisterPendingSave: (handler: PendingSaveHandler | null) => void;
   onDirtyChange: (dirty: boolean) => void;
+  onRefreshMetadata: () => void;
+  onNotify: (message: string) => void;
   onExit: () => void;
 }) {
   const data = useStudioData();
   const activeScene = getActiveScene(data);
+  const manuscriptRef = React.useRef<HTMLTextAreaElement>(null);
+  const [manuscriptSelection, setManuscriptSelection] = React.useState<ManuscriptSelection>({ sceneId: "", start: 0, end: 0 });
+  const noteTarget: NoteCaptureTarget = { novelId: data.settings.activeNovelId, type: "Scene", id: activeScene.id, title: activeScene.title };
   const [content, setContent] = React.useState(activeScene.content);
   const [draftVersion, setDraftVersion] = React.useState(0);
   const revisionRef = React.useRef(0);
@@ -2564,6 +2509,10 @@ function WritingFocusMode({
       <section className="mx-auto max-w-5xl px-4 py-8">
         <div className="mx-auto max-w-3xl rounded-lg border bg-editor p-5 shadow-paper sm:p-10">
           <Textarea
+            aria-label="Scene manuscript"
+            ref={manuscriptRef}
+            data-scene-id={activeScene.id}
+            onSelect={event => { const input = event.currentTarget; setManuscriptSelection({ sceneId: activeScene.id, start: input.selectionStart, end: input.selectionEnd }); }}
             value={content}
             onChange={(event) => {
               const nextContent = event.target.value;
@@ -2574,10 +2523,11 @@ function WritingFocusMode({
               onDirtyChange(true);
               setSaveStatus("Unsaved changes");
             }}
-            className="min-h-[calc(100vh-12rem)] border-0 bg-transparent p-0 font-typewriter leading-9 text-editor-foreground shadow-none focus-visible:ring-0"
+            className="manuscript-editor min-h-[calc(100vh-12rem)] border-0 bg-transparent p-0 font-typewriter leading-9 text-editor-foreground shadow-none focus-visible:ring-0"
             style={{ fontSize: `${editorFontSize}px` }}
           />
         </div>
+        {loadedSceneIdRef.current === activeScene.id ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
       </section>
     </main>
   );
@@ -2585,12 +2535,10 @@ function WritingFocusMode({
 
 function ReaderScreen({
   navigation,
-  readerTheme,
   readerFontSize,
   readerWidth,
   isFocusMode,
   onNavigationChange,
-  onReaderThemeChange,
   onReaderFontSizeChange,
   onReaderWidthChange,
   onResetReaderPreferences,
@@ -2602,12 +2550,10 @@ function ReaderScreen({
   onOpenEditor
 }: {
   navigation: ReaderNavigationState;
-  readerTheme: ReaderTheme;
   readerFontSize: number;
   readerWidth: number;
   isFocusMode: boolean;
   onNavigationChange: (navigation: ReaderNavigationState) => void;
-  onReaderThemeChange: (value: ReaderTheme) => void;
   onReaderFontSizeChange: (value: number) => void;
   onReaderWidthChange: (value: number) => void;
   onResetReaderPreferences: () => void;
@@ -2982,10 +2928,7 @@ function ReaderScreen({
       ref={readerRootRef}
       className={cn(
         "grid gap-6",
-        isFocusMode && "min-h-screen gap-0",
-        isFocusMode && readerTheme === "Dark" && "bg-[#0E0F11] text-[#E7D8B5]",
-        isFocusMode && readerTheme === "Light" && "bg-[#F7F2E8] text-[#2B2118]",
-        isFocusMode && readerTheme === "Sepia" && "bg-[#efe3c8] text-[#2B2118]"
+        isFocusMode && "min-h-screen gap-0 bg-background text-foreground"
       )}
     >
       <div className="contents">
@@ -3047,7 +2990,7 @@ function ReaderScreen({
 
       <div className={cn(isFocusMode && "hidden")}>
         <Card>
-          <CardContent className="grid min-w-0 gap-3 p-4 lg:grid-cols-[minmax(11rem,220px)_150px_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+          <CardContent className="grid min-w-0 gap-3 p-4 lg:grid-cols-[minmax(11rem,220px)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
             <div>
               <Label>Scope</Label>
               <Select value={readerScope} onValueChange={(value) => changeReaderScope(value as typeof readerScope)}>
@@ -3073,19 +3016,6 @@ function ReaderScreen({
                 </SelectContent>
               </Select>
             </div>
-            <div className="hidden lg:block">
-              <Label>Theme</Label>
-              <Select value={readerTheme} onValueChange={(value) => onReaderThemeChange(value as ReaderTheme)}>
-                <SelectTrigger className="mt-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {readerThemes.map((theme) => (
-                    <SelectItem key={theme} value={theme}>{theme}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="hidden min-w-0 lg:block">
               <ControlSlider label="Font size" value={readerFontSize} min={readerPreferenceRanges.fontSize.min} max={readerPreferenceRanges.fontSize.max} suffix="px" onChange={changeReaderFontSize} />
             </div>
@@ -3103,7 +3033,7 @@ function ReaderScreen({
               </Button>
               <Button variant="ghost" onClick={resetReaderPreferences}>Reset</Button>
             </div>
-            <p className="text-xs text-muted-foreground lg:col-span-5" aria-live="polite">
+            <p className="text-xs text-muted-foreground lg:col-span-4" aria-live="polite">
               {readerProgressUnavailable
                 ? "Reading progress is temporarily unavailable. Reading remains available."
                 : savedProgress
@@ -3135,10 +3065,8 @@ function ReaderScreen({
         <CardContent
           className={cn(
             "mx-auto my-6 w-full min-w-0 rounded-lg border p-6 shadow-inner sm:p-10",
-            isFocusMode && "my-0 rounded-none border-0 px-5 py-12 shadow-none sm:px-10 sm:py-16",
-            readerTheme === "Dark" && "bg-[#0E0F11] text-[#E7D8B5]",
-            readerTheme === "Light" && "bg-[#F7F2E8] text-[#2B2118]",
-            readerTheme === "Sepia" && "bg-[#efe3c8] text-[#2B2118]"
+            "bg-editor text-editor-foreground",
+            isFocusMode && "my-0 rounded-none border-0 px-5 py-12 shadow-none sm:px-10 sm:py-16"
           )}
           style={{ maxWidth: `${readerWidth}px`, fontSize: `${readerFontSize}px` }}
         >
@@ -3238,19 +3166,6 @@ function ReaderScreen({
                 <DialogDescription>Adjust the book surface without leaving the Reader.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-5">
-                <div>
-                  <Label>Theme</Label>
-                  <Select value={readerTheme} onValueChange={(value) => onReaderThemeChange(value as ReaderTheme)}>
-                    <SelectTrigger className="mt-2" aria-label="Reading theme">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {readerThemes.map((theme) => (
-                        <SelectItem key={theme} value={theme}>{theme}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <ControlSlider label="Font size" value={readerFontSize} min={readerPreferenceRanges.fontSize.min} max={readerPreferenceRanges.fontSize.max} suffix="px" onChange={changeReaderFontSize} />
                 <ControlSlider label="Reading width" value={readerWidth} min={readerPreferenceRanges.width.min} max={readerPreferenceRanges.width.max} suffix="px" onChange={changeReaderWidth} />
               </div>
@@ -3308,46 +3223,50 @@ function ControlSlider({
 }
 
 function PlacesScreen({
+  onScenesChanged,
   places,
-  query,
-  type,
-  status,
-  onStatusChange,
-  onQueryChange,
-  onTypeChange,
+  catalogState,
+  onCatalogChange,
+  onClearFilters,
   onAddPlace,
   onEditPlace,
   selectedPlaceId
 }: {
-  places: Location[];
-  query: string;
-  type: string;
-  status: string;
-  onStatusChange: (value: string) => void;
-  onQueryChange: (value: string) => void;
-  onTypeChange: (value: string) => void;
+  onScenesChanged: () => Promise<void>;
+  places: PlaceSummary[];
+  catalogState: PlaceCatalogState;
+  onCatalogChange: (changes: Partial<PlaceCatalogState>) => void;
+  onClearFilters: () => void;
   onAddPlace: () => void;
   onEditPlace: (place: Location) => void;
   selectedPlaceId: string | null;
 }) {
   const data = useStudioData();
-  const selectedPlace = selectedPlaceId
-    ? data.locations.find((place) => place.id === selectedPlaceId)
-    : places[0];
-  const charactersByPlace = new Map(
-    data.locations.map((place) => [
-      place.id,
-      uniqueStrings(
-        data.characterPlaceLinks
-          .filter((link) => link.locationId === place.id)
-          .map((link) => characterName(link.characterId, data))
-          .filter((name) => name !== "Unknown")
-      )
-    ])
-  );
+  const novelId = getCurrentNovel(data).id;
+  const selectedPlace = resolvePlaceSelection(novelId, selectedPlaceId, data.locations);
+  const catalogKey = `${novelId}:${serializePlaceCatalogState(catalogState)}`;
+  const [pageWindow, setPageWindow] = React.useState({ key: catalogKey, size: 50 });
+  const visibleCount = pageWindow.key === catalogKey ? pageWindow.size : 50;
+  const searchInput = React.useRef<HTMLInputElement>(null);
+  const catalogRef = React.useRef<HTMLDivElement>(null);
+  const firstAddedPlace = React.useRef<string | null>(null);
+  const previousSelection = React.useRef(selectedPlaceId);
+  React.useEffect(() => {
+    if (!selectedPlaceId && previousSelection.current) {
+      const link = catalogRef.current?.querySelector<HTMLAnchorElement>(`a[data-place-id="${CSS.escape(previousSelection.current)}"]`);
+      (link ?? searchInput.current)?.focus();
+    }
+    previousSelection.current = selectedPlaceId;
+  }, [selectedPlaceId]);
+  React.useEffect(() => {
+    if (!firstAddedPlace.current) return;
+    catalogRef.current?.querySelector<HTMLAnchorElement>(`a[data-place-id="${CSS.escape(firstAddedPlace.current)}"]`)?.focus();
+    firstAddedPlace.current = null;
+  }, [visibleCount]);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6 [overflow-wrap:anywhere]">
+      <div className={selectedPlaceId ? "hidden xl:block" : undefined}>
       <SectionHeader
         eyebrow="Places"
         title="Location bible"
@@ -3359,19 +3278,23 @@ function PlacesScreen({
           </Button>
         }
       />
+      </div>
 
-      <Card>
-        <CardContent className="grid gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_220px_180px]">
-          <div className="relative">
+      <Card className={selectedPlaceId ? "hidden xl:block" : undefined}>
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_160px_150px_160px_auto]">
+          <div className="relative min-w-0 sm:col-span-2 xl:col-span-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
+              value={catalogState.query}
+              ref={searchInput}
+              onChange={(event) => onCatalogChange({ query: event.target.value })}
               placeholder="Search places"
+              aria-label="Search places by name"
+              maxLength={120}
               className="pl-9"
             />
           </div>
-          <Select value={type} onValueChange={onTypeChange}>
+          <Select value={catalogState.type} onValueChange={(value) => onCatalogChange({ type: value as PlaceCatalogState["type"] })}>
             <SelectTrigger aria-label="Filter place type">
               <SelectValue />
             </SelectTrigger>
@@ -3384,20 +3307,26 @@ function PlacesScreen({
               ))}
             </SelectContent>
           </Select>
-          <Select value={status} onValueChange={onStatusChange}>
+          <Select value={catalogState.status} onValueChange={(value) => onCatalogChange({ status: value as PlaceCatalogState["status"] })}>
             <SelectTrigger aria-label="Filter place status"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
               {placeStatuses.map((code) => <SelectItem key={code} value={code}>{placeStatusLabels[code]}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={catalogState.sort} onValueChange={(value) => onCatalogChange({ sort: value as PlaceSort })}>
+            <SelectTrigger aria-label="Sort places"><SelectValue /></SelectTrigger>
+            <SelectContent>{(Object.keys(placeSortLabels) as PlaceSort[]).map((sort) => <SelectItem key={sort} value={sort}>{placeSortLabels[sort]}</SelectItem>)}</SelectContent>
+          </Select>
+          <Button type="button" variant="outline" onClick={onClearFilters}>Clear filters</Button>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_400px]">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div ref={catalogRef} className={cn("min-w-0 space-y-4", selectedPlaceId && "hidden xl:block")}>
         {places.length ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {places.map((place) => (
+          <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+            {places.slice(0, visibleCount).map((place) => (
               <Card key={place.id} className="min-w-0">
                 <CardContent className="space-y-4 p-4">
                   <div className="flex items-start gap-3">
@@ -3406,79 +3335,100 @@ function PlacesScreen({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
+                        <div className="min-w-0">
                           <h3 className="break-words font-semibold">
-                            <Link href={routeForPlace(place.novelId, place.id)} aria-current={selectedPlace?.id === place.id ? "page" : undefined} className="underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring">{place.name}</Link>
+                            <Link data-place-id={place.id} href={routeForPlaceCatalog(place.novelId, catalogState, place.id)} aria-current={selectedPlace?.id === place.id ? "page" : undefined} className="underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring">{place.name}</Link>
                           </h3>
-                          <p className="text-sm text-muted-foreground">{place.region}</p>
+                          <p className="text-sm text-muted-foreground">{place.parent?.name ?? "No parent place"}</p>
                         </div>
                         <Badge variant="outline">{placeTypeLabels[place.type]}</Badge>
                       </div>
                     </div>
                   </div>
-                  <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                    {place.description}
-                  </p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     <FieldLine label="First appearance" value={place.firstAppearance || "Not linked yet"} />
                     <FieldLine label="Status" value={placeStatusLabels[place.status]} />
                     <FieldLine label="Scene count" value={place.sceneCount ?? 0} />
-                    <FieldLine
-                      label="Characters"
-                      value={
-                        charactersByPlace.get(place.id)?.slice(0, 2).join(", ") ||
-                        "No linked characters yet"
-                      }
-                    />
-                    <FieldLine
-                      label="Events"
-                      value={
-                        data.timelineEvents.filter((event) => event.locationId === place.id).length
-                      }
-                    />
-                    <FieldLine label="Importance" value={place.importance} />
+                    <FieldLine label="Characters" value={place.characterCount} />
+                    <FieldLine label="Events" value={place.eventCount} />
+                    <FieldLine label="Children" value={place.childCount} />
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         ) : (
-          <EmptyState
-            icon={MapIcon}
-            title="No places match those filters"
-            description="Adjust the search or type filter to find locations."
+          <PlaceCatalogEmptyState
+            totalCount={data.locations.length}
+            resultCount={places.length}
+            onlyArchived={data.locations.length > 0 && data.locations.every((place) => place.status === "archived")}
+            onAddPlace={onAddPlace}
+            onClearFilters={onClearFilters}
+            onShowArchived={() => onCatalogChange({ ...defaultPlaceCatalogState, status: "archived" })}
           />
         )}
+        {places.length ? <div className="flex flex-wrap items-center gap-3">
+          <p role="status" className="text-sm text-muted-foreground">Showing {Math.min(visibleCount, places.length)} of {places.length} places</p>
+          {visibleCount < places.length ? <Button type="button" variant="outline" onClick={() => {
+            firstAddedPlace.current = places[visibleCount].id;
+            setPageWindow({ key: catalogKey, size: visibleCount + 50 });
+          }}>Show more places</Button> : null}
+        </div> : null}
+        </div>
 
-        {selectedPlace ? <PlaceDetailPanel place={selectedPlace} onEdit={() => onEditPlace(selectedPlace)} /> : null}
+        {selectedPlace ? <div className="min-w-0 space-y-3">
+          {!places.some((place) => place.id === selectedPlace.id) ? <p role="status" className="text-sm text-muted-foreground">The selected place is outside the current catalog filters. Its detail remains available.</p> : null}
+          <PlaceDetailLoader key={selectedPlace.id} summary={selectedPlace} catalogState={catalogState}>
+            {(place) => <PlaceDetailPanel place={place} catalogState={catalogState} onEdit={() => onEditPlace(place)} onScenesChanged={onScenesChanged} />}
+          </PlaceDetailLoader>
+        </div> : selectedPlaceId ? <section aria-label="Place unavailable" className="min-w-0 space-y-3">
+          <EmptyState icon={MapIcon} title="Place unavailable" description="This place is no longer available in this novel. Choose another place from the catalog." />
+          <Link href={routeForPlaceCatalog(novelId, catalogState)} className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">Back to catalog</Link>
+        </section> : places.length ? <EmptyState icon={MapIcon} title="Select a place" description="Choose a place from the catalog to open its detail and related entities." /> : null}
       </div>
     </div>
   );
 }
 
-function PlaceDetailPanel({ place, onEdit }: { place: Location; onEdit: () => void }) {
+function PlaceDetailPanel({ place, catalogState, onEdit, onScenesChanged }: { place: Location; catalogState: PlaceCatalogState; onEdit: () => void; onScenesChanged: () => Promise<void> }) {
   const data = useStudioData();
+  const titleRef = React.useRef<HTMLHeadingElement | null>(null);
+  const titleId = React.useId();
+  React.useEffect(() => { titleRef.current?.focus(); }, [place.id]);
+  const hierarchy = React.useMemo(() => getPlaceHierarchy(place.novelId, place.id, data.locations), [place.novelId, place.id, data.locations]);
   const parent = data.locations.find((candidate) => candidate.id === place.parentPlaceId && candidate.novelId === place.novelId);
-  const linkedCharacters = uniqueStrings(
-    data.characterPlaceLinks
-      .filter((link) => link.locationId === place.id)
-      .map((link) => characterName(link.characterId, data))
-      .filter((name) => name !== "Unknown")
-  );
 
   return (
-    <Card className="min-w-0 break-words xl:sticky xl:top-24">
+    <Card role="region" aria-labelledby={titleId} className="min-w-0 break-words">
       <CardHeader>
+        <Link href={routeForPlaceCatalog(place.novelId, catalogState)} className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">Back to catalog</Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <CardTitle className="min-w-0">{place.name}</CardTitle>
-          <Button type="button" variant="outline" size="sm" onClick={onEdit}>Edit place</Button>
+          <CardTitle ref={titleRef} id={titleId} tabIndex={-1} className="min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{place.name}</CardTitle>
+          <div className="flex flex-wrap gap-2"><AddStoryNoteButton target={{ novelId: place.novelId, type: "Place", id: place.id, title: place.name }} /><Button type="button" variant="outline" size="sm" onClick={onEdit}>Edit place</Button></div>
         </div>
         <CardDescription>
           {placeTypeLabels[place.type]} · {place.region}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        <StoryNotes target={{ novelId: place.novelId, type: "Place", id: place.id, title: place.name }} />
+        <nav aria-label="Place hierarchy">
+          <ol className="flex flex-wrap items-center gap-1 text-sm [overflow-wrap:anywhere]">
+            {hierarchy.breadcrumb.map((ancestor, index) => (
+              <li key={ancestor.id} className="min-w-0">
+                {index > 0 ? <span aria-hidden="true" className="mx-1">→</span> : null}
+                {ancestor.id === place.id ? <span aria-current="page">{ancestor.name}</span> : <Link href={routeForPlaceCatalog(ancestor.novelId, catalogState, ancestor.id)} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">{ancestor.name}</Link>}
+                {ancestor.status === "archived" ? <span className="text-muted-foreground"> (Archived)</span> : null}
+              </li>
+            ))}
+          </ol>
+        </nav>
+        {hierarchy.issue ? <p role="status" className="text-sm text-destructive">{hierarchy.issue}</p> : null}
+        <FieldLine label="Children" value={hierarchy.children.length ? <ul className="space-y-1 [overflow-wrap:anywhere]">
+          {hierarchy.children.map((child) => <li key={child.id}><Link href={routeForPlaceCatalog(child.novelId, catalogState, child.id)} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">{child.name}</Link>{child.status === "archived" ? " (Archived)" : ""}</li>)}
+        </ul> : "No child places yet"} />
         <FieldLine label="Status" value={placeStatusLabels[place.status]} />
+        <PlaceLifecycle key={place.id} place={place} catalogState={catalogState} onChanged={onScenesChanged} />
         <FieldLine label="Description" value={place.description} />
         <FieldLine label="Region" value={place.region} />
         <FieldLine label="Importance" value={place.importance} />
@@ -3486,335 +3436,120 @@ function PlaceDetailPanel({ place, onEdit }: { place: Location; onEdit: () => vo
         <FieldLine label="Atmosphere" value={place.atmosphere} />
         <FieldLine label="Rules / Characteristics" value={place.rules} />
         <FieldLine label="Notes" value={<span className="whitespace-pre-wrap">{place.notes}</span>} />
-        <FieldLine label="Parent place" value={parent ? <Link href={routeForPlace(parent.novelId, parent.id)} className="text-primary hover:underline">{parent.name}</Link> : place.parentPlaceId ? "Parent place unavailable" : "None"} />
+        <FieldLine label="Parent place" value={parent ? <Link href={routeForPlaceCatalog(parent.novelId, catalogState, parent.id)} className="text-primary hover:underline">{parent.name}</Link> : place.parentPlaceId ? "Parent place unavailable" : "None"} />
         <FieldLine label="First appearance" value={place.firstAppearance || "Not linked yet"} />
         <FieldLine label="Scene count" value={place.sceneCount ?? 0} />
-        <FieldLine
-          label="Linked scenes"
-          value={data.scenes
-            .filter((scene) => scene.locationId === place.id)
-            .map((scene) => scene.title)
-            .join(", ")}
-        />
-        <FieldLine
-          label="Linked characters"
-          value={linkedCharacters.length ? linkedCharacters.join(", ") : "No linked characters yet"}
-        />
-        <FieldLine
-          label="Related timeline events"
-          value={data.timelineEvents
-            .filter((event) => event.locationId === place.id)
-            .map((event) => event.title)
-            .join(", ")}
-        />
+        <PlaceScenes key={place.id} place={place} onChanged={onScenesChanged} />
+        <PlaceCharacters key={place.id} place={place} characters={data.characters} links={data.characterPlaceLinks} onChanged={onScenesChanged} />
+        <PlaceStoryEvents key={place.id} place={place} events={data.timelineEvents} onChanged={onScenesChanged} />
       </CardContent>
     </Card>
   );
 }
 
-function RelationshipsScreen({
-  relationships,
-  relationshipType,
-  relationshipCharacter,
-  showSpoilers,
-  onRelationshipTypeChange,
-  onRelationshipCharacterChange,
-  onShowSpoilersChange,
-  onAddRelationship,
-  onRemoveRelationship
-}: {
-  relationships: Relationship[];
-  relationshipType: string;
-  relationshipCharacter: string;
-  showSpoilers: boolean;
-  onRelationshipTypeChange: (value: string) => void;
-  onRelationshipCharacterChange: (value: string) => void;
-  onShowSpoilersChange: (value: boolean) => void;
-  onAddRelationship: () => void;
-  onRemoveRelationship: (relationship: Relationship) => void;
+function RelationshipsScreen({ catalog, onCatalogChange, onAddRelationship, onChanged }: {
+  catalog: RelationshipCatalogState;
+  onCatalogChange: (changes: Partial<RelationshipCatalogState>) => void;
+  onAddRelationship: (type?: string) => void; onChanged: () => Promise<void>;
 }) {
   const data = useStudioData();
-
-  return (
-    <div className="grid gap-6">
-      <SectionHeader
-        eyebrow="Relationships"
-        title="Character relationship map"
-        description="Define one relationship and see the correct label from each character's perspective."
-        action={
-          <Button onClick={onAddRelationship}>
-            <Plus className="size-4" />
-            Add relationship
-          </Button>
-        }
-      />
-
-      <Card>
-        <CardContent className="grid gap-3 p-4 lg:grid-cols-[220px_220px_auto] lg:items-center">
-          <Select value={relationshipType} onValueChange={onRelationshipTypeChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {relationshipFilterTypes.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={relationshipCharacter} onValueChange={onRelationshipCharacterChange}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All characters">All characters</SelectItem>
-              {data.characters.map((character) => (
-                <SelectItem key={character.id} value={character.id}>
-                  {character.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-3 rounded-md border bg-background/35 px-3 py-2">
-            <Switch checked={showSpoilers} onCheckedChange={onShowSpoilersChange} />
-            <span className="text-sm">Show spoilers</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Relationship map</CardTitle>
-            <CardDescription>Visual node graph prototype</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RelationshipMap relationships={relationships} showSpoilers={showSpoilers} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Relationships</CardTitle>
-            <CardDescription>Examples and editable relationship records</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {relationships.map((relationship) => (
-              <div key={relationship.id} className="rounded-md border bg-background/35 p-3">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{relationship.category}</Badge>
-                  <Badge variant="outline">{relationship.direction}</Badge>
-                  {relationship.isSpoiler ? <Badge variant="accent">Spoiler</Badge> : null}
-                </div>
-                <p className="font-medium">
-                  {characterName(relationship.fromCharacterId, data)} — {relationship.labelFromTo} → {characterName(relationship.toCharacterId, data)}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {characterName(relationship.toCharacterId, data)} — {relationship.labelToFrom} → {characterName(relationship.fromCharacterId, data)}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {relationship.description}
-                </p>
-                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                  <FieldLine label="Status" value={relationship.status} />
-                  <FieldLine label="Since" value={relationship.since} />
-                </div>
-                <Button type="button" variant="ghost" size="sm" className="mt-3 text-destructive" onClick={() => onRemoveRelationship(relationship)}>
-                  <Trash2 className="size-4" /> Remove relationship
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+  const novelId = getCurrentNovel(data).id;
+  const sinceOptions = React.useMemo(() => relationshipSinceOptions(novelId, data.volumes, data.chapters, data.scenes), [novelId, data.volumes, data.chapters, data.scenes]);
+  const characters = visibleGraphCharacters(novelId, data.characters, catalog.spoilers);
+  return <div className="grid min-w-0 gap-4">
+    <SectionHeader eyebrow="Relationships" title="Character relationship map" description="Explore character connections and their story context."
+      action={<Button onClick={() => onAddRelationship()}><Plus className="size-4" />Add relationship</Button>} />
+    <RelationshipLibrary onChoose={onAddRelationship} />
+    <section className="grid gap-3 rounded-lg border bg-card p-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Relationship filters">
+      <div className="grid gap-2"><Label htmlFor="relationships-category">Category</Label>
+        <Select value={catalog.category} onValueChange={(category) => onCatalogChange({ category, type: "all" })}>
+          <SelectTrigger id="relationships-category"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All categories</SelectItem>{Object.entries(relationshipCategories).map(([id, label]) => <SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Relationship type semantics</CardTitle>
-          <CardDescription>Direction and inverse labels are defined by the selected type</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {relationshipDefinitions.map((definition) => (
-            <div key={definition.key} className="rounded-md border bg-background/35 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-semibold">{definition.name}</h3>
-                <Badge variant="outline">{definition.direction}</Badge>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                A → B: {definition.labelFromTo}<br />B → A: {definition.labelToFrom}
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
-  );
+      <div className="grid gap-2"><Label htmlFor="relationships-type">Type</Label>
+        <Select value={catalog.type} onValueChange={(type) => onCatalogChange({ type })}>
+          <SelectTrigger id="relationships-type"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All types</SelectItem>{relationshipDefinitions.map((type) => <SelectItem key={type.key} value={type.key}>{type.name}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2"><Label htmlFor="relationships-character">Character</Label>
+        <Select value={catalog.character} onValueChange={(character) => onCatalogChange({ character })}>
+          <SelectTrigger id="relationships-character"><SelectValue placeholder="Character unavailable" /></SelectTrigger>
+          <SelectContent><SelectItem value="All characters">All characters</SelectItem>{characters.map((character) => <SelectItem key={character.id} value={character.id}>{character.name}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2"><Label htmlFor="relationships-direction">Direction</Label>
+        <Select value={catalog.direction} onValueChange={(direction) => onCatalogChange({ direction: direction as RelationshipCatalogState["direction"] })}>
+          <SelectTrigger id="relationships-direction"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All directions</SelectItem><SelectItem value="directional">Directional</SelectItem><SelectItem value="symmetric">Symmetric</SelectItem></SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-2"><Label htmlFor="relationships-lifecycle">Visibility</Label>
+        <Select value={catalog.lifecycle} onValueChange={(lifecycle) => onCatalogChange({ lifecycle: lifecycle as RelationshipCatalogState["lifecycle"] })}>
+          <SelectTrigger id="relationships-lifecycle"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="archived">Archived</SelectItem><SelectItem value="all">Active and archived</SelectItem></SelectContent>
+        </Select>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Switch id="relationship-show-spoilers" checked={catalog.spoilers} onCheckedChange={(spoilers) => onCatalogChange({ spoilers, ...(!spoilers ? { character: "All characters" } : {}) })} />
+        <Label htmlFor="relationship-show-spoilers">Show spoilers</Label>
+        <Button variant="outline" onClick={() => onCatalogChange(defaultRelationshipCatalog)}>Clear filters</Button>
+      </div>
+    </section>
+    <RelationshipCatalogLoader novelId={novelId} showSpoilers={catalog.spoilers} lifecycle={catalog.lifecycle} refreshKey={data.relationships}>
+      {(relationships) => <RelationshipExplorer key={`${novelId}:${serializeRelationshipCatalog(catalog)}`} novelId={novelId} characters={data.characters} relationships={filterRelationships(relationships, catalog)}
+      showSpoilers={catalog.spoilers} focusId={catalog.character} sinceOptions={sinceOptions}
+      onFocusCharacter={(character) => onCatalogChange({ character })} onChanged={onChanged} onClearFilters={() => onCatalogChange(defaultRelationshipCatalog)} />}
+    </RelationshipCatalogLoader>
+  </div>;
 }
 
-function RelationshipMap({
-  relationships,
-  showSpoilers
-}: {
-  relationships: Relationship[];
-  showSpoilers: boolean;
+
+function TimelineScreen({ eventId, ready, onAddEvent, onChanged }: {
+  eventId?: string; ready: boolean; onAddEvent: () => void; onChanged: () => Promise<void>;
+}) {
+  const data = useStudioData(), params = useSearchParams(), router = useRouter();
+  const novelId = getCurrentNovel(data).id;
+  const catalog = normalizeTimelineCatalog(parseTimelineCatalog(new URLSearchParams(params.toString())), novelId, data);
+  const query = timelineCatalogQuery(catalog);
+  React.useEffect(() => {
+    if (ready && params.toString() !== query) router.replace(timelineCatalogRoute(novelId, catalog, eventId), { scroll: false });
+  }, [params, query, router, novelId, eventId, catalog, ready]);
+  if (!ready) return <p role="status">Waiting for novel data…</p>;
+  return <TimelineCatalogLoader novelId={novelId} selectedId={eventId} showSpoilers={catalog.spoilers} showArchived={catalog.archived} refreshKey={data.timelineEvents}>
+    {events => <TimelineCatalogScreen eventId={eventId} events={events} catalog={catalog}
+      onFilterChange={changes => router.replace(timelineCatalogRoute(novelId, normalizeTimelineCatalog({ ...catalog, ...changes }, novelId, data), eventId), { scroll: false })}
+      onClear={() => router.replace(timelineCatalogRoute(novelId, defaultTimelineCatalog), { scroll: false })}
+      onAddEvent={onAddEvent} onChanged={onChanged} />}
+  </TimelineCatalogLoader>;
+}
+
+function TimelineCatalogScreen({ eventId, events, catalog, onFilterChange, onClear, onAddEvent, onChanged }: {
+  eventId?: string; events: import("@/lib/studio-domain").TimelineEventSummary[]; catalog: TimelineCatalogState;
+  onFilterChange: (changes: Partial<TimelineCatalogState>) => void; onClear: () => void;
+  onAddEvent: () => void; onChanged: () => Promise<void>;
 }) {
   const data = useStudioData();
-  const visibleRelationships = relationships.filter(
-    (relationship) => showSpoilers || !relationship.isSpoiler
-  );
-  const characterIds = uniqueStrings(
-    visibleRelationships.flatMap((relationship) => [
-      relationship.fromCharacterId,
-      relationship.toCharacterId
-    ])
-  ).slice(0, 6);
-  const positions = [
-    "left-[10%] top-[12%]",
-    "right-[10%] top-[12%]",
-    "left-[8%] top-[52%]",
-    "right-[8%] top-[52%]",
-    "left-[26%] bottom-[10%]",
-    "right-[26%] bottom-[10%]"
-  ];
-
-  if (!visibleRelationships.length) {
-    return (
-      <div className="grid min-h-[420px] place-items-center rounded-lg border bg-editor p-4">
-        <EmptyState
-          icon={EyeOff}
-          title={showSpoilers ? "No relationships yet" : "Spoiler relationships are hidden"}
-          description={
-            showSpoilers
-              ? "Add a relationship to start building the map."
-              : "Enable spoiler visibility to reveal all map links."
-          }
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative min-h-[420px] overflow-hidden rounded-lg border bg-editor p-4">
-      {characterIds.map((id, index) => {
-        const character = data.characters.find((item) => item.id === id);
-        const detail = uniqueStrings(
-          visibleRelationships
-            .filter(
-              (relationship) =>
-                relationship.fromCharacterId === id || relationship.toCharacterId === id
-            )
-            .map((relationship) => relationshipViewForCharacter(relationship, id)?.label ?? "")
-        )
-          .slice(0, 2)
-          .join(" · ");
-
-        if (!character) {
-          return null;
-        }
-
-        return (
-          <GraphNode
-            key={id}
-            className={positions[index] ?? positions[0]}
-            name={character.name}
-            detail={detail || character.role || "linked character"}
-          />
-        );
-      })}
-      <div className="absolute inset-x-8 bottom-4 grid gap-2">
-        {visibleRelationships.slice(0, 6).map((relationship) => (
-          <div
-            key={relationship.id}
-            className="rounded-md border bg-background/85 px-3 py-2 text-xs shadow-paper-sm"
-          >
-            <span className="font-medium">
-              {characterName(relationship.fromCharacterId, data)}{" "}
-              {relationship.direction === "Bidirectional" ? "<->" : "->"}{" "}
-              {characterName(relationship.toCharacterId, data)}
-            </span>
-            <span className="text-muted-foreground">
-              {" · "}
-              {relationship.labelFromTo} / {relationship.labelToFrom}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-function GraphNode({
-  className,
-  name,
-  detail
-}: {
-  className: string;
-  name: string;
-  detail: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "absolute w-40 rounded-lg border bg-card p-3 text-center shadow-paper-sm",
-        className
-      )}
-    >
-      <div className="mx-auto mb-2 grid size-10 place-items-center rounded-md bg-primary/12 text-primary">
-        <UserRound className="size-5" />
-      </div>
-      <p className="font-semibold">{name}</p>
-      <p className="text-xs text-muted-foreground">{detail}</p>
-    </div>
-  );
-}
-
-function TimelineScreen({
-  volumeFilter,
-  chapterFilter,
-  characterFilter,
-  placeFilter,
-  onVolumeFilterChange,
-  onChapterFilterChange,
-  onCharacterFilterChange,
-  onPlaceFilterChange,
-  onAddEvent
-}: {
-  volumeFilter: string;
-  chapterFilter: string;
-  characterFilter: string;
-  placeFilter: string;
-  onVolumeFilterChange: (value: string) => void;
-  onChapterFilterChange: (value: string) => void;
-  onCharacterFilterChange: (value: string) => void;
-  onPlaceFilterChange: (value: string) => void;
-  onAddEvent: () => void;
-}) {
-  const data = useStudioData();
-  const filteredEvents = data.timelineEvents.filter((event) => {
-    const volumeMatch =
-      volumeFilter === "All volumes" || volumeTitle(event.volumeId, data) === volumeFilter;
-    const chapterMatch =
-      chapterFilter === "All chapters" || chapterTitle(event.chapterId, data) === chapterFilter;
-    const characterMatch =
-      characterFilter === "All characters" ||
-      event.characterIds.some((id) => characterName(id, data) === characterFilter);
-    const placeMatch =
-      placeFilter === "All places" || placeName(event.locationId, data) === placeFilter;
-
-    return volumeMatch && chapterMatch && characterMatch && placeMatch;
-  });
-  const grouped = filteredEvents.reduce<Record<string, TimelineEvent[]>>((acc, event) => {
-    acc[event.internalDate] = [...(acc[event.internalDate] ?? []), event];
-    return acc;
-  }, {});
-  const groupedEntries = Object.entries(grouped).sort(([left], [right]) => left.localeCompare(right));
-
+  const selectedTitle = React.useRef<HTMLHeadingElement | null>(null);
+  const novelId = getCurrentNovel(data).id, showSpoilers = catalog.spoilers;
+  const selectedEvent = events.find(event => event.id === eventId && event.novelId === novelId && (showSpoilers || !event.isSpoiler));
+  const storyOptions = React.useMemo(() => relationshipSinceOptions(novelId, data.volumes, data.chapters, data.scenes), [novelId, data]);
+  React.useEffect(() => { if (selectedEvent) selectedTitle.current?.focus(); }, [selectedEvent]);
+  const filteredEvents = filterTimelineEvents(events, novelId, catalog);
+  const hasVisibleEvents = events.some(event => event.novelId === novelId && (showSpoilers || !event.isSpoiler));
+  const volumes = data.volumes.filter(volume => volume.novelId === novelId);
+  const chapters = data.chapters.filter(chapter => volumes.some(volume => volume.id === chapter.volumeId) && (!catalog.volume || chapter.volumeId === catalog.volume));
+  const select = (label: string, key: "volume" | "chapter" | "character" | "place", rows: { id: string; name?: string; title?: string }[]) =>
+    <FilterSelect label={label} value={catalog[key] || "all"} values={["all", ...rows.map(row => row.id)]}
+      labels={Object.fromEntries([["all", `All ${label.toLowerCase()}s`], ...rows.map(row => [row.id, row.name ?? row.title ?? row.id])])}
+      onValueChange={value => onFilterChange({ [key]: value === "all" ? "" : value, ...(key === "volume" ? { chapter: "" } : {}) })} />;
   return (
     <div className="grid gap-6">
       <SectionHeader
         eyebrow="Timeline"
         title="Story chronology"
-        description="Filter events by volume, chapter, character, or place while keeping spoilers marked."
+        description="Follow chronological order independently of where events are told."
         action={
           <Button onClick={onAddEvent}>
             <Plus className="size-4" />
@@ -3823,78 +3558,37 @@ function TimelineScreen({
         }
       />
 
+      {eventId ? <Link href={timelineCatalogRoute(novelId, catalog)} className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">Back to all events</Link> : null}
+      <TimelineFilters><div className="grid min-w-0 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div><Label htmlFor="timeline-search">Search Event Title</Label><Input id="timeline-search" type="search" maxLength={200} value={catalog.q} onChange={event => onFilterChange({ q: event.target.value })} /></div>
+        {select("Volume", "volume", volumes)}
+        {select("Chapter", "chapter", chapters)}
+        {select("Character", "character", data.characters.filter(person => person.novelId === novelId))}
+        {select("Place", "place", data.locations.filter(place => place.novelId === novelId))}
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showSpoilers} onChange={event => onFilterChange({ spoilers: event.target.checked })} />Show spoilers</label>
+        <Button variant="outline" onClick={onClear}>Clear Filters</Button>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={catalog.archived} onChange={event => onFilterChange({ archived: event.target.checked })} />Show archived</label>
+      </div></TimelineFilters>
       <Card>
-        <CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
-          <FilterSelect
-            label="Volume"
-            value={volumeFilter}
-            values={["All volumes", ...data.volumes.map((v) => v.title)]}
-            onValueChange={onVolumeFilterChange}
-          />
-          <FilterSelect
-            label="Chapter"
-            value={chapterFilter}
-            values={["All chapters", ...data.chapters.map((c) => c.title)]}
-            onValueChange={onChapterFilterChange}
-          />
-          <FilterSelect
-            label="Character"
-            value={characterFilter}
-            values={["All characters", ...data.characters.map((c) => c.name)]}
-            onValueChange={onCharacterFilterChange}
-          />
-          <FilterSelect
-            label="Place"
-            value={placeFilter}
-            values={["All places", ...data.locations.map((p) => p.name)]}
-            onValueChange={onPlaceFilterChange}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Events</CardTitle>
-          <CardDescription>
-            {filteredEvents.length} matching event{filteredEvents.length === 1 ? "" : "s"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {groupedEntries.length ? (
-            groupedEntries.map(([day, events]) => (
-              <div key={day} className="grid gap-3 md:grid-cols-[120px_1fr]">
-                <div className="font-semibold">{day}</div>
-                <div className="space-y-3 border-l pl-4">
-                  {events.map((event) => (
-                    <div key={event.id} className="rounded-md border bg-background/35 p-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-medium">{event.title}</h3>
-                        {event.isSpoiler ? <Badge variant="accent">Spoiler</Badge> : null}
-                      </div>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        {event.description}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Badge variant="outline">{chapterTitle(event.chapterId, data)}</Badge>
-                        <Badge variant="outline">{placeName(event.locationId, data)}</Badge>
-                        {event.characterIds.map((id) => (
-                          <Badge key={id} variant="outline">
-                            {characterName(id, data)}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        <CardHeader><CardTitle id="timeline-results-heading" tabIndex={-1}>Events</CardTitle><CardDescription>{filteredEvents.length} matching events</CardDescription></CardHeader>
+        <CardContent className="min-w-0 space-y-6">
+          {filteredEvents.length ? <TimelineWindow key={timelineCatalogQuery(catalog)} catalogQuery={timelineCatalogQuery(catalog)} events={filteredEvents} novelId={novelId} showSpoilers={showSpoilers} selectedId={eventId} characters={data.characters} places={data.locations} storyOptions={storyOptions} /> : <TimelineEmptyState hasVisibleEvents={hasVisibleEvents} onAdd={onAddEvent} onClear={onClear} />}
+          {eventId && !selectedEvent ? <p role="status">Event unavailable with the current visibility settings.</p> : null}
+          {selectedEvent ? <TimelineDetailPanel backHref={timelineCatalogRoute(novelId, catalog)}><section aria-label="Selected event detail" className="min-w-0 rounded-lg border p-4 [overflow-wrap:anywhere]">
+            <h2 ref={selectedTitle} tabIndex={-1} className="mb-3 text-lg font-semibold">{selectedEvent.title}</h2>
+            <TimelineDetailLoader summary={selectedEvent} showSpoilers={showSpoilers}>{event => <div className="space-y-3">
+              <AddStoryNoteButton target={{ novelId: event.novelId, type: "TimelineEvent", id: event.id, title: event.title }} />
+              <StoryNotes target={{ novelId: event.novelId, type: "TimelineEvent", id: event.id, title: event.title }} />
+              <p className="whitespace-pre-wrap text-sm">{event.description || "No description yet."}</p>
+              <TimelineStoryLink event={event} novelId={novelId} options={storyOptions} />
+              <div className="flex flex-wrap gap-3">
+                {resolveTimelinePlaces(event, data.locations).map(place => <Link key={place.id} href={routeForPlace(place.novelId, place.id)} className="text-primary hover:underline">{place.name}</Link>)}
+                {data.characters.filter(person => person.novelId === event.novelId && event.characterIds.includes(person.id)).map(person => <Link key={person.id} href={routeForCharacter(person.novelId, person.id)} className="text-primary hover:underline">{person.name}</Link>)}
               </div>
-            ))
-          ) : (
-            <EmptyState
-              icon={Clock}
-              title="No timeline events match those filters"
-              description="Adjust one filter to bring linked story beats back into view."
-            />
-          )}
+              <TimelinePositionEditor event={event} options={storyOptions} characters={data.characters} places={data.locations} onChanged={onChanged} />
+              <TimelineLifecycle event={event} catalog={catalog} onChanged={onChanged} />
+            </div>}</TimelineDetailLoader>
+          </section></TimelineDetailPanel> : null}
         </CardContent>
       </Card>
     </div>
@@ -3905,24 +3599,27 @@ function FilterSelect({
   label,
   value,
   values,
-  onValueChange
+  onValueChange,
+  labels
 }: {
   label: string;
   value: string;
   values: string[];
   onValueChange: (value: string) => void;
+  labels?: Record<string, string>;
 }) {
+  const filterId = React.useId();
   return (
     <div>
-      <Label>{label}</Label>
+      <Label htmlFor={filterId}>{label}</Label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="mt-2">
+        <SelectTrigger id={filterId} className="mt-2">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {values.map((value) => (
             <SelectItem key={value} value={value}>
-              {value}
+              {labels?.[value] ?? value}
             </SelectItem>
           ))}
         </SelectContent>
@@ -3931,75 +3628,6 @@ function FilterSelect({
   );
 }
 
-function NotesScreen({ onAddNote }: { onAddNote: () => void }) {
-  const data = useStudioData();
-  const grouped = data.notes.reduce<Record<Note["linkedType"], Note[]>>((acc, note) => {
-    acc[note.linkedType] = [...(acc[note.linkedType] ?? []), note];
-    return acc;
-  }, {} as Record<Note["linkedType"], Note[]>);
-  const noteTags = uniqueStrings(data.notes.flatMap((note) => note.tags));
-
-  return (
-    <div className="grid gap-6">
-      <SectionHeader
-        eyebrow="Notes"
-        title="Story notes"
-        description="Group private notes by novel, volume, chapter, scene, character, and place."
-        action={
-          <Button onClick={onAddNote}>
-            <Plus className="size-4" />
-            Add note
-          </Button>
-        }
-      />
-
-      <Card>
-        <CardContent className="flex flex-wrap gap-2 p-4">
-          {(noteTags.length ? noteTags : ["no-tags"]).map((tag) => (
-              <Badge key={tag} variant="outline" className="bg-background/45">
-                <Tag className="mr-1 size-3" />
-                {tag}
-              </Badge>
-            ))}
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        {Object.entries(grouped).map(([group, groupNotes]) => (
-          <Card key={group}>
-            <CardHeader>
-              <CardTitle>{group}</CardTitle>
-              <CardDescription>{groupNotes.length} notes</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {groupNotes.map((note) => (
-                <div key={note.id} className="rounded-md border bg-background/35 p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold">{note.title}</h3>
-                      <p className="text-xs text-muted-foreground">Last edited {note.updatedAt}</p>
-                    </div>
-                    <Badge variant="outline">{note.linkedType}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {note.content}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {note.tags.map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function ExportScreen({
   exportScope,
@@ -4259,11 +3887,10 @@ function BackupsScreen({
 
 function PrototypeDialog({
   dialog,
+  initialRelationshipType = "",
   exportFilename,
   onCreateNovel,
   onCreateRelationship,
-  onCreateEvent,
-  onCreateNote,
   onNavigateReaderScene,
   onClose
 }: {
@@ -4271,15 +3898,12 @@ function PrototypeDialog({
     | null
     | "novel"
     | "relationship"
-    | "event"
-    | "note"
     | "export"
     | "toc";
   exportFilename: string;
+  initialRelationshipType?: string;
   onCreateNovel: (input: CreateNovelInput) => Promise<void>;
   onCreateRelationship: (input: CreateRelationshipInput) => Promise<void>;
-  onCreateEvent: (input: CreateTimelineEventInput) => Promise<void>;
-  onCreateNote: (input: CreateNoteInput) => Promise<void>;
   onNavigateReaderScene: (sceneId: string) => void;
   onClose: () => void;
 }) {
@@ -4289,22 +3913,20 @@ function PrototypeDialog({
   const [itemNotes, setItemNotes] = React.useState("");
   const [dialogError, setDialogError] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+  const relationshipInvoker = React.useRef<HTMLElement | null>(null);
+  const relationshipFirstField = React.useRef<HTMLButtonElement | null>(null);
+  const relationshipBody = React.useRef<HTMLDivElement | null>(null);
+  const previousDialog = React.useRef<typeof dialog>(null);
   const [relationshipForm, setRelationshipForm] = React.useState<CreateRelationshipInput>({
     fromCharacterId: "",
     toCharacterId: "",
     relationshipType: "",
-    status: "Growing",
+    status: "",
     since: "",
+    sinceKind: "unknown",
+    sinceTargetId: null,
     description: "",
     notes: "",
-    isSpoiler: false
-  });
-  const [eventForm, setEventForm] = React.useState<CreateTimelineEventInput>({
-    title: "",
-    internalDate: "",
-    chapterId: "",
-    locationId: "",
-    description: "",
     isSpoiler: false
   });
   const dialogCopy = {
@@ -4317,14 +3939,6 @@ function PrototypeDialog({
       title: "Add relationship",
       description: "Define character links, direction, spoiler visibility, and notes."
     },
-    event: {
-      title: "Add timeline event",
-      description: "Create a story chronology entry linked to characters and places."
-    },
-    note: {
-      title: "Add note",
-      description: "Capture a private note and attach it to a story entity."
-    },
     export: {
       title: "Generate export",
       description: `Prototype export ready for ${exportFilename}.`
@@ -4336,33 +3950,32 @@ function PrototypeDialog({
   };
 
   const copy = dialog ? dialogCopy[dialog] : null;
+  const sinceOptions = React.useMemo(() => relationshipSinceOptions(currentNovel.id, data.volumes, data.chapters, data.scenes), [currentNovel.id, data.volumes, data.chapters, data.scenes]);
 
   React.useEffect(() => {
+    // Background refreshes must not reset an open narrative draft or its save lock.
+    if (dialog === "relationship" && previousDialog.current === dialog) return;
+    previousDialog.current = dialog;
     setItemTitle("");
     setItemNotes("");
     setDialogError("");
     setSaving(false);
     setRelationshipForm({
       fromCharacterId: data.characters[0]?.id ?? "",
-      toCharacterId: data.characters[1]?.id ?? data.characters[0]?.id ?? "",
-      relationshipType: "",
-      status: "Growing",
+      toCharacterId: data.characters[1]?.id ?? "",
+      relationshipType: relationshipDefinitions.some((type) => type.key === initialRelationshipType) ? initialRelationshipType : "",
+      status: "",
       since: "",
+      sinceKind: "unknown",
+      sinceTargetId: null,
       description: "",
       notes: "",
       isSpoiler: false
     });
-    setEventForm({
-      title: "",
-      internalDate: "",
-      chapterId: data.chapters[0]?.id ?? "",
-      locationId: data.locations[0]?.id ?? "",
-      description: "",
-      isSpoiler: false
-    });
-  }, [data.characters, data.chapters, data.locations, dialog]);
+  }, [data.characters, data.chapters, data.locations, dialog, initialRelationshipType]);
 
   const submitDialog = async () => {
+    if (saving) return;
     if (!dialog || dialog === "toc" || dialog === "export") {
       onClose();
       return;
@@ -4393,6 +4006,12 @@ function PrototypeDialog({
           return;
         }
 
+        if (relationshipForm.sinceKind === "custom" && !relationshipForm.since.trim()) {
+          setDialogError("Enter custom Since text or choose Unknown.");
+          setSaving(false);
+          return;
+        }
+
         await onCreateRelationship({
           ...relationshipForm,
           relationshipType: relationshipForm.relationshipType.trim(),
@@ -4400,29 +4019,6 @@ function PrototypeDialog({
           notes: relationshipForm.notes.trim(),
           since: relationshipForm.since.trim(),
           status: relationshipForm.status.trim()
-        });
-      } else if (dialog === "event") {
-        if (!eventForm.title.trim() || !eventForm.internalDate.trim()) {
-          setDialogError("Title and internal date are required.");
-          setSaving(false);
-          return;
-        }
-
-        await onCreateEvent({
-          ...eventForm,
-          title: eventForm.title.trim(),
-          internalDate: eventForm.internalDate.trim(),
-          description: eventForm.description.trim()
-        });
-      } else if (dialog === "note") {
-        if (!itemTitle.trim()) {
-          setDialogError("Title is required.");
-          setSaving(false);
-          return;
-        }
-        await onCreateNote({
-          title: itemTitle.trim(),
-          content: itemNotes.trim()
         });
       } else {
         onClose();
@@ -4437,11 +4033,30 @@ function PrototypeDialog({
   };
 
   return (
-    <Dialog open={Boolean(dialog)} onOpenChange={(open) => (!open ? onClose() : null)}>
-      <DialogContent>
+    <Dialog open={Boolean(dialog)} modal onOpenChange={(open) => { if (!open && !(dialog === "relationship" && saving)) onClose(); }}>
+      <DialogContent
+        className={dialog === "relationship" ? "relationship-dialog" : undefined}
+        aria-modal="true"
+        closeDisabled={dialog === "relationship" && saving}
+        onOpenAutoFocus={(event) => {
+          if (dialog !== "relationship") return;
+          relationshipInvoker.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          event.preventDefault();
+          if (relationshipBody.current) relationshipBody.current.scrollTop = 0;
+          relationshipFirstField.current?.focus({ preventScroll: true });
+        }}
+        onCloseAutoFocus={(event) => {
+          if (!relationshipInvoker.current) return;
+          event.preventDefault();
+          if (relationshipInvoker.current.isConnected) relationshipInvoker.current.focus({ preventScroll: true });
+          relationshipInvoker.current = null;
+        }}
+        onEscapeKeyDown={(event) => { if (dialog === "relationship" && saving) event.preventDefault(); }}
+        onInteractOutside={(event) => { if (dialog === "relationship" && saving) event.preventDefault(); }}
+      >
         {copy ? (
           <>
-            <DialogHeader>
+            <DialogHeader className={dialog === "relationship" ? "relationship-dialog-header" : undefined}>
               <DialogTitle>{copy.title}</DialogTitle>
               <DialogDescription>{copy.description}</DialogDescription>
             </DialogHeader>
@@ -4466,219 +4081,9 @@ function PrototypeDialog({
                 ))}
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div ref={dialog === "relationship" ? relationshipBody : undefined} className={dialog === "relationship" ? "relationship-dialog-body" : "grid gap-3"}>
                 {dialog === "relationship" ? (
-                  <>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <Label htmlFor="relationship-from">From character</Label>
-                        <Select
-                          value={relationshipForm.fromCharacterId}
-                          onValueChange={(value) =>
-                            setRelationshipForm((current) => ({ ...current, fromCharacterId: value }))
-                          }
-                        >
-                          <SelectTrigger id="relationship-from" className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {data.characters.map((character) => (
-                              <SelectItem key={character.id} value={character.id}>
-                                {character.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="relationship-to">To character</Label>
-                        <Select
-                          value={relationshipForm.toCharacterId}
-                          onValueChange={(value) =>
-                            setRelationshipForm((current) => ({ ...current, toCharacterId: value }))
-                          }
-                        >
-                          <SelectTrigger id="relationship-to" className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {data.characters.map((character) => (
-                              <SelectItem key={character.id} value={character.id}>
-                                {character.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <Label htmlFor="relationship-type">Relationship type</Label>
-                        <Select value={relationshipForm.relationshipType} onValueChange={(value) => setRelationshipForm((current) => ({ ...current, relationshipType: value }))}>
-                          <SelectTrigger id="relationship-type" className="mt-2"><SelectValue placeholder="Select a relationship" /></SelectTrigger>
-                          <SelectContent>{relationshipDefinitions.map((definition) => <SelectItem key={definition.key} value={definition.key}>{definition.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Status</Label>
-                        <Input
-                          className="mt-2"
-                          value={relationshipForm.status}
-                          placeholder="Growing"
-                          onChange={(event) =>
-                            setRelationshipForm((current) => ({
-                              ...current,
-                              status: event.target.value
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Since</Label>
-                      <Input
-                        className="mt-2"
-                        value={relationshipForm.since}
-                        placeholder="Chapter 1"
-                        onChange={(event) =>
-                          setRelationshipForm((current) => ({
-                            ...current,
-                            since: event.target.value
-                          }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Description</Label>
-                      <Textarea
-                        className="mt-2"
-                        value={relationshipForm.description}
-                        placeholder="Private relationship context"
-                        onChange={(event) =>
-                          setRelationshipForm((current) => ({
-                            ...current,
-                            description: event.target.value
-                          }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Notes</Label>
-                      <Textarea
-                        className="mt-2"
-                        value={relationshipForm.notes}
-                        placeholder="Continuity notes"
-                        onChange={(event) =>
-                          setRelationshipForm((current) => ({
-                            ...current,
-                            notes: event.target.value
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between rounded-md border bg-background/35 p-3">
-                      <span className="text-sm">Spoiler relationship</span>
-                      <Switch
-                        checked={relationshipForm.isSpoiler}
-                        onCheckedChange={(value) =>
-                          setRelationshipForm((current) => ({ ...current, isSpoiler: value }))
-                        }
-                      />
-                    </div>
-                  </>
-                ) : dialog === "event" ? (
-                  <>
-                    <div>
-                      <Label>Event title</Label>
-                      <Input
-                        className="mt-2"
-                        value={eventForm.title}
-                        placeholder="Midnight bell test"
-                        onChange={(event) =>
-                          setEventForm((current) => ({ ...current, title: event.target.value }))
-                        }
-                      />
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div>
-                        <Label>Internal date</Label>
-                        <Input
-                          className="mt-2"
-                          value={eventForm.internalDate}
-                          placeholder="Day 03"
-                          onChange={(event) =>
-                            setEventForm((current) => ({
-                              ...current,
-                              internalDate: event.target.value
-                            }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label>Linked chapter</Label>
-                        <Select
-                          value={eventForm.chapterId}
-                          onValueChange={(value) =>
-                            setEventForm((current) => ({ ...current, chapterId: value }))
-                          }
-                        >
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {data.chapters.map((chapter) => (
-                              <SelectItem key={chapter.id} value={chapter.id}>
-                                {chapter.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Linked place</Label>
-                      <Select
-                        value={eventForm.locationId}
-                        onValueChange={(value) =>
-                          setEventForm((current) => ({ ...current, locationId: value }))
-                        }
-                      >
-                        <SelectTrigger className="mt-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {data.locations.map((location) => (
-                            <SelectItem key={location.id} value={location.id}>
-                              {location.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Description</Label>
-                      <Textarea
-                        className="mt-2"
-                        value={eventForm.description}
-                        placeholder="What happens in this story beat?"
-                        onChange={(event) =>
-                          setEventForm((current) => ({
-                            ...current,
-                            description: event.target.value
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between rounded-md border bg-background/35 p-3">
-                      <span className="text-sm">Spoiler event</span>
-                      <Switch
-                        checked={eventForm.isSpoiler}
-                        onCheckedChange={(value) =>
-                          setEventForm((current) => ({ ...current, isSpoiler: value }))
-                        }
-                      />
-                    </div>
-                  </>
+                  <RelationshipFields form={relationshipForm} onChange={setRelationshipForm} characters={data.characters} sinceOptions={sinceOptions} saving={saving} firstFieldRef={relationshipFirstField} />
                 ) : (
                   <>
                     <div>
@@ -4702,22 +4107,22 @@ function PrototypeDialog({
                   </>
                 )}
                 {dialogError ? (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
                     {dialogError}
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between rounded-md border bg-background/35 p-3">
                   <span className="text-sm">Current novel: {currentNovel.title}</span>
-                  <Switch defaultChecked />
+                  {dialog !== "relationship" ? <Switch defaultChecked /> : null}
                 </div>
               </div>
             )}
-            <DialogFooter>
-              <Button variant="outline" onClick={onClose}>
+            <DialogFooter className={dialog === "relationship" ? "relationship-dialog-footer" : undefined}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={dialog === "relationship" && saving}>
                 Cancel
               </Button>
-              <Button onClick={submitDialog} disabled={saving}>
-                {dialog === "export" ? "Generate" : saving ? "Saving..." : "Save item"}
+              <Button type="button" onClick={submitDialog} disabled={saving}>
+                {dialog === "export" ? "Generate" : saving ? "Saving..." : dialog === "relationship" ? "Save Relationship" : "Save item"}
               </Button>
             </DialogFooter>
           </>

@@ -2,6 +2,11 @@ import { existsSync } from "node:fs";
 import { mkdir, open } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
+import Database from "better-sqlite3";
+import { migrateTimelinePosition } from "./migrate-timeline-position.mjs";
+import { migrateTimelineLinks } from "./migrate-timeline-links.mjs";
+import { migrateTimelineLifecycle } from "./migrate-timeline-lifecycle.mjs";
+import { migrateNotes } from "./migrate-notes.mjs";
 
 import { canSeedWithoutReset, inspectDevDatabase } from "./dev-database-state.mjs";
 
@@ -31,6 +36,16 @@ if (!existsSync(databasePath)) {
   console.log("Created an empty local SQLite file for the initial schema push.");
 }
 
+// Preserve legacy Timeline ordering before schema push adds zero-valued index defaults.
+const migrationDatabase = new Database(databasePath);
+try {
+  if (migrationDatabase.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='TimelineEvent'").get()) {
+    console.log(`Migrated timeline positions: ${migrateTimelinePosition(migrationDatabase)}`);
+    console.log("Migrated timeline links:", migrateTimelineLinks(migrationDatabase));
+    migrateTimelineLifecycle(migrationDatabase);
+  }
+  if (migrationDatabase.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='Note'").get()) console.log("Migrated Notes:", migrateNotes(migrationDatabase));
+} finally { migrationDatabase.close(); }
 runNpmScript("db:push");
 
 const initialState = inspectDevDatabase(databasePath);

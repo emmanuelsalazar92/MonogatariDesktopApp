@@ -1,6 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import { getScene, SceneRevisionConflictError, updateScene } from "@/lib/db/studio";
 import type { ChapterStatus } from "@/lib/studio-domain";
+import { ScenePlaceError } from "@/lib/db/scene-places";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 const chapterStatuses = new Set([
   "Idea",
@@ -29,6 +31,7 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ sceneId: string }> }
 ) {
+  if (!isTrustedMutationRequest(request)) return NextResponse.json({ error: "Cross-origin mutation rejected" }, { status: 403 });
   const { sceneId } = await context.params;
   const body = (await request.json()) as {
     title?: unknown;
@@ -72,6 +75,7 @@ export async function PATCH(
 
     return NextResponse.json(scene);
   } catch (error) {
+    if (error instanceof ScenePlaceError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof SceneRevisionConflictError) {
       return NextResponse.json({ error: "scene changed elsewhere; reload before retrying" }, { status: 409 });
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ScenePlaceError } from "@/lib/db/scene-places";
 import {
   createStructureItem,
   deleteStructureItem,
@@ -28,6 +29,7 @@ function isMovePosition(value: unknown): value is StructureMovePosition {
 }
 
 function apiError(error: unknown) {
+  if (error instanceof ScenePlaceError) return NextResponse.json({ error: error.message }, { status: error.status });
   if (
     error instanceof Error &&
     (error.message.startsWith("cannot create inside") ||

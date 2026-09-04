@@ -390,6 +390,7 @@ export const ModelName = {
   Chapter: 'Chapter',
   Scene: 'Scene',
   SceneVersion: 'SceneVersion',
+  ScenePlace: 'ScenePlace',
   WritingActivity: 'WritingActivity',
   Character: 'Character',
   SceneCharacter: 'SceneCharacter',
@@ -397,9 +398,20 @@ export const ModelName = {
   Location: 'Location',
   Relationship: 'Relationship',
   TimelineEvent: 'TimelineEvent',
+  TimelineEventCharacter: 'TimelineEventCharacter',
+  TimelineEventPlace: 'TimelineEventPlace',
   Note: 'Note',
+  Tag: 'Tag',
+  NoteTag: 'NoteTag',
+  NoteVolume: 'NoteVolume',
+  NoteChapter: 'NoteChapter',
+  NoteScene: 'NoteScene',
+  NoteCharacter: 'NoteCharacter',
+  NotePlace: 'NotePlace',
+  NoteTimelineEvent: 'NoteTimelineEvent',
   Backup: 'Backup',
   AppSetting: 'AppSetting',
+  LocalDataMigration: 'LocalDataMigration',
   StudioConfiguration: 'StudioConfiguration',
   NotionMapping: 'NotionMapping',
   NotionSyncState: 'NotionSyncState'
@@ -418,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "writingActivity" | "character" | "sceneCharacter" | "characterPlace" | "location" | "relationship" | "timelineEvent" | "note" | "backup" | "appSetting" | "studioConfiguration" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "scenePlace" | "writingActivity" | "character" | "sceneCharacter" | "characterPlace" | "location" | "relationship" | "timelineEvent" | "timelineEventCharacter" | "timelineEventPlace" | "note" | "tag" | "noteTag" | "noteVolume" | "noteChapter" | "noteScene" | "noteCharacter" | "notePlace" | "noteTimelineEvent" | "backup" | "appSetting" | "localDataMigration" | "studioConfiguration" | "notionMapping" | "notionSyncState"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -863,6 +875,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.SceneVersionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SceneVersionCountAggregateOutputType> | number
+        }
+      }
+    }
+    ScenePlace: {
+      payload: Prisma.$ScenePlacePayload<ExtArgs>
+      fields: Prisma.ScenePlaceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ScenePlaceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ScenePlaceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>
+        }
+        findFirst: {
+          args: Prisma.ScenePlaceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ScenePlaceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>
+        }
+        findMany: {
+          args: Prisma.ScenePlaceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>[]
+        }
+        create: {
+          args: Prisma.ScenePlaceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>
+        }
+        createMany: {
+          args: Prisma.ScenePlaceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ScenePlaceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>[]
+        }
+        delete: {
+          args: Prisma.ScenePlaceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>
+        }
+        update: {
+          args: Prisma.ScenePlaceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>
+        }
+        deleteMany: {
+          args: Prisma.ScenePlaceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ScenePlaceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ScenePlaceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>[]
+        }
+        upsert: {
+          args: Prisma.ScenePlaceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ScenePlacePayload>
+        }
+        aggregate: {
+          args: Prisma.ScenePlaceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateScenePlace>
+        }
+        groupBy: {
+          args: Prisma.ScenePlaceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ScenePlaceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ScenePlaceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ScenePlaceCountAggregateOutputType> | number
         }
       }
     }
@@ -1384,6 +1470,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TimelineEventCharacter: {
+      payload: Prisma.$TimelineEventCharacterPayload<ExtArgs>
+      fields: Prisma.TimelineEventCharacterFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TimelineEventCharacterFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TimelineEventCharacterFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>
+        }
+        findFirst: {
+          args: Prisma.TimelineEventCharacterFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TimelineEventCharacterFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>
+        }
+        findMany: {
+          args: Prisma.TimelineEventCharacterFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>[]
+        }
+        create: {
+          args: Prisma.TimelineEventCharacterCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>
+        }
+        createMany: {
+          args: Prisma.TimelineEventCharacterCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TimelineEventCharacterCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>[]
+        }
+        delete: {
+          args: Prisma.TimelineEventCharacterDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>
+        }
+        update: {
+          args: Prisma.TimelineEventCharacterUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>
+        }
+        deleteMany: {
+          args: Prisma.TimelineEventCharacterDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TimelineEventCharacterUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TimelineEventCharacterUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>[]
+        }
+        upsert: {
+          args: Prisma.TimelineEventCharacterUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventCharacterPayload>
+        }
+        aggregate: {
+          args: Prisma.TimelineEventCharacterAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTimelineEventCharacter>
+        }
+        groupBy: {
+          args: Prisma.TimelineEventCharacterGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TimelineEventCharacterGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TimelineEventCharacterCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TimelineEventCharacterCountAggregateOutputType> | number
+        }
+      }
+    }
+    TimelineEventPlace: {
+      payload: Prisma.$TimelineEventPlacePayload<ExtArgs>
+      fields: Prisma.TimelineEventPlaceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TimelineEventPlaceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TimelineEventPlaceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>
+        }
+        findFirst: {
+          args: Prisma.TimelineEventPlaceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TimelineEventPlaceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>
+        }
+        findMany: {
+          args: Prisma.TimelineEventPlaceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>[]
+        }
+        create: {
+          args: Prisma.TimelineEventPlaceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>
+        }
+        createMany: {
+          args: Prisma.TimelineEventPlaceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TimelineEventPlaceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>[]
+        }
+        delete: {
+          args: Prisma.TimelineEventPlaceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>
+        }
+        update: {
+          args: Prisma.TimelineEventPlaceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>
+        }
+        deleteMany: {
+          args: Prisma.TimelineEventPlaceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TimelineEventPlaceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TimelineEventPlaceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>[]
+        }
+        upsert: {
+          args: Prisma.TimelineEventPlaceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TimelineEventPlacePayload>
+        }
+        aggregate: {
+          args: Prisma.TimelineEventPlaceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTimelineEventPlace>
+        }
+        groupBy: {
+          args: Prisma.TimelineEventPlaceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TimelineEventPlaceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TimelineEventPlaceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TimelineEventPlaceCountAggregateOutputType> | number
+        }
+      }
+    }
     Note: {
       payload: Prisma.$NotePayload<ExtArgs>
       fields: Prisma.NoteFieldRefs
@@ -1455,6 +1689,598 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.NoteCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.NoteCountAggregateOutputType> | number
+        }
+      }
+    }
+    Tag: {
+      payload: Prisma.$TagPayload<ExtArgs>
+      fields: Prisma.TagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        findFirst: {
+          args: Prisma.TagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        findMany: {
+          args: Prisma.TagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>[]
+        }
+        create: {
+          args: Prisma.TagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        createMany: {
+          args: Prisma.TagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>[]
+        }
+        delete: {
+          args: Prisma.TagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        update: {
+          args: Prisma.TagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        deleteMany: {
+          args: Prisma.TagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>[]
+        }
+        upsert: {
+          args: Prisma.TagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TagPayload>
+        }
+        aggregate: {
+          args: Prisma.TagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTag>
+        }
+        groupBy: {
+          args: Prisma.TagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TagCountAggregateOutputType> | number
+        }
+      }
+    }
+    NoteTag: {
+      payload: Prisma.$NoteTagPayload<ExtArgs>
+      fields: Prisma.NoteTagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NoteTagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NoteTagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>
+        }
+        findFirst: {
+          args: Prisma.NoteTagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NoteTagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>
+        }
+        findMany: {
+          args: Prisma.NoteTagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>[]
+        }
+        create: {
+          args: Prisma.NoteTagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>
+        }
+        createMany: {
+          args: Prisma.NoteTagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NoteTagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>[]
+        }
+        delete: {
+          args: Prisma.NoteTagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>
+        }
+        update: {
+          args: Prisma.NoteTagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>
+        }
+        deleteMany: {
+          args: Prisma.NoteTagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NoteTagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NoteTagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>[]
+        }
+        upsert: {
+          args: Prisma.NoteTagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTagPayload>
+        }
+        aggregate: {
+          args: Prisma.NoteTagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNoteTag>
+        }
+        groupBy: {
+          args: Prisma.NoteTagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteTagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NoteTagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteTagCountAggregateOutputType> | number
+        }
+      }
+    }
+    NoteVolume: {
+      payload: Prisma.$NoteVolumePayload<ExtArgs>
+      fields: Prisma.NoteVolumeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NoteVolumeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NoteVolumeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>
+        }
+        findFirst: {
+          args: Prisma.NoteVolumeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NoteVolumeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>
+        }
+        findMany: {
+          args: Prisma.NoteVolumeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>[]
+        }
+        create: {
+          args: Prisma.NoteVolumeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>
+        }
+        createMany: {
+          args: Prisma.NoteVolumeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NoteVolumeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>[]
+        }
+        delete: {
+          args: Prisma.NoteVolumeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>
+        }
+        update: {
+          args: Prisma.NoteVolumeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>
+        }
+        deleteMany: {
+          args: Prisma.NoteVolumeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NoteVolumeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NoteVolumeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>[]
+        }
+        upsert: {
+          args: Prisma.NoteVolumeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteVolumePayload>
+        }
+        aggregate: {
+          args: Prisma.NoteVolumeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNoteVolume>
+        }
+        groupBy: {
+          args: Prisma.NoteVolumeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteVolumeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NoteVolumeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteVolumeCountAggregateOutputType> | number
+        }
+      }
+    }
+    NoteChapter: {
+      payload: Prisma.$NoteChapterPayload<ExtArgs>
+      fields: Prisma.NoteChapterFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NoteChapterFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NoteChapterFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>
+        }
+        findFirst: {
+          args: Prisma.NoteChapterFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NoteChapterFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>
+        }
+        findMany: {
+          args: Prisma.NoteChapterFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>[]
+        }
+        create: {
+          args: Prisma.NoteChapterCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>
+        }
+        createMany: {
+          args: Prisma.NoteChapterCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NoteChapterCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>[]
+        }
+        delete: {
+          args: Prisma.NoteChapterDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>
+        }
+        update: {
+          args: Prisma.NoteChapterUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>
+        }
+        deleteMany: {
+          args: Prisma.NoteChapterDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NoteChapterUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NoteChapterUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>[]
+        }
+        upsert: {
+          args: Prisma.NoteChapterUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteChapterPayload>
+        }
+        aggregate: {
+          args: Prisma.NoteChapterAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNoteChapter>
+        }
+        groupBy: {
+          args: Prisma.NoteChapterGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteChapterGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NoteChapterCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteChapterCountAggregateOutputType> | number
+        }
+      }
+    }
+    NoteScene: {
+      payload: Prisma.$NoteScenePayload<ExtArgs>
+      fields: Prisma.NoteSceneFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NoteSceneFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NoteSceneFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>
+        }
+        findFirst: {
+          args: Prisma.NoteSceneFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NoteSceneFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>
+        }
+        findMany: {
+          args: Prisma.NoteSceneFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>[]
+        }
+        create: {
+          args: Prisma.NoteSceneCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>
+        }
+        createMany: {
+          args: Prisma.NoteSceneCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NoteSceneCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>[]
+        }
+        delete: {
+          args: Prisma.NoteSceneDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>
+        }
+        update: {
+          args: Prisma.NoteSceneUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>
+        }
+        deleteMany: {
+          args: Prisma.NoteSceneDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NoteSceneUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NoteSceneUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>[]
+        }
+        upsert: {
+          args: Prisma.NoteSceneUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteScenePayload>
+        }
+        aggregate: {
+          args: Prisma.NoteSceneAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNoteScene>
+        }
+        groupBy: {
+          args: Prisma.NoteSceneGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteSceneGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NoteSceneCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteSceneCountAggregateOutputType> | number
+        }
+      }
+    }
+    NoteCharacter: {
+      payload: Prisma.$NoteCharacterPayload<ExtArgs>
+      fields: Prisma.NoteCharacterFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NoteCharacterFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NoteCharacterFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>
+        }
+        findFirst: {
+          args: Prisma.NoteCharacterFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NoteCharacterFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>
+        }
+        findMany: {
+          args: Prisma.NoteCharacterFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>[]
+        }
+        create: {
+          args: Prisma.NoteCharacterCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>
+        }
+        createMany: {
+          args: Prisma.NoteCharacterCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NoteCharacterCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>[]
+        }
+        delete: {
+          args: Prisma.NoteCharacterDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>
+        }
+        update: {
+          args: Prisma.NoteCharacterUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>
+        }
+        deleteMany: {
+          args: Prisma.NoteCharacterDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NoteCharacterUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NoteCharacterUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>[]
+        }
+        upsert: {
+          args: Prisma.NoteCharacterUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteCharacterPayload>
+        }
+        aggregate: {
+          args: Prisma.NoteCharacterAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNoteCharacter>
+        }
+        groupBy: {
+          args: Prisma.NoteCharacterGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteCharacterGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NoteCharacterCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteCharacterCountAggregateOutputType> | number
+        }
+      }
+    }
+    NotePlace: {
+      payload: Prisma.$NotePlacePayload<ExtArgs>
+      fields: Prisma.NotePlaceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NotePlaceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NotePlaceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>
+        }
+        findFirst: {
+          args: Prisma.NotePlaceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NotePlaceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>
+        }
+        findMany: {
+          args: Prisma.NotePlaceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>[]
+        }
+        create: {
+          args: Prisma.NotePlaceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>
+        }
+        createMany: {
+          args: Prisma.NotePlaceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NotePlaceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>[]
+        }
+        delete: {
+          args: Prisma.NotePlaceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>
+        }
+        update: {
+          args: Prisma.NotePlaceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>
+        }
+        deleteMany: {
+          args: Prisma.NotePlaceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NotePlaceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NotePlaceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>[]
+        }
+        upsert: {
+          args: Prisma.NotePlaceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NotePlacePayload>
+        }
+        aggregate: {
+          args: Prisma.NotePlaceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotePlace>
+        }
+        groupBy: {
+          args: Prisma.NotePlaceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotePlaceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NotePlaceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotePlaceCountAggregateOutputType> | number
+        }
+      }
+    }
+    NoteTimelineEvent: {
+      payload: Prisma.$NoteTimelineEventPayload<ExtArgs>
+      fields: Prisma.NoteTimelineEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NoteTimelineEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NoteTimelineEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>
+        }
+        findFirst: {
+          args: Prisma.NoteTimelineEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NoteTimelineEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>
+        }
+        findMany: {
+          args: Prisma.NoteTimelineEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>[]
+        }
+        create: {
+          args: Prisma.NoteTimelineEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>
+        }
+        createMany: {
+          args: Prisma.NoteTimelineEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NoteTimelineEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>[]
+        }
+        delete: {
+          args: Prisma.NoteTimelineEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>
+        }
+        update: {
+          args: Prisma.NoteTimelineEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.NoteTimelineEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NoteTimelineEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NoteTimelineEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.NoteTimelineEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NoteTimelineEventPayload>
+        }
+        aggregate: {
+          args: Prisma.NoteTimelineEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNoteTimelineEvent>
+        }
+        groupBy: {
+          args: Prisma.NoteTimelineEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteTimelineEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NoteTimelineEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NoteTimelineEventCountAggregateOutputType> | number
         }
       }
     }
@@ -1603,6 +2429,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AppSettingCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AppSettingCountAggregateOutputType> | number
+        }
+      }
+    }
+    LocalDataMigration: {
+      payload: Prisma.$LocalDataMigrationPayload<ExtArgs>
+      fields: Prisma.LocalDataMigrationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.LocalDataMigrationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.LocalDataMigrationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>
+        }
+        findFirst: {
+          args: Prisma.LocalDataMigrationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.LocalDataMigrationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>
+        }
+        findMany: {
+          args: Prisma.LocalDataMigrationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>[]
+        }
+        create: {
+          args: Prisma.LocalDataMigrationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>
+        }
+        createMany: {
+          args: Prisma.LocalDataMigrationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.LocalDataMigrationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>[]
+        }
+        delete: {
+          args: Prisma.LocalDataMigrationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>
+        }
+        update: {
+          args: Prisma.LocalDataMigrationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>
+        }
+        deleteMany: {
+          args: Prisma.LocalDataMigrationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.LocalDataMigrationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.LocalDataMigrationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>[]
+        }
+        upsert: {
+          args: Prisma.LocalDataMigrationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LocalDataMigrationPayload>
+        }
+        aggregate: {
+          args: Prisma.LocalDataMigrationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLocalDataMigration>
+        }
+        groupBy: {
+          args: Prisma.LocalDataMigrationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LocalDataMigrationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.LocalDataMigrationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LocalDataMigrationCountAggregateOutputType> | number
         }
       }
     }
@@ -1927,7 +2827,6 @@ export const SceneScalarFieldEnum = {
   content: 'content',
   summary: 'summary',
   status: 'status',
-  locationId: 'locationId',
   sortOrder: 'sortOrder',
   wordCount: 'wordCount',
   objective: 'objective',
@@ -1950,6 +2849,14 @@ export const SceneVersionScalarFieldEnum = {
 } as const
 
 export type SceneVersionScalarFieldEnum = (typeof SceneVersionScalarFieldEnum)[keyof typeof SceneVersionScalarFieldEnum]
+
+
+export const ScenePlaceScalarFieldEnum = {
+  sceneId: 'sceneId',
+  locationId: 'locationId'
+} as const
+
+export type ScenePlaceScalarFieldEnum = (typeof ScenePlaceScalarFieldEnum)[keyof typeof ScenePlaceScalarFieldEnum]
 
 
 export const WritingActivityScalarFieldEnum = {
@@ -2018,6 +2925,7 @@ export const LocationScalarFieldEnum = {
   status: 'status',
   atmosphere: 'atmosphere',
   revision: 'revision',
+  updatedAt: 'updatedAt',
   parentPlaceId: 'parentPlaceId'
 } as const
 
@@ -2026,6 +2934,8 @@ export type LocationScalarFieldEnum = (typeof LocationScalarFieldEnum)[keyof typ
 
 export const RelationshipScalarFieldEnum = {
   id: 'id',
+  revision: 'revision',
+  archivedAt: 'archivedAt',
   novelId: 'novelId',
   fromCharacterId: 'fromCharacterId',
   toCharacterId: 'toCharacterId',
@@ -2036,6 +2946,8 @@ export const RelationshipScalarFieldEnum = {
   isSpoiler: 'isSpoiler',
   status: 'status',
   since: 'since',
+  sinceKind: 'sinceKind',
+  sinceTargetId: 'sinceTargetId',
   notes: 'notes'
 } as const
 
@@ -2047,11 +2959,15 @@ export const TimelineEventScalarFieldEnum = {
   novelId: 'novelId',
   title: 'title',
   internalDate: 'internalDate',
+  sortIndex: 'sortIndex',
+  chronologyKind: 'chronologyKind',
+  relativeDay: 'relativeDay',
+  relativeMinute: 'relativeMinute',
+  positionRevision: 'positionRevision',
+  archivedAt: 'archivedAt',
   volumeId: 'volumeId',
   chapterId: 'chapterId',
   sceneId: 'sceneId',
-  locationId: 'locationId',
-  characterIds: 'characterIds',
   description: 'description',
   isSpoiler: 'isSpoiler'
 } as const
@@ -2059,7 +2975,30 @@ export const TimelineEventScalarFieldEnum = {
 export type TimelineEventScalarFieldEnum = (typeof TimelineEventScalarFieldEnum)[keyof typeof TimelineEventScalarFieldEnum]
 
 
+export const TimelineEventCharacterScalarFieldEnum = {
+  eventId: 'eventId',
+  characterId: 'characterId'
+} as const
+
+export type TimelineEventCharacterScalarFieldEnum = (typeof TimelineEventCharacterScalarFieldEnum)[keyof typeof TimelineEventCharacterScalarFieldEnum]
+
+
+export const TimelineEventPlaceScalarFieldEnum = {
+  eventId: 'eventId',
+  locationId: 'locationId'
+} as const
+
+export type TimelineEventPlaceScalarFieldEnum = (typeof TimelineEventPlaceScalarFieldEnum)[keyof typeof TimelineEventPlaceScalarFieldEnum]
+
+
 export const NoteScalarFieldEnum = {
+  searchText: 'searchText',
+  quotedText: 'quotedText',
+  pinned: 'pinned',
+  workflowStatus: 'workflowStatus',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt',
+  revision: 'revision',
   id: 'id',
   novelId: 'novelId',
   linkedType: 'linkedType',
@@ -2071,6 +3010,72 @@ export const NoteScalarFieldEnum = {
 } as const
 
 export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
+
+
+export const TagScalarFieldEnum = {
+  id: 'id',
+  novelId: 'novelId',
+  name: 'name',
+  key: 'key'
+} as const
+
+export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const NoteTagScalarFieldEnum = {
+  noteId: 'noteId',
+  tagId: 'tagId'
+} as const
+
+export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeof NoteTagScalarFieldEnum]
+
+
+export const NoteVolumeScalarFieldEnum = {
+  noteId: 'noteId',
+  volumeId: 'volumeId'
+} as const
+
+export type NoteVolumeScalarFieldEnum = (typeof NoteVolumeScalarFieldEnum)[keyof typeof NoteVolumeScalarFieldEnum]
+
+
+export const NoteChapterScalarFieldEnum = {
+  noteId: 'noteId',
+  chapterId: 'chapterId'
+} as const
+
+export type NoteChapterScalarFieldEnum = (typeof NoteChapterScalarFieldEnum)[keyof typeof NoteChapterScalarFieldEnum]
+
+
+export const NoteSceneScalarFieldEnum = {
+  noteId: 'noteId',
+  sceneId: 'sceneId'
+} as const
+
+export type NoteSceneScalarFieldEnum = (typeof NoteSceneScalarFieldEnum)[keyof typeof NoteSceneScalarFieldEnum]
+
+
+export const NoteCharacterScalarFieldEnum = {
+  noteId: 'noteId',
+  characterId: 'characterId'
+} as const
+
+export type NoteCharacterScalarFieldEnum = (typeof NoteCharacterScalarFieldEnum)[keyof typeof NoteCharacterScalarFieldEnum]
+
+
+export const NotePlaceScalarFieldEnum = {
+  noteId: 'noteId',
+  locationId: 'locationId'
+} as const
+
+export type NotePlaceScalarFieldEnum = (typeof NotePlaceScalarFieldEnum)[keyof typeof NotePlaceScalarFieldEnum]
+
+
+export const NoteTimelineEventScalarFieldEnum = {
+  noteId: 'noteId',
+  eventId: 'eventId'
+} as const
+
+export type NoteTimelineEventScalarFieldEnum = (typeof NoteTimelineEventScalarFieldEnum)[keyof typeof NoteTimelineEventScalarFieldEnum]
 
 
 export const BackupScalarFieldEnum = {
@@ -2093,6 +3098,13 @@ export const AppSettingScalarFieldEnum = {
 } as const
 
 export type AppSettingScalarFieldEnum = (typeof AppSettingScalarFieldEnum)[keyof typeof AppSettingScalarFieldEnum]
+
+
+export const LocalDataMigrationScalarFieldEnum = {
+  id: 'id'
+} as const
+
+export type LocalDataMigrationScalarFieldEnum = (typeof LocalDataMigrationScalarFieldEnum)[keyof typeof LocalDataMigrationScalarFieldEnum]
 
 
 export const StudioConfigurationScalarFieldEnum = {
@@ -2302,6 +3314,7 @@ export type GlobalOmitConfig = {
   chapter?: Prisma.ChapterOmit
   scene?: Prisma.SceneOmit
   sceneVersion?: Prisma.SceneVersionOmit
+  scenePlace?: Prisma.ScenePlaceOmit
   writingActivity?: Prisma.WritingActivityOmit
   character?: Prisma.CharacterOmit
   sceneCharacter?: Prisma.SceneCharacterOmit
@@ -2309,9 +3322,20 @@ export type GlobalOmitConfig = {
   location?: Prisma.LocationOmit
   relationship?: Prisma.RelationshipOmit
   timelineEvent?: Prisma.TimelineEventOmit
+  timelineEventCharacter?: Prisma.TimelineEventCharacterOmit
+  timelineEventPlace?: Prisma.TimelineEventPlaceOmit
   note?: Prisma.NoteOmit
+  tag?: Prisma.TagOmit
+  noteTag?: Prisma.NoteTagOmit
+  noteVolume?: Prisma.NoteVolumeOmit
+  noteChapter?: Prisma.NoteChapterOmit
+  noteScene?: Prisma.NoteSceneOmit
+  noteCharacter?: Prisma.NoteCharacterOmit
+  notePlace?: Prisma.NotePlaceOmit
+  noteTimelineEvent?: Prisma.NoteTimelineEventOmit
   backup?: Prisma.BackupOmit
   appSetting?: Prisma.AppSettingOmit
+  localDataMigration?: Prisma.LocalDataMigrationOmit
   studioConfiguration?: Prisma.StudioConfigurationOmit
   notionMapping?: Prisma.NotionMappingOmit
   notionSyncState?: Prisma.NotionSyncStateOmit

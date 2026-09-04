@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { placeTypes, type Location } from "@/lib/studio-domain";
-import { placeParentError, placeTextLimits, validatePlaceMetadata, type PlaceFieldErrors, type PlaceMetadataInput } from "@/lib/place-metadata";
+import { placeTypes, type Location, type PlaceSummary } from "@/lib/studio-domain";
+import { placeTextLimits, validatePlaceMetadata, type PlaceFieldErrors, type PlaceMetadataInput } from "@/lib/place-metadata";
+import { createPlaceParentValidator, MAX_PLACE_DEPTH } from "@/lib/place-hierarchy";
 import { placeStatuses, placeTypeLabels, placeStatusLabels, normalizePlaceType, normalizePlaceStatus } from "@/lib/place-classification";
 
 function metadataFor(place: Location | null): PlaceMetadataInput {
@@ -23,7 +24,7 @@ function metadataFor(place: Location | null): PlaceMetadataInput {
 export function PlaceFormDialog({ novelId, place, places, onClose, onSaved }: {
   novelId: string;
   place: Location | null;
-  places: Location[];
+  places: PlaceSummary[];
   onClose: () => void;
   onSaved: (place: Location) => Promise<void>;
 }) {
@@ -41,9 +42,11 @@ export function PlaceFormDialog({ novelId, place, places, onClose, onSaved }: {
   currentNovelRef.current = novelId;
   React.useEffect(() => () => requestRef.current?.abort(), []);
   const contextChanged = contextNovelId !== novelId || Boolean(place && place.novelId !== contextNovelId);
-  const parentOptions = places.filter((candidate) =>
-    candidate.novelId === contextNovelId && !placeParentError(place?.id ?? "new-place", candidate.id, places)
-  );
+  const parentOptions = React.useMemo(() => {
+    const scoped = places.filter((candidate) => candidate.novelId === contextNovelId);
+    const parentError = createPlaceParentValidator(scoped);
+    return scoped.filter((candidate) => !parentError(place?.id ?? "new-place", candidate.id));
+  }, [places, contextNovelId, place?.id]);
 
   const update = (field: keyof PlaceMetadataInput, value: string | null) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -107,7 +110,7 @@ export function PlaceFormDialog({ novelId, place, places, onClose, onSaved }: {
           event.preventDefault();
           if (invoker instanceof HTMLElement && invoker.isConnected) invoker.focus({ preventScroll: true });
         }}
-        className="max-h-[calc(100dvh-2rem)] max-w-3xl overflow-y-auto"
+        className="max-h-[calc(100dvh-2rem)] max-w-3xl overflow-y-auto [overflow-wrap:anywhere]"
       >
         <DialogHeader>
           <DialogTitle>{place ? "Edit place" : "Add place"}</DialogTitle>
@@ -135,12 +138,14 @@ export function PlaceFormDialog({ novelId, place, places, onClose, onSaved }: {
             <div className="grid min-w-0 gap-2">
               <Label htmlFor="place-parent">Parent place</Label>
               <Select value={form.parentPlaceId ?? "none"} onValueChange={(value) => update("parentPlaceId", value === "none" ? null : value)} disabled={saving || contextChanged}>
-                <SelectTrigger id="place-parent"><SelectValue placeholder="None" /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className="min-w-0" id="place-parent" aria-describedby="place-parent-help"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent className="max-h-[min(24rem,var(--radix-select-content-available-height))] max-w-[calc(100vw-2rem)] [overflow-wrap:anywhere]">
                   <SelectItem value="none">None</SelectItem>
-                  {parentOptions.map((parent) => <SelectItem key={parent.id} value={parent.id}>{parent.name}</SelectItem>)}
+                  {form.parentPlaceId && !parentOptions.some((parent) => parent.id === form.parentPlaceId) ? <SelectItem value={form.parentPlaceId} disabled>Current parent unavailable — choose another</SelectItem> : null}
+                  {parentOptions.map((parent) => <SelectItem key={parent.id} value={parent.id}>{parent.name}{parent.status === "archived" ? " (Archived)" : ""}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <p id="place-parent-help" className="text-xs text-muted-foreground">Same novel only. Up to {MAX_PLACE_DEPTH} levels; self and descendant places cannot be selected.</p>
               {fieldErrors.parentPlaceId ? <p className="text-sm text-destructive">{fieldErrors.parentPlaceId}</p> : null}
             </div>
             {longFields.map(([field, label]) => (
