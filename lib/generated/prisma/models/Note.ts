@@ -20,11 +20,28 @@ export type NoteModel = runtime.Types.Result.DefaultSelection<Prisma.$NotePayloa
 
 export type AggregateNote = {
   _count: NoteCountAggregateOutputType | null
+  _avg: NoteAvgAggregateOutputType | null
+  _sum: NoteSumAggregateOutputType | null
   _min: NoteMinAggregateOutputType | null
   _max: NoteMaxAggregateOutputType | null
 }
 
+export type NoteAvgAggregateOutputType = {
+  revision: number | null
+}
+
+export type NoteSumAggregateOutputType = {
+  revision: number | null
+}
+
 export type NoteMinAggregateOutputType = {
+  searchText: string | null
+  quotedText: string | null
+  pinned: boolean | null
+  workflowStatus: string | null
+  archivedAt: Date | null
+  createdAt: Date | null
+  revision: number | null
   id: string | null
   novelId: string | null
   linkedType: string | null
@@ -36,6 +53,13 @@ export type NoteMinAggregateOutputType = {
 }
 
 export type NoteMaxAggregateOutputType = {
+  searchText: string | null
+  quotedText: string | null
+  pinned: boolean | null
+  workflowStatus: string | null
+  archivedAt: Date | null
+  createdAt: Date | null
+  revision: number | null
   id: string | null
   novelId: string | null
   linkedType: string | null
@@ -47,6 +71,13 @@ export type NoteMaxAggregateOutputType = {
 }
 
 export type NoteCountAggregateOutputType = {
+  searchText: number
+  quotedText: number
+  pinned: number
+  workflowStatus: number
+  archivedAt: number
+  createdAt: number
+  revision: number
   id: number
   novelId: number
   linkedType: number
@@ -59,7 +90,22 @@ export type NoteCountAggregateOutputType = {
 }
 
 
+export type NoteAvgAggregateInputType = {
+  revision?: true
+}
+
+export type NoteSumAggregateInputType = {
+  revision?: true
+}
+
 export type NoteMinAggregateInputType = {
+  searchText?: true
+  quotedText?: true
+  pinned?: true
+  workflowStatus?: true
+  archivedAt?: true
+  createdAt?: true
+  revision?: true
   id?: true
   novelId?: true
   linkedType?: true
@@ -71,6 +117,13 @@ export type NoteMinAggregateInputType = {
 }
 
 export type NoteMaxAggregateInputType = {
+  searchText?: true
+  quotedText?: true
+  pinned?: true
+  workflowStatus?: true
+  archivedAt?: true
+  createdAt?: true
+  revision?: true
   id?: true
   novelId?: true
   linkedType?: true
@@ -82,6 +135,13 @@ export type NoteMaxAggregateInputType = {
 }
 
 export type NoteCountAggregateInputType = {
+  searchText?: true
+  quotedText?: true
+  pinned?: true
+  workflowStatus?: true
+  archivedAt?: true
+  createdAt?: true
+  revision?: true
   id?: true
   novelId?: true
   linkedType?: true
@@ -131,6 +191,18 @@ export type NoteAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: NoteAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: NoteSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: NoteMinAggregateInputType
@@ -161,11 +233,20 @@ export type NoteGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   _count?: NoteCountAggregateInputType | true
+  _avg?: NoteAvgAggregateInputType
+  _sum?: NoteSumAggregateInputType
   _min?: NoteMinAggregateInputType
   _max?: NoteMaxAggregateInputType
 }
 
 export type NoteGroupByOutputType = {
+  searchText: string
+  quotedText: string
+  pinned: boolean
+  workflowStatus: string
+  archivedAt: Date | null
+  createdAt: Date
+  revision: number
   id: string
   novelId: string
   linkedType: string
@@ -175,6 +256,8 @@ export type NoteGroupByOutputType = {
   tags: string
   updatedAt: Date
   _count: NoteCountAggregateOutputType | null
+  _avg: NoteAvgAggregateOutputType | null
+  _sum: NoteSumAggregateOutputType | null
   _min: NoteMinAggregateOutputType | null
   _max: NoteMaxAggregateOutputType | null
 }
@@ -198,6 +281,13 @@ export type NoteWhereInput = {
   AND?: Prisma.NoteWhereInput | Prisma.NoteWhereInput[]
   OR?: Prisma.NoteWhereInput[]
   NOT?: Prisma.NoteWhereInput | Prisma.NoteWhereInput[]
+  searchText?: Prisma.StringFilter<"Note"> | string
+  quotedText?: Prisma.StringFilter<"Note"> | string
+  pinned?: Prisma.BoolFilter<"Note"> | boolean
+  workflowStatus?: Prisma.StringFilter<"Note"> | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Note"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"Note"> | Date | string
+  revision?: Prisma.IntFilter<"Note"> | number
   id?: Prisma.StringFilter<"Note"> | string
   novelId?: Prisma.StringFilter<"Note"> | string
   linkedType?: Prisma.StringFilter<"Note"> | string
@@ -206,10 +296,24 @@ export type NoteWhereInput = {
   content?: Prisma.StringFilter<"Note"> | string
   tags?: Prisma.StringFilter<"Note"> | string
   updatedAt?: Prisma.DateTimeFilter<"Note"> | Date | string
+  volumeLinks?: Prisma.NoteVolumeListRelationFilter
+  chapterLinks?: Prisma.NoteChapterListRelationFilter
+  sceneLinks?: Prisma.NoteSceneListRelationFilter
+  characterLinks?: Prisma.NoteCharacterListRelationFilter
+  placeLinks?: Prisma.NotePlaceListRelationFilter
+  eventLinks?: Prisma.NoteTimelineEventListRelationFilter
+  tagLinks?: Prisma.NoteTagListRelationFilter
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
 }
 
 export type NoteOrderByWithRelationInput = {
+  searchText?: Prisma.SortOrder
+  quotedText?: Prisma.SortOrder
+  pinned?: Prisma.SortOrder
+  workflowStatus?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   linkedType?: Prisma.SortOrder
@@ -218,6 +322,13 @@ export type NoteOrderByWithRelationInput = {
   content?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  volumeLinks?: Prisma.NoteVolumeOrderByRelationAggregateInput
+  chapterLinks?: Prisma.NoteChapterOrderByRelationAggregateInput
+  sceneLinks?: Prisma.NoteSceneOrderByRelationAggregateInput
+  characterLinks?: Prisma.NoteCharacterOrderByRelationAggregateInput
+  placeLinks?: Prisma.NotePlaceOrderByRelationAggregateInput
+  eventLinks?: Prisma.NoteTimelineEventOrderByRelationAggregateInput
+  tagLinks?: Prisma.NoteTagOrderByRelationAggregateInput
   novel?: Prisma.NovelOrderByWithRelationInput
 }
 
@@ -226,6 +337,13 @@ export type NoteWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.NoteWhereInput | Prisma.NoteWhereInput[]
   OR?: Prisma.NoteWhereInput[]
   NOT?: Prisma.NoteWhereInput | Prisma.NoteWhereInput[]
+  searchText?: Prisma.StringFilter<"Note"> | string
+  quotedText?: Prisma.StringFilter<"Note"> | string
+  pinned?: Prisma.BoolFilter<"Note"> | boolean
+  workflowStatus?: Prisma.StringFilter<"Note"> | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Note"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"Note"> | Date | string
+  revision?: Prisma.IntFilter<"Note"> | number
   novelId?: Prisma.StringFilter<"Note"> | string
   linkedType?: Prisma.StringFilter<"Note"> | string
   linkedId?: Prisma.StringFilter<"Note"> | string
@@ -233,10 +351,24 @@ export type NoteWhereUniqueInput = Prisma.AtLeast<{
   content?: Prisma.StringFilter<"Note"> | string
   tags?: Prisma.StringFilter<"Note"> | string
   updatedAt?: Prisma.DateTimeFilter<"Note"> | Date | string
+  volumeLinks?: Prisma.NoteVolumeListRelationFilter
+  chapterLinks?: Prisma.NoteChapterListRelationFilter
+  sceneLinks?: Prisma.NoteSceneListRelationFilter
+  characterLinks?: Prisma.NoteCharacterListRelationFilter
+  placeLinks?: Prisma.NotePlaceListRelationFilter
+  eventLinks?: Prisma.NoteTimelineEventListRelationFilter
+  tagLinks?: Prisma.NoteTagListRelationFilter
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
 }, "id">
 
 export type NoteOrderByWithAggregationInput = {
+  searchText?: Prisma.SortOrder
+  quotedText?: Prisma.SortOrder
+  pinned?: Prisma.SortOrder
+  workflowStatus?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   linkedType?: Prisma.SortOrder
@@ -246,14 +378,23 @@ export type NoteOrderByWithAggregationInput = {
   tags?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.NoteCountOrderByAggregateInput
+  _avg?: Prisma.NoteAvgOrderByAggregateInput
   _max?: Prisma.NoteMaxOrderByAggregateInput
   _min?: Prisma.NoteMinOrderByAggregateInput
+  _sum?: Prisma.NoteSumOrderByAggregateInput
 }
 
 export type NoteScalarWhereWithAggregatesInput = {
   AND?: Prisma.NoteScalarWhereWithAggregatesInput | Prisma.NoteScalarWhereWithAggregatesInput[]
   OR?: Prisma.NoteScalarWhereWithAggregatesInput[]
   NOT?: Prisma.NoteScalarWhereWithAggregatesInput | Prisma.NoteScalarWhereWithAggregatesInput[]
+  searchText?: Prisma.StringWithAggregatesFilter<"Note"> | string
+  quotedText?: Prisma.StringWithAggregatesFilter<"Note"> | string
+  pinned?: Prisma.BoolWithAggregatesFilter<"Note"> | boolean
+  workflowStatus?: Prisma.StringWithAggregatesFilter<"Note"> | string
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Note"> | Date | string | null
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"Note"> | Date | string
+  revision?: Prisma.IntWithAggregatesFilter<"Note"> | number
   id?: Prisma.StringWithAggregatesFilter<"Note"> | string
   novelId?: Prisma.StringWithAggregatesFilter<"Note"> | string
   linkedType?: Prisma.StringWithAggregatesFilter<"Note"> | string
@@ -265,6 +406,13 @@ export type NoteScalarWhereWithAggregatesInput = {
 }
 
 export type NoteCreateInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
   id: string
   linkedType: string
   linkedId: string
@@ -272,10 +420,24 @@ export type NoteCreateInput = {
   content?: string
   tags?: string
   updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
   novel: Prisma.NovelCreateNestedOneWithoutNotesInput
 }
 
 export type NoteUncheckedCreateInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
   id: string
   novelId: string
   linkedType: string
@@ -284,9 +446,23 @@ export type NoteUncheckedCreateInput = {
   content?: string
   tags?: string
   updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
 }
 
 export type NoteUpdateInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
   linkedId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -294,10 +470,24 @@ export type NoteUpdateInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
   novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
 }
 
 export type NoteUncheckedUpdateInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -306,9 +496,23 @@ export type NoteUncheckedUpdateInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
 }
 
 export type NoteCreateManyInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
   id: string
   novelId: string
   linkedType: string
@@ -320,6 +524,13 @@ export type NoteCreateManyInput = {
 }
 
 export type NoteUpdateManyMutationInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
   linkedId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -330,6 +541,13 @@ export type NoteUpdateManyMutationInput = {
 }
 
 export type NoteUncheckedUpdateManyInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -351,6 +569,13 @@ export type NoteOrderByRelationAggregateInput = {
 }
 
 export type NoteCountOrderByAggregateInput = {
+  searchText?: Prisma.SortOrder
+  quotedText?: Prisma.SortOrder
+  pinned?: Prisma.SortOrder
+  workflowStatus?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   linkedType?: Prisma.SortOrder
@@ -361,7 +586,18 @@ export type NoteCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type NoteAvgOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
+}
+
 export type NoteMaxOrderByAggregateInput = {
+  searchText?: Prisma.SortOrder
+  quotedText?: Prisma.SortOrder
+  pinned?: Prisma.SortOrder
+  workflowStatus?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   linkedType?: Prisma.SortOrder
@@ -373,6 +609,13 @@ export type NoteMaxOrderByAggregateInput = {
 }
 
 export type NoteMinOrderByAggregateInput = {
+  searchText?: Prisma.SortOrder
+  quotedText?: Prisma.SortOrder
+  pinned?: Prisma.SortOrder
+  workflowStatus?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
   id?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   linkedType?: Prisma.SortOrder
@@ -381,6 +624,15 @@ export type NoteMinOrderByAggregateInput = {
   content?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type NoteSumOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
+}
+
+export type NoteScalarRelationFilter = {
+  is?: Prisma.NoteWhereInput
+  isNot?: Prisma.NoteWhereInput
 }
 
 export type NoteCreateNestedManyWithoutNovelInput = {
@@ -425,7 +677,112 @@ export type NoteUncheckedUpdateManyWithoutNovelNestedInput = {
   deleteMany?: Prisma.NoteScalarWhereInput | Prisma.NoteScalarWhereInput[]
 }
 
+export type NoteCreateNestedOneWithoutTagLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutTagLinksInput, Prisma.NoteUncheckedCreateWithoutTagLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutTagLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutTagLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutTagLinksInput, Prisma.NoteUncheckedCreateWithoutTagLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutTagLinksInput
+  upsert?: Prisma.NoteUpsertWithoutTagLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutTagLinksInput, Prisma.NoteUpdateWithoutTagLinksInput>, Prisma.NoteUncheckedUpdateWithoutTagLinksInput>
+}
+
+export type NoteCreateNestedOneWithoutVolumeLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutVolumeLinksInput, Prisma.NoteUncheckedCreateWithoutVolumeLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutVolumeLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutVolumeLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutVolumeLinksInput, Prisma.NoteUncheckedCreateWithoutVolumeLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutVolumeLinksInput
+  upsert?: Prisma.NoteUpsertWithoutVolumeLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutVolumeLinksInput, Prisma.NoteUpdateWithoutVolumeLinksInput>, Prisma.NoteUncheckedUpdateWithoutVolumeLinksInput>
+}
+
+export type NoteCreateNestedOneWithoutChapterLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutChapterLinksInput, Prisma.NoteUncheckedCreateWithoutChapterLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutChapterLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutChapterLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutChapterLinksInput, Prisma.NoteUncheckedCreateWithoutChapterLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutChapterLinksInput
+  upsert?: Prisma.NoteUpsertWithoutChapterLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutChapterLinksInput, Prisma.NoteUpdateWithoutChapterLinksInput>, Prisma.NoteUncheckedUpdateWithoutChapterLinksInput>
+}
+
+export type NoteCreateNestedOneWithoutSceneLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutSceneLinksInput, Prisma.NoteUncheckedCreateWithoutSceneLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutSceneLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutSceneLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutSceneLinksInput, Prisma.NoteUncheckedCreateWithoutSceneLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutSceneLinksInput
+  upsert?: Prisma.NoteUpsertWithoutSceneLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutSceneLinksInput, Prisma.NoteUpdateWithoutSceneLinksInput>, Prisma.NoteUncheckedUpdateWithoutSceneLinksInput>
+}
+
+export type NoteCreateNestedOneWithoutCharacterLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutCharacterLinksInput, Prisma.NoteUncheckedCreateWithoutCharacterLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutCharacterLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutCharacterLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutCharacterLinksInput, Prisma.NoteUncheckedCreateWithoutCharacterLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutCharacterLinksInput
+  upsert?: Prisma.NoteUpsertWithoutCharacterLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutCharacterLinksInput, Prisma.NoteUpdateWithoutCharacterLinksInput>, Prisma.NoteUncheckedUpdateWithoutCharacterLinksInput>
+}
+
+export type NoteCreateNestedOneWithoutPlaceLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutPlaceLinksInput, Prisma.NoteUncheckedCreateWithoutPlaceLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutPlaceLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutPlaceLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutPlaceLinksInput, Prisma.NoteUncheckedCreateWithoutPlaceLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutPlaceLinksInput
+  upsert?: Prisma.NoteUpsertWithoutPlaceLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutPlaceLinksInput, Prisma.NoteUpdateWithoutPlaceLinksInput>, Prisma.NoteUncheckedUpdateWithoutPlaceLinksInput>
+}
+
+export type NoteCreateNestedOneWithoutEventLinksInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutEventLinksInput, Prisma.NoteUncheckedCreateWithoutEventLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutEventLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+}
+
+export type NoteUpdateOneRequiredWithoutEventLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.NoteCreateWithoutEventLinksInput, Prisma.NoteUncheckedCreateWithoutEventLinksInput>
+  connectOrCreate?: Prisma.NoteCreateOrConnectWithoutEventLinksInput
+  upsert?: Prisma.NoteUpsertWithoutEventLinksInput
+  connect?: Prisma.NoteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NoteUpdateToOneWithWhereWithoutEventLinksInput, Prisma.NoteUpdateWithoutEventLinksInput>, Prisma.NoteUncheckedUpdateWithoutEventLinksInput>
+}
+
 export type NoteCreateWithoutNovelInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
   id: string
   linkedType: string
   linkedId: string
@@ -433,9 +790,23 @@ export type NoteCreateWithoutNovelInput = {
   content?: string
   tags?: string
   updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
 }
 
 export type NoteUncheckedCreateWithoutNovelInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
   id: string
   linkedType: string
   linkedId: string
@@ -443,6 +814,13 @@ export type NoteUncheckedCreateWithoutNovelInput = {
   content?: string
   tags?: string
   updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
 }
 
 export type NoteCreateOrConnectWithoutNovelInput = {
@@ -474,6 +852,13 @@ export type NoteScalarWhereInput = {
   AND?: Prisma.NoteScalarWhereInput | Prisma.NoteScalarWhereInput[]
   OR?: Prisma.NoteScalarWhereInput[]
   NOT?: Prisma.NoteScalarWhereInput | Prisma.NoteScalarWhereInput[]
+  searchText?: Prisma.StringFilter<"Note"> | string
+  quotedText?: Prisma.StringFilter<"Note"> | string
+  pinned?: Prisma.BoolFilter<"Note"> | boolean
+  workflowStatus?: Prisma.StringFilter<"Note"> | string
+  archivedAt?: Prisma.DateTimeNullableFilter<"Note"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"Note"> | Date | string
+  revision?: Prisma.IntFilter<"Note"> | number
   id?: Prisma.StringFilter<"Note"> | string
   novelId?: Prisma.StringFilter<"Note"> | string
   linkedType?: Prisma.StringFilter<"Note"> | string
@@ -484,7 +869,798 @@ export type NoteScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Note"> | Date | string
 }
 
+export type NoteCreateWithoutTagLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutTagLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutTagLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutTagLinksInput, Prisma.NoteUncheckedCreateWithoutTagLinksInput>
+}
+
+export type NoteUpsertWithoutTagLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutTagLinksInput, Prisma.NoteUncheckedUpdateWithoutTagLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutTagLinksInput, Prisma.NoteUncheckedCreateWithoutTagLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutTagLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutTagLinksInput, Prisma.NoteUncheckedUpdateWithoutTagLinksInput>
+}
+
+export type NoteUpdateWithoutTagLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutTagLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+}
+
+export type NoteCreateWithoutVolumeLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutVolumeLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutVolumeLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutVolumeLinksInput, Prisma.NoteUncheckedCreateWithoutVolumeLinksInput>
+}
+
+export type NoteUpsertWithoutVolumeLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutVolumeLinksInput, Prisma.NoteUncheckedUpdateWithoutVolumeLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutVolumeLinksInput, Prisma.NoteUncheckedCreateWithoutVolumeLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutVolumeLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutVolumeLinksInput, Prisma.NoteUncheckedUpdateWithoutVolumeLinksInput>
+}
+
+export type NoteUpdateWithoutVolumeLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutVolumeLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
+}
+
+export type NoteCreateWithoutChapterLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutChapterLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutChapterLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutChapterLinksInput, Prisma.NoteUncheckedCreateWithoutChapterLinksInput>
+}
+
+export type NoteUpsertWithoutChapterLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutChapterLinksInput, Prisma.NoteUncheckedUpdateWithoutChapterLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutChapterLinksInput, Prisma.NoteUncheckedCreateWithoutChapterLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutChapterLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutChapterLinksInput, Prisma.NoteUncheckedUpdateWithoutChapterLinksInput>
+}
+
+export type NoteUpdateWithoutChapterLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutChapterLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
+}
+
+export type NoteCreateWithoutSceneLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutSceneLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutSceneLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutSceneLinksInput, Prisma.NoteUncheckedCreateWithoutSceneLinksInput>
+}
+
+export type NoteUpsertWithoutSceneLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutSceneLinksInput, Prisma.NoteUncheckedUpdateWithoutSceneLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutSceneLinksInput, Prisma.NoteUncheckedCreateWithoutSceneLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutSceneLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutSceneLinksInput, Prisma.NoteUncheckedUpdateWithoutSceneLinksInput>
+}
+
+export type NoteUpdateWithoutSceneLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutSceneLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
+}
+
+export type NoteCreateWithoutCharacterLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutCharacterLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutCharacterLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutCharacterLinksInput, Prisma.NoteUncheckedCreateWithoutCharacterLinksInput>
+}
+
+export type NoteUpsertWithoutCharacterLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutCharacterLinksInput, Prisma.NoteUncheckedUpdateWithoutCharacterLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutCharacterLinksInput, Prisma.NoteUncheckedCreateWithoutCharacterLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutCharacterLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutCharacterLinksInput, Prisma.NoteUncheckedUpdateWithoutCharacterLinksInput>
+}
+
+export type NoteUpdateWithoutCharacterLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutCharacterLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
+}
+
+export type NoteCreateWithoutPlaceLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutPlaceLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutPlaceLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutPlaceLinksInput, Prisma.NoteUncheckedCreateWithoutPlaceLinksInput>
+}
+
+export type NoteUpsertWithoutPlaceLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutPlaceLinksInput, Prisma.NoteUncheckedUpdateWithoutPlaceLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutPlaceLinksInput, Prisma.NoteUncheckedCreateWithoutPlaceLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutPlaceLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutPlaceLinksInput, Prisma.NoteUncheckedUpdateWithoutPlaceLinksInput>
+}
+
+export type NoteUpdateWithoutPlaceLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutPlaceLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
+}
+
+export type NoteCreateWithoutEventLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagCreateNestedManyWithoutNoteInput
+  novel: Prisma.NovelCreateNestedOneWithoutNotesInput
+}
+
+export type NoteUncheckedCreateWithoutEventLinksInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
+  id: string
+  novelId: string
+  linkedType: string
+  linkedId: string
+  title: string
+  content?: string
+  tags?: string
+  updatedAt?: Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedCreateNestedManyWithoutNoteInput
+  chapterLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutNoteInput
+  sceneLinks?: Prisma.NoteSceneUncheckedCreateNestedManyWithoutNoteInput
+  characterLinks?: Prisma.NoteCharacterUncheckedCreateNestedManyWithoutNoteInput
+  placeLinks?: Prisma.NotePlaceUncheckedCreateNestedManyWithoutNoteInput
+  tagLinks?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
+}
+
+export type NoteCreateOrConnectWithoutEventLinksInput = {
+  where: Prisma.NoteWhereUniqueInput
+  create: Prisma.XOR<Prisma.NoteCreateWithoutEventLinksInput, Prisma.NoteUncheckedCreateWithoutEventLinksInput>
+}
+
+export type NoteUpsertWithoutEventLinksInput = {
+  update: Prisma.XOR<Prisma.NoteUpdateWithoutEventLinksInput, Prisma.NoteUncheckedUpdateWithoutEventLinksInput>
+  create: Prisma.XOR<Prisma.NoteCreateWithoutEventLinksInput, Prisma.NoteUncheckedCreateWithoutEventLinksInput>
+  where?: Prisma.NoteWhereInput
+}
+
+export type NoteUpdateToOneWithWhereWithoutEventLinksInput = {
+  where?: Prisma.NoteWhereInput
+  data: Prisma.XOR<Prisma.NoteUpdateWithoutEventLinksInput, Prisma.NoteUncheckedUpdateWithoutEventLinksInput>
+}
+
+export type NoteUpdateWithoutEventLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
+  novel?: Prisma.NovelUpdateOneRequiredWithoutNotesNestedInput
+}
+
+export type NoteUncheckedUpdateWithoutEventLinksInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  novelId?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedType?: Prisma.StringFieldUpdateOperationsInput | string
+  linkedId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
+}
+
 export type NoteCreateManyNovelInput = {
+  searchText?: string
+  quotedText?: string
+  pinned?: boolean
+  workflowStatus?: string
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  revision?: number
   id: string
   linkedType: string
   linkedId: string
@@ -495,6 +1671,13 @@ export type NoteCreateManyNovelInput = {
 }
 
 export type NoteUpdateWithoutNovelInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
   linkedId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -502,9 +1685,23 @@ export type NoteUpdateWithoutNovelInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUpdateManyWithoutNoteNestedInput
 }
 
 export type NoteUncheckedUpdateWithoutNovelInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
   linkedId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -512,9 +1709,23 @@ export type NoteUncheckedUpdateWithoutNovelInput = {
   content?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.StringFieldUpdateOperationsInput | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  volumeLinks?: Prisma.NoteVolumeUncheckedUpdateManyWithoutNoteNestedInput
+  chapterLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutNoteNestedInput
+  sceneLinks?: Prisma.NoteSceneUncheckedUpdateManyWithoutNoteNestedInput
+  characterLinks?: Prisma.NoteCharacterUncheckedUpdateManyWithoutNoteNestedInput
+  placeLinks?: Prisma.NotePlaceUncheckedUpdateManyWithoutNoteNestedInput
+  eventLinks?: Prisma.NoteTimelineEventUncheckedUpdateManyWithoutNoteNestedInput
+  tagLinks?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
 }
 
 export type NoteUncheckedUpdateManyWithoutNovelInput = {
+  searchText?: Prisma.StringFieldUpdateOperationsInput | string
+  quotedText?: Prisma.StringFieldUpdateOperationsInput | string
+  pinned?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  workflowStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
   id?: Prisma.StringFieldUpdateOperationsInput | string
   linkedType?: Prisma.StringFieldUpdateOperationsInput | string
   linkedId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -525,8 +1736,98 @@ export type NoteUncheckedUpdateManyWithoutNovelInput = {
 }
 
 
+/**
+ * Count Type NoteCountOutputType
+ */
+
+export type NoteCountOutputType = {
+  volumeLinks: number
+  chapterLinks: number
+  sceneLinks: number
+  characterLinks: number
+  placeLinks: number
+  eventLinks: number
+  tagLinks: number
+}
+
+export type NoteCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  volumeLinks?: boolean | NoteCountOutputTypeCountVolumeLinksArgs
+  chapterLinks?: boolean | NoteCountOutputTypeCountChapterLinksArgs
+  sceneLinks?: boolean | NoteCountOutputTypeCountSceneLinksArgs
+  characterLinks?: boolean | NoteCountOutputTypeCountCharacterLinksArgs
+  placeLinks?: boolean | NoteCountOutputTypeCountPlaceLinksArgs
+  eventLinks?: boolean | NoteCountOutputTypeCountEventLinksArgs
+  tagLinks?: boolean | NoteCountOutputTypeCountTagLinksArgs
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteCountOutputType
+   */
+  select?: Prisma.NoteCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountVolumeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteVolumeWhereInput
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountChapterLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteChapterWhereInput
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountSceneLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteSceneWhereInput
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountCharacterLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteCharacterWhereInput
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountPlaceLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NotePlaceWhereInput
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountEventLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteTimelineEventWhereInput
+}
+
+/**
+ * NoteCountOutputType without action
+ */
+export type NoteCountOutputTypeCountTagLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteTagWhereInput
+}
+
 
 export type NoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  searchText?: boolean
+  quotedText?: boolean
+  pinned?: boolean
+  workflowStatus?: boolean
+  archivedAt?: boolean
+  createdAt?: boolean
+  revision?: boolean
   id?: boolean
   novelId?: boolean
   linkedType?: boolean
@@ -535,10 +1836,25 @@ export type NoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   content?: boolean
   tags?: boolean
   updatedAt?: boolean
+  volumeLinks?: boolean | Prisma.Note$volumeLinksArgs<ExtArgs>
+  chapterLinks?: boolean | Prisma.Note$chapterLinksArgs<ExtArgs>
+  sceneLinks?: boolean | Prisma.Note$sceneLinksArgs<ExtArgs>
+  characterLinks?: boolean | Prisma.Note$characterLinksArgs<ExtArgs>
+  placeLinks?: boolean | Prisma.Note$placeLinksArgs<ExtArgs>
+  eventLinks?: boolean | Prisma.Note$eventLinksArgs<ExtArgs>
+  tagLinks?: boolean | Prisma.Note$tagLinksArgs<ExtArgs>
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
+  _count?: boolean | Prisma.NoteCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["note"]>
 
 export type NoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  searchText?: boolean
+  quotedText?: boolean
+  pinned?: boolean
+  workflowStatus?: boolean
+  archivedAt?: boolean
+  createdAt?: boolean
+  revision?: boolean
   id?: boolean
   novelId?: boolean
   linkedType?: boolean
@@ -551,6 +1867,13 @@ export type NoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 }, ExtArgs["result"]["note"]>
 
 export type NoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  searchText?: boolean
+  quotedText?: boolean
+  pinned?: boolean
+  workflowStatus?: boolean
+  archivedAt?: boolean
+  createdAt?: boolean
+  revision?: boolean
   id?: boolean
   novelId?: boolean
   linkedType?: boolean
@@ -563,6 +1886,13 @@ export type NoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 }, ExtArgs["result"]["note"]>
 
 export type NoteSelectScalar = {
+  searchText?: boolean
+  quotedText?: boolean
+  pinned?: boolean
+  workflowStatus?: boolean
+  archivedAt?: boolean
+  createdAt?: boolean
+  revision?: boolean
   id?: boolean
   novelId?: boolean
   linkedType?: boolean
@@ -573,9 +1903,17 @@ export type NoteSelectScalar = {
   updatedAt?: boolean
 }
 
-export type NoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "linkedType" | "linkedId" | "title" | "content" | "tags" | "updatedAt", ExtArgs["result"]["note"]>
+export type NoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"searchText" | "quotedText" | "pinned" | "workflowStatus" | "archivedAt" | "createdAt" | "revision" | "id" | "novelId" | "linkedType" | "linkedId" | "title" | "content" | "tags" | "updatedAt", ExtArgs["result"]["note"]>
 export type NoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  volumeLinks?: boolean | Prisma.Note$volumeLinksArgs<ExtArgs>
+  chapterLinks?: boolean | Prisma.Note$chapterLinksArgs<ExtArgs>
+  sceneLinks?: boolean | Prisma.Note$sceneLinksArgs<ExtArgs>
+  characterLinks?: boolean | Prisma.Note$characterLinksArgs<ExtArgs>
+  placeLinks?: boolean | Prisma.Note$placeLinksArgs<ExtArgs>
+  eventLinks?: boolean | Prisma.Note$eventLinksArgs<ExtArgs>
+  tagLinks?: boolean | Prisma.Note$tagLinksArgs<ExtArgs>
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
+  _count?: boolean | Prisma.NoteCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type NoteIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
@@ -587,9 +1925,23 @@ export type NoteIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $NotePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Note"
   objects: {
+    volumeLinks: Prisma.$NoteVolumePayload<ExtArgs>[]
+    chapterLinks: Prisma.$NoteChapterPayload<ExtArgs>[]
+    sceneLinks: Prisma.$NoteScenePayload<ExtArgs>[]
+    characterLinks: Prisma.$NoteCharacterPayload<ExtArgs>[]
+    placeLinks: Prisma.$NotePlacePayload<ExtArgs>[]
+    eventLinks: Prisma.$NoteTimelineEventPayload<ExtArgs>[]
+    tagLinks: Prisma.$NoteTagPayload<ExtArgs>[]
     novel: Prisma.$NovelPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
+    searchText: string
+    quotedText: string
+    pinned: boolean
+    workflowStatus: string
+    archivedAt: Date | null
+    createdAt: Date
+    revision: number
     id: string
     novelId: string
     linkedType: string
@@ -681,8 +2033,8 @@ export interface NoteDelegate<ExtArgs extends runtime.Types.Extensions.InternalA
    * // Get first 10 Notes
    * const notes = await prisma.note.findMany({ take: 10 })
    * 
-   * // Only select the `id`
-   * const noteWithIdOnly = await prisma.note.findMany({ select: { id: true } })
+   * // Only select the `searchText`
+   * const noteWithSearchTextOnly = await prisma.note.findMany({ select: { searchText: true } })
    * 
    */
   findMany<T extends NoteFindManyArgs>(args?: Prisma.SelectSubset<T, NoteFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -726,9 +2078,9 @@ export interface NoteDelegate<ExtArgs extends runtime.Types.Extensions.InternalA
    *   ]
    * })
    * 
-   * // Create many Notes and only return the `id`
-   * const noteWithIdOnly = await prisma.note.createManyAndReturn({
-   *   select: { id: true },
+   * // Create many Notes and only return the `searchText`
+   * const noteWithSearchTextOnly = await prisma.note.createManyAndReturn({
+   *   select: { searchText: true },
    *   data: [
    *     // ... provide data here
    *   ]
@@ -817,9 +2169,9 @@ export interface NoteDelegate<ExtArgs extends runtime.Types.Extensions.InternalA
    *   ]
    * })
    * 
-   * // Update zero or more Notes and only return the `id`
-   * const noteWithIdOnly = await prisma.note.updateManyAndReturn({
-   *   select: { id: true },
+   * // Update zero or more Notes and only return the `searchText`
+   * const noteWithSearchTextOnly = await prisma.note.updateManyAndReturn({
+   *   select: { searchText: true },
    *   where: {
    *     // ... provide filter here
    *   },
@@ -992,6 +2344,13 @@ readonly fields: NoteFieldRefs;
  */
 export interface Prisma__NoteClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  volumeLinks<T extends Prisma.Note$volumeLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$volumeLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteVolumePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  chapterLinks<T extends Prisma.Note$chapterLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$chapterLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteChapterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sceneLinks<T extends Prisma.Note$sceneLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$sceneLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteScenePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  characterLinks<T extends Prisma.Note$characterLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$characterLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  placeLinks<T extends Prisma.Note$placeLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$placeLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePlacePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  eventLinks<T extends Prisma.Note$eventLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$eventLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteTimelineEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tagLinks<T extends Prisma.Note$tagLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Note$tagLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   novel<T extends Prisma.NovelDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NovelDefaultArgs<ExtArgs>>): Prisma.Prisma__NovelClient<runtime.Types.Result.GetResult<Prisma.$NovelPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1022,6 +2381,13 @@ export interface Prisma__NoteClient<T, Null = never, ExtArgs extends runtime.Typ
  * Fields of the Note model
  */
 export interface NoteFieldRefs {
+  readonly searchText: Prisma.FieldRef<"Note", 'String'>
+  readonly quotedText: Prisma.FieldRef<"Note", 'String'>
+  readonly pinned: Prisma.FieldRef<"Note", 'Boolean'>
+  readonly workflowStatus: Prisma.FieldRef<"Note", 'String'>
+  readonly archivedAt: Prisma.FieldRef<"Note", 'DateTime'>
+  readonly createdAt: Prisma.FieldRef<"Note", 'DateTime'>
+  readonly revision: Prisma.FieldRef<"Note", 'Int'>
   readonly id: Prisma.FieldRef<"Note", 'String'>
   readonly novelId: Prisma.FieldRef<"Note", 'String'>
   readonly linkedType: Prisma.FieldRef<"Note", 'String'>
@@ -1426,6 +2792,174 @@ export type NoteDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Notes to delete.
    */
   limit?: number
+}
+
+/**
+ * Note.volumeLinks
+ */
+export type Note$volumeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteVolume
+   */
+  select?: Prisma.NoteVolumeSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteVolume
+   */
+  omit?: Prisma.NoteVolumeOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteVolumeInclude<ExtArgs> | null
+  where?: Prisma.NoteVolumeWhereInput
+  orderBy?: Prisma.NoteVolumeOrderByWithRelationInput | Prisma.NoteVolumeOrderByWithRelationInput[]
+  cursor?: Prisma.NoteVolumeWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteVolumeScalarFieldEnum | Prisma.NoteVolumeScalarFieldEnum[]
+}
+
+/**
+ * Note.chapterLinks
+ */
+export type Note$chapterLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteChapter
+   */
+  select?: Prisma.NoteChapterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteChapter
+   */
+  omit?: Prisma.NoteChapterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteChapterInclude<ExtArgs> | null
+  where?: Prisma.NoteChapterWhereInput
+  orderBy?: Prisma.NoteChapterOrderByWithRelationInput | Prisma.NoteChapterOrderByWithRelationInput[]
+  cursor?: Prisma.NoteChapterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteChapterScalarFieldEnum | Prisma.NoteChapterScalarFieldEnum[]
+}
+
+/**
+ * Note.sceneLinks
+ */
+export type Note$sceneLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteScene
+   */
+  select?: Prisma.NoteSceneSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteScene
+   */
+  omit?: Prisma.NoteSceneOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteSceneInclude<ExtArgs> | null
+  where?: Prisma.NoteSceneWhereInput
+  orderBy?: Prisma.NoteSceneOrderByWithRelationInput | Prisma.NoteSceneOrderByWithRelationInput[]
+  cursor?: Prisma.NoteSceneWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteSceneScalarFieldEnum | Prisma.NoteSceneScalarFieldEnum[]
+}
+
+/**
+ * Note.characterLinks
+ */
+export type Note$characterLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteCharacter
+   */
+  select?: Prisma.NoteCharacterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteCharacter
+   */
+  omit?: Prisma.NoteCharacterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteCharacterInclude<ExtArgs> | null
+  where?: Prisma.NoteCharacterWhereInput
+  orderBy?: Prisma.NoteCharacterOrderByWithRelationInput | Prisma.NoteCharacterOrderByWithRelationInput[]
+  cursor?: Prisma.NoteCharacterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteCharacterScalarFieldEnum | Prisma.NoteCharacterScalarFieldEnum[]
+}
+
+/**
+ * Note.placeLinks
+ */
+export type Note$placeLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NotePlace
+   */
+  select?: Prisma.NotePlaceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NotePlace
+   */
+  omit?: Prisma.NotePlaceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NotePlaceInclude<ExtArgs> | null
+  where?: Prisma.NotePlaceWhereInput
+  orderBy?: Prisma.NotePlaceOrderByWithRelationInput | Prisma.NotePlaceOrderByWithRelationInput[]
+  cursor?: Prisma.NotePlaceWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NotePlaceScalarFieldEnum | Prisma.NotePlaceScalarFieldEnum[]
+}
+
+/**
+ * Note.eventLinks
+ */
+export type Note$eventLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteTimelineEvent
+   */
+  select?: Prisma.NoteTimelineEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteTimelineEvent
+   */
+  omit?: Prisma.NoteTimelineEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteTimelineEventInclude<ExtArgs> | null
+  where?: Prisma.NoteTimelineEventWhereInput
+  orderBy?: Prisma.NoteTimelineEventOrderByWithRelationInput | Prisma.NoteTimelineEventOrderByWithRelationInput[]
+  cursor?: Prisma.NoteTimelineEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteTimelineEventScalarFieldEnum | Prisma.NoteTimelineEventScalarFieldEnum[]
+}
+
+/**
+ * Note.tagLinks
+ */
+export type Note$tagLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteTag
+   */
+  select?: Prisma.NoteTagSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteTag
+   */
+  omit?: Prisma.NoteTagOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteTagInclude<ExtArgs> | null
+  where?: Prisma.NoteTagWhereInput
+  orderBy?: Prisma.NoteTagOrderByWithRelationInput | Prisma.NoteTagOrderByWithRelationInput[]
+  cursor?: Prisma.NoteTagWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteTagScalarFieldEnum | Prisma.NoteTagScalarFieldEnum[]
 }
 
 /**

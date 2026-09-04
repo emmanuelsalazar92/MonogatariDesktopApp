@@ -60,19 +60,4 @@ export function validatePlaceMetadata(value: unknown, partial = false): Validati
   return { ok: true, data };
 }
 
-export function placeParentError(
-  placeId: string,
-  parentPlaceId: string | null,
-  places: Array<{ id: string; parentPlaceId: string | null }>
-) {
-  const parents = new Map(places.map((place) => [place.id, place.parentPlaceId]));
-  const visited = new Set([placeId]);
-  let current = parentPlaceId;
-  while (current !== null) {
-    if (visited.has(current)) return "Parent place would create a cycle";
-    if (!parents.has(current)) return "Parent place must belong to the same novel";
-    visited.add(current);
-    current = parents.get(current) ?? null;
-  }
-  return null;
-}
+export { placeParentError } from "@/lib/place-hierarchy";

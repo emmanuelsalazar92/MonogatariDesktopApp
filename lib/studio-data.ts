@@ -2,14 +2,15 @@ import type {
   Character,
   CharacterPlaceLink,
   Chapter,
-  Location,
+  PlaceSummary,
   Novel,
-  Relationship,
+  RelationshipSummary,
   Scene,
-  TimelineEvent,
+  TimelineEventSummary,
   Volume,
   WritingActivity
 } from "@/lib/studio-domain";
+import { relationshipSummary } from "@/lib/character-relationship";
 
 export type StudioBackup = {
   id?: string;
@@ -28,9 +29,9 @@ export type StudioData = {
   scenes: Scene[];
   characters: Character[];
   characterPlaceLinks: CharacterPlaceLink[];
-  locations: Location[];
-  relationships: Relationship[];
-  timelineEvents: TimelineEvent[];
+  locations: PlaceSummary[];
+  relationships: RelationshipSummary[];
+  timelineEvents: TimelineEventSummary[];
   notes: import("@/lib/studio-domain").Note[];
   backups: StudioBackup[];
   writingActivities: WritingActivity[];
@@ -47,7 +48,6 @@ export type StudioData = {
 export type DataStatus = "loading" | "ready" | "fallback";
 
 export type PersistedStudioSettings = {
-  theme: "light" | "dark" | "system";
   language: "en" | "es";
   sidebarState: "expanded" | "compact" | "hidden";
   editorFontSize: string;
@@ -56,7 +56,6 @@ export type PersistedStudioSettings = {
   autosaveInterval: string;
   editorInspectorOpen: boolean;
   defaultFocusMode: string;
-  defaultReadingMode: string;
   backupRetention: string;
   exportDefaults: string;
   typewriterFont: boolean;
@@ -125,7 +124,6 @@ export const emptyScene: Scene = {
 };
 
 export const defaultPersistedStudioSettings: PersistedStudioSettings = {
-  theme: "light",
   language: "en",
   sidebarState: "expanded",
   editorFontSize: "18 px",
@@ -134,7 +132,6 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   autosaveInterval: "30 seconds",
   editorInspectorOpen: true,
   defaultFocusMode: "Writing",
-  defaultReadingMode: "Sepia",
   backupRetention: "30 daily backups",
   exportDefaults: "{\"format\":\"EPUB\",\"options\":[\"Include cover\",\"Include metadata\"]}",
   typewriterFont: true,
@@ -159,7 +156,7 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
       : emptyStudioData.characterPlaceLinks,
     locations: Array.isArray(payload.locations) ? payload.locations : emptyStudioData.locations,
     relationships: Array.isArray(payload.relationships)
-      ? payload.relationships
+      ? payload.relationships.map(relationshipSummary)
       : emptyStudioData.relationships,
     timelineEvents: Array.isArray(payload.timelineEvents)
       ? payload.timelineEvents

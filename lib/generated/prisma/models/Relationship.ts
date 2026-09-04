@@ -20,12 +20,24 @@ export type RelationshipModel = runtime.Types.Result.DefaultSelection<Prisma.$Re
 
 export type AggregateRelationship = {
   _count: RelationshipCountAggregateOutputType | null
+  _avg: RelationshipAvgAggregateOutputType | null
+  _sum: RelationshipSumAggregateOutputType | null
   _min: RelationshipMinAggregateOutputType | null
   _max: RelationshipMaxAggregateOutputType | null
 }
 
+export type RelationshipAvgAggregateOutputType = {
+  revision: number | null
+}
+
+export type RelationshipSumAggregateOutputType = {
+  revision: number | null
+}
+
 export type RelationshipMinAggregateOutputType = {
   id: string | null
+  revision: number | null
+  archivedAt: Date | null
   novelId: string | null
   fromCharacterId: string | null
   toCharacterId: string | null
@@ -36,11 +48,15 @@ export type RelationshipMinAggregateOutputType = {
   isSpoiler: boolean | null
   status: string | null
   since: string | null
+  sinceKind: string | null
+  sinceTargetId: string | null
   notes: string | null
 }
 
 export type RelationshipMaxAggregateOutputType = {
   id: string | null
+  revision: number | null
+  archivedAt: Date | null
   novelId: string | null
   fromCharacterId: string | null
   toCharacterId: string | null
@@ -51,11 +67,15 @@ export type RelationshipMaxAggregateOutputType = {
   isSpoiler: boolean | null
   status: string | null
   since: string | null
+  sinceKind: string | null
+  sinceTargetId: string | null
   notes: string | null
 }
 
 export type RelationshipCountAggregateOutputType = {
   id: number
+  revision: number
+  archivedAt: number
   novelId: number
   fromCharacterId: number
   toCharacterId: number
@@ -66,13 +86,25 @@ export type RelationshipCountAggregateOutputType = {
   isSpoiler: number
   status: number
   since: number
+  sinceKind: number
+  sinceTargetId: number
   notes: number
   _all: number
 }
 
 
+export type RelationshipAvgAggregateInputType = {
+  revision?: true
+}
+
+export type RelationshipSumAggregateInputType = {
+  revision?: true
+}
+
 export type RelationshipMinAggregateInputType = {
   id?: true
+  revision?: true
+  archivedAt?: true
   novelId?: true
   fromCharacterId?: true
   toCharacterId?: true
@@ -83,11 +115,15 @@ export type RelationshipMinAggregateInputType = {
   isSpoiler?: true
   status?: true
   since?: true
+  sinceKind?: true
+  sinceTargetId?: true
   notes?: true
 }
 
 export type RelationshipMaxAggregateInputType = {
   id?: true
+  revision?: true
+  archivedAt?: true
   novelId?: true
   fromCharacterId?: true
   toCharacterId?: true
@@ -98,11 +134,15 @@ export type RelationshipMaxAggregateInputType = {
   isSpoiler?: true
   status?: true
   since?: true
+  sinceKind?: true
+  sinceTargetId?: true
   notes?: true
 }
 
 export type RelationshipCountAggregateInputType = {
   id?: true
+  revision?: true
+  archivedAt?: true
   novelId?: true
   fromCharacterId?: true
   toCharacterId?: true
@@ -113,6 +153,8 @@ export type RelationshipCountAggregateInputType = {
   isSpoiler?: true
   status?: true
   since?: true
+  sinceKind?: true
+  sinceTargetId?: true
   notes?: true
   _all?: true
 }
@@ -155,6 +197,18 @@ export type RelationshipAggregateArgs<ExtArgs extends runtime.Types.Extensions.I
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: RelationshipAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: RelationshipSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: RelationshipMinAggregateInputType
@@ -185,12 +239,16 @@ export type RelationshipGroupByArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   _count?: RelationshipCountAggregateInputType | true
+  _avg?: RelationshipAvgAggregateInputType
+  _sum?: RelationshipSumAggregateInputType
   _min?: RelationshipMinAggregateInputType
   _max?: RelationshipMaxAggregateInputType
 }
 
 export type RelationshipGroupByOutputType = {
   id: string
+  revision: number
+  archivedAt: Date | null
   novelId: string
   fromCharacterId: string
   toCharacterId: string
@@ -201,8 +259,12 @@ export type RelationshipGroupByOutputType = {
   isSpoiler: boolean
   status: string
   since: string
+  sinceKind: string
+  sinceTargetId: string | null
   notes: string
   _count: RelationshipCountAggregateOutputType | null
+  _avg: RelationshipAvgAggregateOutputType | null
+  _sum: RelationshipSumAggregateOutputType | null
   _min: RelationshipMinAggregateOutputType | null
   _max: RelationshipMaxAggregateOutputType | null
 }
@@ -227,6 +289,8 @@ export type RelationshipWhereInput = {
   OR?: Prisma.RelationshipWhereInput[]
   NOT?: Prisma.RelationshipWhereInput | Prisma.RelationshipWhereInput[]
   id?: Prisma.StringFilter<"Relationship"> | string
+  revision?: Prisma.IntFilter<"Relationship"> | number
+  archivedAt?: Prisma.DateTimeNullableFilter<"Relationship"> | Date | string | null
   novelId?: Prisma.StringFilter<"Relationship"> | string
   fromCharacterId?: Prisma.StringFilter<"Relationship"> | string
   toCharacterId?: Prisma.StringFilter<"Relationship"> | string
@@ -237,6 +301,8 @@ export type RelationshipWhereInput = {
   isSpoiler?: Prisma.BoolFilter<"Relationship"> | boolean
   status?: Prisma.StringFilter<"Relationship"> | string
   since?: Prisma.StringFilter<"Relationship"> | string
+  sinceKind?: Prisma.StringFilter<"Relationship"> | string
+  sinceTargetId?: Prisma.StringNullableFilter<"Relationship"> | string | null
   notes?: Prisma.StringFilter<"Relationship"> | string
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   fromCharacter?: Prisma.XOR<Prisma.CharacterScalarRelationFilter, Prisma.CharacterWhereInput>
@@ -245,6 +311,8 @@ export type RelationshipWhereInput = {
 
 export type RelationshipOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   novelId?: Prisma.SortOrder
   fromCharacterId?: Prisma.SortOrder
   toCharacterId?: Prisma.SortOrder
@@ -255,6 +323,8 @@ export type RelationshipOrderByWithRelationInput = {
   isSpoiler?: Prisma.SortOrder
   status?: Prisma.SortOrder
   since?: Prisma.SortOrder
+  sinceKind?: Prisma.SortOrder
+  sinceTargetId?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrder
   novel?: Prisma.NovelOrderByWithRelationInput
   fromCharacter?: Prisma.CharacterOrderByWithRelationInput
@@ -266,6 +336,8 @@ export type RelationshipWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.RelationshipWhereInput | Prisma.RelationshipWhereInput[]
   OR?: Prisma.RelationshipWhereInput[]
   NOT?: Prisma.RelationshipWhereInput | Prisma.RelationshipWhereInput[]
+  revision?: Prisma.IntFilter<"Relationship"> | number
+  archivedAt?: Prisma.DateTimeNullableFilter<"Relationship"> | Date | string | null
   novelId?: Prisma.StringFilter<"Relationship"> | string
   fromCharacterId?: Prisma.StringFilter<"Relationship"> | string
   toCharacterId?: Prisma.StringFilter<"Relationship"> | string
@@ -276,6 +348,8 @@ export type RelationshipWhereUniqueInput = Prisma.AtLeast<{
   isSpoiler?: Prisma.BoolFilter<"Relationship"> | boolean
   status?: Prisma.StringFilter<"Relationship"> | string
   since?: Prisma.StringFilter<"Relationship"> | string
+  sinceKind?: Prisma.StringFilter<"Relationship"> | string
+  sinceTargetId?: Prisma.StringNullableFilter<"Relationship"> | string | null
   notes?: Prisma.StringFilter<"Relationship"> | string
   novel?: Prisma.XOR<Prisma.NovelScalarRelationFilter, Prisma.NovelWhereInput>
   fromCharacter?: Prisma.XOR<Prisma.CharacterScalarRelationFilter, Prisma.CharacterWhereInput>
@@ -284,6 +358,8 @@ export type RelationshipWhereUniqueInput = Prisma.AtLeast<{
 
 export type RelationshipOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   novelId?: Prisma.SortOrder
   fromCharacterId?: Prisma.SortOrder
   toCharacterId?: Prisma.SortOrder
@@ -294,10 +370,14 @@ export type RelationshipOrderByWithAggregationInput = {
   isSpoiler?: Prisma.SortOrder
   status?: Prisma.SortOrder
   since?: Prisma.SortOrder
+  sinceKind?: Prisma.SortOrder
+  sinceTargetId?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.SortOrder
   _count?: Prisma.RelationshipCountOrderByAggregateInput
+  _avg?: Prisma.RelationshipAvgOrderByAggregateInput
   _max?: Prisma.RelationshipMaxOrderByAggregateInput
   _min?: Prisma.RelationshipMinOrderByAggregateInput
+  _sum?: Prisma.RelationshipSumOrderByAggregateInput
 }
 
 export type RelationshipScalarWhereWithAggregatesInput = {
@@ -305,6 +385,8 @@ export type RelationshipScalarWhereWithAggregatesInput = {
   OR?: Prisma.RelationshipScalarWhereWithAggregatesInput[]
   NOT?: Prisma.RelationshipScalarWhereWithAggregatesInput | Prisma.RelationshipScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
+  revision?: Prisma.IntWithAggregatesFilter<"Relationship"> | number
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Relationship"> | Date | string | null
   novelId?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
   fromCharacterId?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
   toCharacterId?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
@@ -315,11 +397,15 @@ export type RelationshipScalarWhereWithAggregatesInput = {
   isSpoiler?: Prisma.BoolWithAggregatesFilter<"Relationship"> | boolean
   status?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
   since?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
+  sinceKind?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
+  sinceTargetId?: Prisma.StringNullableWithAggregatesFilter<"Relationship"> | string | null
   notes?: Prisma.StringWithAggregatesFilter<"Relationship"> | string
 }
 
 export type RelationshipCreateInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   relationshipType: string
   category: string
   direction?: string
@@ -327,6 +413,8 @@ export type RelationshipCreateInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
   novel: Prisma.NovelCreateNestedOneWithoutRelationshipsInput
   fromCharacter: Prisma.CharacterCreateNestedOneWithoutOutgoingRelationshipsInput
@@ -335,6 +423,8 @@ export type RelationshipCreateInput = {
 
 export type RelationshipUncheckedCreateInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   novelId: string
   fromCharacterId: string
   toCharacterId: string
@@ -345,11 +435,15 @@ export type RelationshipUncheckedCreateInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
 export type RelationshipUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
   direction?: Prisma.StringFieldUpdateOperationsInput | string
@@ -357,6 +451,8 @@ export type RelationshipUpdateInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
   novel?: Prisma.NovelUpdateOneRequiredWithoutRelationshipsNestedInput
   fromCharacter?: Prisma.CharacterUpdateOneRequiredWithoutOutgoingRelationshipsNestedInput
@@ -365,6 +461,8 @@ export type RelationshipUpdateInput = {
 
 export type RelationshipUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   fromCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   toCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -375,11 +473,15 @@ export type RelationshipUncheckedUpdateInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipCreateManyInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   novelId: string
   fromCharacterId: string
   toCharacterId: string
@@ -390,11 +492,15 @@ export type RelationshipCreateManyInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
 export type RelationshipUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
   direction?: Prisma.StringFieldUpdateOperationsInput | string
@@ -402,11 +508,15 @@ export type RelationshipUpdateManyMutationInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   fromCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   toCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -417,6 +527,8 @@ export type RelationshipUncheckedUpdateManyInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -432,6 +544,8 @@ export type RelationshipOrderByRelationAggregateInput = {
 
 export type RelationshipCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   fromCharacterId?: Prisma.SortOrder
   toCharacterId?: Prisma.SortOrder
@@ -442,11 +556,19 @@ export type RelationshipCountOrderByAggregateInput = {
   isSpoiler?: Prisma.SortOrder
   status?: Prisma.SortOrder
   since?: Prisma.SortOrder
+  sinceKind?: Prisma.SortOrder
+  sinceTargetId?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+}
+
+export type RelationshipAvgOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
 }
 
 export type RelationshipMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   fromCharacterId?: Prisma.SortOrder
   toCharacterId?: Prisma.SortOrder
@@ -457,11 +579,15 @@ export type RelationshipMaxOrderByAggregateInput = {
   isSpoiler?: Prisma.SortOrder
   status?: Prisma.SortOrder
   since?: Prisma.SortOrder
+  sinceKind?: Prisma.SortOrder
+  sinceTargetId?: Prisma.SortOrder
   notes?: Prisma.SortOrder
 }
 
 export type RelationshipMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  revision?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   fromCharacterId?: Prisma.SortOrder
   toCharacterId?: Prisma.SortOrder
@@ -472,7 +598,13 @@ export type RelationshipMinOrderByAggregateInput = {
   isSpoiler?: Prisma.SortOrder
   status?: Prisma.SortOrder
   since?: Prisma.SortOrder
+  sinceKind?: Prisma.SortOrder
+  sinceTargetId?: Prisma.SortOrder
   notes?: Prisma.SortOrder
+}
+
+export type RelationshipSumOrderByAggregateInput = {
+  revision?: Prisma.SortOrder
 }
 
 export type RelationshipCreateNestedManyWithoutNovelInput = {
@@ -603,6 +735,8 @@ export type RelationshipUncheckedUpdateManyWithoutToCharacterNestedInput = {
 
 export type RelationshipCreateWithoutNovelInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   relationshipType: string
   category: string
   direction?: string
@@ -610,6 +744,8 @@ export type RelationshipCreateWithoutNovelInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
   fromCharacter: Prisma.CharacterCreateNestedOneWithoutOutgoingRelationshipsInput
   toCharacter: Prisma.CharacterCreateNestedOneWithoutIncomingRelationshipsInput
@@ -617,6 +753,8 @@ export type RelationshipCreateWithoutNovelInput = {
 
 export type RelationshipUncheckedCreateWithoutNovelInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   fromCharacterId: string
   toCharacterId: string
   relationshipType: string
@@ -626,6 +764,8 @@ export type RelationshipUncheckedCreateWithoutNovelInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
@@ -659,6 +799,8 @@ export type RelationshipScalarWhereInput = {
   OR?: Prisma.RelationshipScalarWhereInput[]
   NOT?: Prisma.RelationshipScalarWhereInput | Prisma.RelationshipScalarWhereInput[]
   id?: Prisma.StringFilter<"Relationship"> | string
+  revision?: Prisma.IntFilter<"Relationship"> | number
+  archivedAt?: Prisma.DateTimeNullableFilter<"Relationship"> | Date | string | null
   novelId?: Prisma.StringFilter<"Relationship"> | string
   fromCharacterId?: Prisma.StringFilter<"Relationship"> | string
   toCharacterId?: Prisma.StringFilter<"Relationship"> | string
@@ -669,11 +811,15 @@ export type RelationshipScalarWhereInput = {
   isSpoiler?: Prisma.BoolFilter<"Relationship"> | boolean
   status?: Prisma.StringFilter<"Relationship"> | string
   since?: Prisma.StringFilter<"Relationship"> | string
+  sinceKind?: Prisma.StringFilter<"Relationship"> | string
+  sinceTargetId?: Prisma.StringNullableFilter<"Relationship"> | string | null
   notes?: Prisma.StringFilter<"Relationship"> | string
 }
 
 export type RelationshipCreateWithoutFromCharacterInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   relationshipType: string
   category: string
   direction?: string
@@ -681,6 +827,8 @@ export type RelationshipCreateWithoutFromCharacterInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
   novel: Prisma.NovelCreateNestedOneWithoutRelationshipsInput
   toCharacter: Prisma.CharacterCreateNestedOneWithoutIncomingRelationshipsInput
@@ -688,6 +836,8 @@ export type RelationshipCreateWithoutFromCharacterInput = {
 
 export type RelationshipUncheckedCreateWithoutFromCharacterInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   novelId: string
   toCharacterId: string
   relationshipType: string
@@ -697,6 +847,8 @@ export type RelationshipUncheckedCreateWithoutFromCharacterInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
@@ -711,6 +863,8 @@ export type RelationshipCreateManyFromCharacterInputEnvelope = {
 
 export type RelationshipCreateWithoutToCharacterInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   relationshipType: string
   category: string
   direction?: string
@@ -718,6 +872,8 @@ export type RelationshipCreateWithoutToCharacterInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
   novel: Prisma.NovelCreateNestedOneWithoutRelationshipsInput
   fromCharacter: Prisma.CharacterCreateNestedOneWithoutOutgoingRelationshipsInput
@@ -725,6 +881,8 @@ export type RelationshipCreateWithoutToCharacterInput = {
 
 export type RelationshipUncheckedCreateWithoutToCharacterInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   novelId: string
   fromCharacterId: string
   relationshipType: string
@@ -734,6 +892,8 @@ export type RelationshipUncheckedCreateWithoutToCharacterInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
@@ -780,6 +940,8 @@ export type RelationshipUpdateManyWithWhereWithoutToCharacterInput = {
 
 export type RelationshipCreateManyNovelInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   fromCharacterId: string
   toCharacterId: string
   relationshipType: string
@@ -789,11 +951,15 @@ export type RelationshipCreateManyNovelInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
 export type RelationshipUpdateWithoutNovelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
   direction?: Prisma.StringFieldUpdateOperationsInput | string
@@ -801,6 +967,8 @@ export type RelationshipUpdateWithoutNovelInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
   fromCharacter?: Prisma.CharacterUpdateOneRequiredWithoutOutgoingRelationshipsNestedInput
   toCharacter?: Prisma.CharacterUpdateOneRequiredWithoutIncomingRelationshipsNestedInput
@@ -808,6 +976,8 @@ export type RelationshipUpdateWithoutNovelInput = {
 
 export type RelationshipUncheckedUpdateWithoutNovelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   fromCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   toCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -817,11 +987,15 @@ export type RelationshipUncheckedUpdateWithoutNovelInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipUncheckedUpdateManyWithoutNovelInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   fromCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   toCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -831,11 +1005,15 @@ export type RelationshipUncheckedUpdateManyWithoutNovelInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipCreateManyFromCharacterInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   novelId: string
   toCharacterId: string
   relationshipType: string
@@ -845,11 +1023,15 @@ export type RelationshipCreateManyFromCharacterInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
 export type RelationshipCreateManyToCharacterInput = {
   id: string
+  revision?: number
+  archivedAt?: Date | string | null
   novelId: string
   fromCharacterId: string
   relationshipType: string
@@ -859,11 +1041,15 @@ export type RelationshipCreateManyToCharacterInput = {
   isSpoiler?: boolean
   status?: string
   since?: string
+  sinceKind?: string
+  sinceTargetId?: string | null
   notes?: string
 }
 
 export type RelationshipUpdateWithoutFromCharacterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
   direction?: Prisma.StringFieldUpdateOperationsInput | string
@@ -871,6 +1057,8 @@ export type RelationshipUpdateWithoutFromCharacterInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
   novel?: Prisma.NovelUpdateOneRequiredWithoutRelationshipsNestedInput
   toCharacter?: Prisma.CharacterUpdateOneRequiredWithoutIncomingRelationshipsNestedInput
@@ -878,6 +1066,8 @@ export type RelationshipUpdateWithoutFromCharacterInput = {
 
 export type RelationshipUncheckedUpdateWithoutFromCharacterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   toCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -887,11 +1077,15 @@ export type RelationshipUncheckedUpdateWithoutFromCharacterInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipUncheckedUpdateManyWithoutFromCharacterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   toCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -901,11 +1095,15 @@ export type RelationshipUncheckedUpdateManyWithoutFromCharacterInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipUpdateWithoutToCharacterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
   direction?: Prisma.StringFieldUpdateOperationsInput | string
@@ -913,6 +1111,8 @@ export type RelationshipUpdateWithoutToCharacterInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
   novel?: Prisma.NovelUpdateOneRequiredWithoutRelationshipsNestedInput
   fromCharacter?: Prisma.CharacterUpdateOneRequiredWithoutOutgoingRelationshipsNestedInput
@@ -920,6 +1120,8 @@ export type RelationshipUpdateWithoutToCharacterInput = {
 
 export type RelationshipUncheckedUpdateWithoutToCharacterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   fromCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -929,11 +1131,15 @@ export type RelationshipUncheckedUpdateWithoutToCharacterInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RelationshipUncheckedUpdateManyWithoutToCharacterInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  revision?: Prisma.IntFieldUpdateOperationsInput | number
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   fromCharacterId?: Prisma.StringFieldUpdateOperationsInput | string
   relationshipType?: Prisma.StringFieldUpdateOperationsInput | string
@@ -943,6 +1149,8 @@ export type RelationshipUncheckedUpdateManyWithoutToCharacterInput = {
   isSpoiler?: Prisma.BoolFieldUpdateOperationsInput | boolean
   status?: Prisma.StringFieldUpdateOperationsInput | string
   since?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceKind?: Prisma.StringFieldUpdateOperationsInput | string
+  sinceTargetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -950,6 +1158,8 @@ export type RelationshipUncheckedUpdateManyWithoutToCharacterInput = {
 
 export type RelationshipSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  revision?: boolean
+  archivedAt?: boolean
   novelId?: boolean
   fromCharacterId?: boolean
   toCharacterId?: boolean
@@ -960,6 +1170,8 @@ export type RelationshipSelect<ExtArgs extends runtime.Types.Extensions.Internal
   isSpoiler?: boolean
   status?: boolean
   since?: boolean
+  sinceKind?: boolean
+  sinceTargetId?: boolean
   notes?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   fromCharacter?: boolean | Prisma.CharacterDefaultArgs<ExtArgs>
@@ -968,6 +1180,8 @@ export type RelationshipSelect<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type RelationshipSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  revision?: boolean
+  archivedAt?: boolean
   novelId?: boolean
   fromCharacterId?: boolean
   toCharacterId?: boolean
@@ -978,6 +1192,8 @@ export type RelationshipSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   isSpoiler?: boolean
   status?: boolean
   since?: boolean
+  sinceKind?: boolean
+  sinceTargetId?: boolean
   notes?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   fromCharacter?: boolean | Prisma.CharacterDefaultArgs<ExtArgs>
@@ -986,6 +1202,8 @@ export type RelationshipSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
 
 export type RelationshipSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  revision?: boolean
+  archivedAt?: boolean
   novelId?: boolean
   fromCharacterId?: boolean
   toCharacterId?: boolean
@@ -996,6 +1214,8 @@ export type RelationshipSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   isSpoiler?: boolean
   status?: boolean
   since?: boolean
+  sinceKind?: boolean
+  sinceTargetId?: boolean
   notes?: boolean
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   fromCharacter?: boolean | Prisma.CharacterDefaultArgs<ExtArgs>
@@ -1004,6 +1224,8 @@ export type RelationshipSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
 
 export type RelationshipSelectScalar = {
   id?: boolean
+  revision?: boolean
+  archivedAt?: boolean
   novelId?: boolean
   fromCharacterId?: boolean
   toCharacterId?: boolean
@@ -1014,10 +1236,12 @@ export type RelationshipSelectScalar = {
   isSpoiler?: boolean
   status?: boolean
   since?: boolean
+  sinceKind?: boolean
+  sinceTargetId?: boolean
   notes?: boolean
 }
 
-export type RelationshipOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "novelId" | "fromCharacterId" | "toCharacterId" | "relationshipType" | "category" | "direction" | "description" | "isSpoiler" | "status" | "since" | "notes", ExtArgs["result"]["relationship"]>
+export type RelationshipOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "revision" | "archivedAt" | "novelId" | "fromCharacterId" | "toCharacterId" | "relationshipType" | "category" | "direction" | "description" | "isSpoiler" | "status" | "since" | "sinceKind" | "sinceTargetId" | "notes", ExtArgs["result"]["relationship"]>
 export type RelationshipInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   novel?: boolean | Prisma.NovelDefaultArgs<ExtArgs>
   fromCharacter?: boolean | Prisma.CharacterDefaultArgs<ExtArgs>
@@ -1043,6 +1267,8 @@ export type $RelationshipPayload<ExtArgs extends runtime.Types.Extensions.Intern
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    revision: number
+    archivedAt: Date | null
     novelId: string
     fromCharacterId: string
     toCharacterId: string
@@ -1053,6 +1279,8 @@ export type $RelationshipPayload<ExtArgs extends runtime.Types.Extensions.Intern
     isSpoiler: boolean
     status: string
     since: string
+    sinceKind: string
+    sinceTargetId: string | null
     notes: string
   }, ExtArgs["result"]["relationship"]>
   composites: {}
@@ -1481,6 +1709,8 @@ export interface Prisma__RelationshipClient<T, Null = never, ExtArgs extends run
  */
 export interface RelationshipFieldRefs {
   readonly id: Prisma.FieldRef<"Relationship", 'String'>
+  readonly revision: Prisma.FieldRef<"Relationship", 'Int'>
+  readonly archivedAt: Prisma.FieldRef<"Relationship", 'DateTime'>
   readonly novelId: Prisma.FieldRef<"Relationship", 'String'>
   readonly fromCharacterId: Prisma.FieldRef<"Relationship", 'String'>
   readonly toCharacterId: Prisma.FieldRef<"Relationship", 'String'>
@@ -1491,6 +1721,8 @@ export interface RelationshipFieldRefs {
   readonly isSpoiler: Prisma.FieldRef<"Relationship", 'Boolean'>
   readonly status: Prisma.FieldRef<"Relationship", 'String'>
   readonly since: Prisma.FieldRef<"Relationship", 'String'>
+  readonly sinceKind: Prisma.FieldRef<"Relationship", 'String'>
+  readonly sinceTargetId: Prisma.FieldRef<"Relationship", 'String'>
   readonly notes: Prisma.FieldRef<"Relationship", 'String'>
 }
     

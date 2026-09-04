@@ -8,6 +8,7 @@ async function main() {
   const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
   const { default: createJiti } = await import("jiti");
   const jiti = createJiti(__filename);
+  const { getRelationshipDefinition, canonicalRelationship } = jiti(join(process.cwd(), "lib", "character-relationship.ts"));
   const { PrismaClient } = jiti(
     join(process.cwd(), "lib", "generated", "prisma", "client.ts")
   );
@@ -188,7 +189,6 @@ async function main() {
           "-No debiste abrir esa puerta -dijo Reina.\nYo, por supuesto, abri la puerta.\n\nLa bisagra respondio con un gemido tan antiguo que por un instante pense que toda la Academia Seiryu habia contenido la respiracion.",
         summary: "Akira abre una puerta prohibida junto a Reina.",
         status: "Writing",
-        locationId: "place-torre",
         sortOrder: 1,
         wordCount: 510,
         objective: "Presentar la curiosidad de Akira y la advertencia de Reina."
@@ -201,13 +201,17 @@ async function main() {
           "Reina no grito cuando la campana sono bajo nuestros pies. Eso fue lo primero que me inquieto.",
         summary: "La torre imita una voz familiar.",
         status: "Draft",
-        locationId: "place-torre",
         sortOrder: 2,
         wordCount: 620,
         objective: "Vincular a Mika con el misterio central."
       }
     ]
   });
+
+  await prisma.scenePlace.createMany({ data: [
+    { sceneId: "scene-1", locationId: "place-torre" },
+    { sceneId: "scene-2", locationId: "place-torre" }
+  ] });
 
   await prisma.character.createMany({
     data: [
@@ -275,24 +279,21 @@ async function main() {
         novelId: "novel-eco-azul",
         fromCharacterId: "char-akira",
         toCharacterId: "char-reina",
-        relationshipType: "is in love with",
-        category: "Romance",
-        direction: "Directional",
+        relationshipType: "in_love_with",
         description: "Akira is drawn to Reina's courage before he understands her burden.",
         status: "Growing",
-        since: "Chapter 1"
+        sinceKind: "chapter",
+        sinceTargetId: "ch-1"
       },
       {
         id: "rel-mika-akira",
         novelId: "novel-eco-azul",
         fromCharacterId: "char-mika",
         toCharacterId: "char-akira",
-        relationshipType: "cousin of",
-        category: "Family",
-        direction: "Bidirectional",
+        relationshipType: "cousin_of",
         description: "Mika is Akira's younger cousin and his most reliable critic.",
         status: "Stable",
-        since: "Before story"
+        sinceKind: "before_story"
       },
       {
         id: "rel-reina-kuroda",
@@ -300,42 +301,45 @@ async function main() {
         fromCharacterId: "char-reina",
         toCharacterId: "char-kuroda",
         relationshipType: "distrusts",
-        category: "Conflict",
-        direction: "Directional",
         description: "Reina believes Kuroda knows more about her family than he admits.",
         isSpoiler: true,
         status: "Tense",
+        sinceKind: "custom",
         since: "Prologue"
       }
-    ]
+    ].map((relationship) => {
+      const definition = getRelationshipDefinition(relationship.relationshipType);
+      return { ...relationship, ...canonicalRelationship(relationship.fromCharacterId, relationship.toCharacterId, relationship.relationshipType), category: definition.category, direction: definition.direction };
+    })
   });
 
   await prisma.timelineEvent.createMany({
     data: [
       {
         id: "event-1",
+        sortIndex: 1024,
         novelId: "novel-eco-azul",
         title: "Akira arrives at the academy.",
         internalDate: "Day 1",
         chapterId: "ch-1",
         sceneId: "scene-1",
-        locationId: "place-academia",
-        characterIds: json(["char-akira"]),
         description: "Akira reaches Seiryu just before the evening bell."
       },
       {
         id: "event-2",
+        sortIndex: 2048,
         novelId: "novel-eco-azul",
         title: "Akira meets Reina.",
         internalDate: "Day 1",
         chapterId: "ch-1",
         sceneId: "scene-1",
-        locationId: "place-torre",
-        characterIds: json(["char-akira", "char-reina"]),
         description: "Reina catches Akira near the forbidden door."
       }
     ]
   });
+
+  await prisma.timelineEventPlace.createMany({ data: [{ eventId: "event-1", locationId: "place-academia" }, { eventId: "event-2", locationId: "place-torre" }] });
+  await prisma.timelineEventCharacter.createMany({ data: [{ eventId: "event-1", characterId: "char-akira" }, { eventId: "event-2", characterId: "char-akira" }, { eventId: "event-2", characterId: "char-reina" }] });
 
   await prisma.note.createMany({
     data: [
@@ -347,23 +351,35 @@ async function main() {
         title: "Core emotional promise",
         content:
           "Every mystery scene should also test whether Akira and Reina trust each other one step more.",
-        tags: json(["mystery", "romance", "use-later"]),
+        tags: "[]",
+        createdAt: toDate("2026-06-28"),
         updatedAt: toDate("2026-06-28")
       },
       {
         id: "note-2",
         novelId: "novel-eco-azul",
-        linkedType: "Character",
-        linkedId: "char-kuroda",
+        linkedType: "Novel",
+        linkedId: "novel-eco-azul",
         title: "Kuroda reveal pacing",
         content:
           "He should answer questions truthfully but incompletely. Avoid making him a simple villain.",
-        tags: json(["spoiler", "volume-2"]),
+        tags: "[]",
+        createdAt: toDate("2026-06-25"),
         updatedAt: toDate("2026-06-25")
       }
     ]
   });
 
+  for (const note of await prisma.note.findMany({ select: { id: true, title: true, content: true, updatedAt: true } })) {
+    await prisma.note.update({ where: { id: note.id }, data: { searchText: `${note.title}\n${note.content}`.normalize("NFC").toLowerCase(), updatedAt: note.updatedAt } });
+  }
+  await prisma.noteCharacter.create({ data: { noteId: "note-2", characterId: "char-kuroda" } });
+  for (const [noteId, names] of [["note-1", ["mystery", "romance", "use-later"]], ["note-2", ["spoiler", "volume-2"]]]) {
+    for (const name of names) {
+      const tag = await prisma.tag.create({ data: { id: `tag-${name}`, novelId: "novel-eco-azul", name, key: name } });
+      await prisma.noteTag.create({ data: { noteId, tagId: tag.id } });
+    }
+  }
   await prisma.backup.createMany({
     data: [
       {
@@ -396,7 +412,6 @@ async function main() {
       id: "studio",
       version: 1,
       values: json({
-        theme: "light",
         language: "en",
         sidebarState: "expanded",
         editorFontSize: "18 px",
@@ -404,7 +419,6 @@ async function main() {
         readerWidth: "720 px",
         autosaveInterval: "30 seconds",
         defaultFocusMode: "Writing",
-        defaultReadingMode: "Sepia",
         backupRetention: "30 daily backups",
         exportDefaults: "{\"format\":\"EPUB\",\"options\":[\"Include cover\",\"Include metadata\"]}",
         typewriterFont: true,

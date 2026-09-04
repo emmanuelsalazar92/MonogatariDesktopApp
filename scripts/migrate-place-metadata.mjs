@@ -10,7 +10,9 @@ export function migratePlaceMetadata(database) {
     status: 'TEXT NOT NULL DEFAULT \'active\'',
     atmosphere: 'TEXT NOT NULL DEFAULT \'\'',
     revision: 'INTEGER NOT NULL DEFAULT 0',
-    parentPlaceId: 'TEXT REFERENCES "Location"("id") ON DELETE SET NULL ON UPDATE CASCADE'
+    parentPlaceId: 'TEXT REFERENCES "Location"("id") ON DELETE SET NULL ON UPDATE CASCADE',
+    // Historical edit times are unknown; never invent a timestamp for existing Places.
+    updatedAt: 'DATETIME'
   };
   return database.transaction(() => {
     const added = [];

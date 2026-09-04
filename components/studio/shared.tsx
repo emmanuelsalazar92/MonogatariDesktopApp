@@ -179,7 +179,7 @@ export function ProgressBar({
       aria-valuenow={normalizedValue}
     >
       <div
-        className="h-full rounded-full bg-primary shadow-[0_0_0_1px_rgba(101,70,39,0.08)]"
+        className="h-full rounded-full bg-primary shadow-[0_0_0_1px_rgb(var(--primary)/0.1)]"
         style={{ width: `${normalizedValue}%` }}
       />
     </div>

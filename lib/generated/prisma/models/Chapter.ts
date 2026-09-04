@@ -244,6 +244,7 @@ export type ChapterWhereInput = {
   sortOrder?: Prisma.IntFilter<"Chapter"> | number
   wordCount?: Prisma.IntFilter<"Chapter"> | number
   archived?: Prisma.BoolFilter<"Chapter"> | boolean
+  noteLinks?: Prisma.NoteChapterListRelationFilter
   volume?: Prisma.XOR<Prisma.VolumeScalarRelationFilter, Prisma.VolumeWhereInput>
   scenes?: Prisma.SceneListRelationFilter
   timelineEvents?: Prisma.TimelineEventListRelationFilter
@@ -258,6 +259,7 @@ export type ChapterOrderByWithRelationInput = {
   sortOrder?: Prisma.SortOrder
   wordCount?: Prisma.SortOrder
   archived?: Prisma.SortOrder
+  noteLinks?: Prisma.NoteChapterOrderByRelationAggregateInput
   volume?: Prisma.VolumeOrderByWithRelationInput
   scenes?: Prisma.SceneOrderByRelationAggregateInput
   timelineEvents?: Prisma.TimelineEventOrderByRelationAggregateInput
@@ -275,6 +277,7 @@ export type ChapterWhereUniqueInput = Prisma.AtLeast<{
   sortOrder?: Prisma.IntFilter<"Chapter"> | number
   wordCount?: Prisma.IntFilter<"Chapter"> | number
   archived?: Prisma.BoolFilter<"Chapter"> | boolean
+  noteLinks?: Prisma.NoteChapterListRelationFilter
   volume?: Prisma.XOR<Prisma.VolumeScalarRelationFilter, Prisma.VolumeWhereInput>
   scenes?: Prisma.SceneListRelationFilter
   timelineEvents?: Prisma.TimelineEventListRelationFilter
@@ -318,6 +321,7 @@ export type ChapterCreateInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterCreateNestedManyWithoutTargetInput
   volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
   scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
@@ -332,6 +336,7 @@ export type ChapterUncheckedCreateInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutTargetInput
   scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
 }
@@ -344,6 +349,7 @@ export type ChapterUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUpdateManyWithoutTargetNestedInput
   volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
   scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
@@ -358,6 +364,7 @@ export type ChapterUncheckedUpdateInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutTargetNestedInput
   scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
@@ -529,6 +536,20 @@ export type ChapterUpdateOneWithoutTimelineEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ChapterUpdateToOneWithWhereWithoutTimelineEventsInput, Prisma.ChapterUpdateWithoutTimelineEventsInput>, Prisma.ChapterUncheckedUpdateWithoutTimelineEventsInput>
 }
 
+export type ChapterCreateNestedOneWithoutNoteLinksInput = {
+  create?: Prisma.XOR<Prisma.ChapterCreateWithoutNoteLinksInput, Prisma.ChapterUncheckedCreateWithoutNoteLinksInput>
+  connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutNoteLinksInput
+  connect?: Prisma.ChapterWhereUniqueInput
+}
+
+export type ChapterUpdateOneRequiredWithoutNoteLinksNestedInput = {
+  create?: Prisma.XOR<Prisma.ChapterCreateWithoutNoteLinksInput, Prisma.ChapterUncheckedCreateWithoutNoteLinksInput>
+  connectOrCreate?: Prisma.ChapterCreateOrConnectWithoutNoteLinksInput
+  upsert?: Prisma.ChapterUpsertWithoutNoteLinksInput
+  connect?: Prisma.ChapterWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ChapterUpdateToOneWithWhereWithoutNoteLinksInput, Prisma.ChapterUpdateWithoutNoteLinksInput>, Prisma.ChapterUncheckedUpdateWithoutNoteLinksInput>
+}
+
 export type ChapterCreateWithoutVolumeInput = {
   id: string
   title: string
@@ -537,6 +558,7 @@ export type ChapterCreateWithoutVolumeInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterCreateNestedManyWithoutTargetInput
   scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
 }
@@ -549,6 +571,7 @@ export type ChapterUncheckedCreateWithoutVolumeInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutTargetInput
   scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
 }
@@ -600,6 +623,7 @@ export type ChapterCreateWithoutScenesInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterCreateNestedManyWithoutTargetInput
   volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
 }
@@ -613,6 +637,7 @@ export type ChapterUncheckedCreateWithoutScenesInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutTargetInput
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
 }
 
@@ -640,6 +665,7 @@ export type ChapterUpdateWithoutScenesInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUpdateManyWithoutTargetNestedInput
   volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
 }
@@ -653,6 +679,7 @@ export type ChapterUncheckedUpdateWithoutScenesInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutTargetNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
 
@@ -664,6 +691,7 @@ export type ChapterCreateWithoutTimelineEventsInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterCreateNestedManyWithoutTargetInput
   volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
   scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
 }
@@ -677,6 +705,7 @@ export type ChapterUncheckedCreateWithoutTimelineEventsInput = {
   sortOrder?: number
   wordCount?: number
   archived?: boolean
+  noteLinks?: Prisma.NoteChapterUncheckedCreateNestedManyWithoutTargetInput
   scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
 }
 
@@ -704,6 +733,7 @@ export type ChapterUpdateWithoutTimelineEventsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUpdateManyWithoutTargetNestedInput
   volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
   scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
 }
@@ -717,7 +747,76 @@ export type ChapterUncheckedUpdateWithoutTimelineEventsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutTargetNestedInput
   scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
+}
+
+export type ChapterCreateWithoutNoteLinksInput = {
+  id: string
+  title: string
+  summary?: string
+  status?: string
+  sortOrder?: number
+  wordCount?: number
+  archived?: boolean
+  volume: Prisma.VolumeCreateNestedOneWithoutChaptersInput
+  scenes?: Prisma.SceneCreateNestedManyWithoutChapterInput
+  timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutChapterInput
+}
+
+export type ChapterUncheckedCreateWithoutNoteLinksInput = {
+  id: string
+  volumeId: string
+  title: string
+  summary?: string
+  status?: string
+  sortOrder?: number
+  wordCount?: number
+  archived?: boolean
+  scenes?: Prisma.SceneUncheckedCreateNestedManyWithoutChapterInput
+  timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutChapterInput
+}
+
+export type ChapterCreateOrConnectWithoutNoteLinksInput = {
+  where: Prisma.ChapterWhereUniqueInput
+  create: Prisma.XOR<Prisma.ChapterCreateWithoutNoteLinksInput, Prisma.ChapterUncheckedCreateWithoutNoteLinksInput>
+}
+
+export type ChapterUpsertWithoutNoteLinksInput = {
+  update: Prisma.XOR<Prisma.ChapterUpdateWithoutNoteLinksInput, Prisma.ChapterUncheckedUpdateWithoutNoteLinksInput>
+  create: Prisma.XOR<Prisma.ChapterCreateWithoutNoteLinksInput, Prisma.ChapterUncheckedCreateWithoutNoteLinksInput>
+  where?: Prisma.ChapterWhereInput
+}
+
+export type ChapterUpdateToOneWithWhereWithoutNoteLinksInput = {
+  where?: Prisma.ChapterWhereInput
+  data: Prisma.XOR<Prisma.ChapterUpdateWithoutNoteLinksInput, Prisma.ChapterUncheckedUpdateWithoutNoteLinksInput>
+}
+
+export type ChapterUpdateWithoutNoteLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  summary?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  volume?: Prisma.VolumeUpdateOneRequiredWithoutChaptersNestedInput
+  scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
+  timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
+}
+
+export type ChapterUncheckedUpdateWithoutNoteLinksInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  volumeId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  summary?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
+  timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
 
 export type ChapterCreateManyVolumeInput = {
@@ -738,6 +837,7 @@ export type ChapterUpdateWithoutVolumeInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUpdateManyWithoutTargetNestedInput
   scenes?: Prisma.SceneUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutChapterNestedInput
 }
@@ -750,6 +850,7 @@ export type ChapterUncheckedUpdateWithoutVolumeInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   wordCount?: Prisma.IntFieldUpdateOperationsInput | number
   archived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  noteLinks?: Prisma.NoteChapterUncheckedUpdateManyWithoutTargetNestedInput
   scenes?: Prisma.SceneUncheckedUpdateManyWithoutChapterNestedInput
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutChapterNestedInput
 }
@@ -770,11 +871,13 @@ export type ChapterUncheckedUpdateManyWithoutVolumeInput = {
  */
 
 export type ChapterCountOutputType = {
+  noteLinks: number
   scenes: number
   timelineEvents: number
 }
 
 export type ChapterCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteLinks?: boolean | ChapterCountOutputTypeCountNoteLinksArgs
   scenes?: boolean | ChapterCountOutputTypeCountScenesArgs
   timelineEvents?: boolean | ChapterCountOutputTypeCountTimelineEventsArgs
 }
@@ -787,6 +890,13 @@ export type ChapterCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Exte
    * Select specific fields to fetch from the ChapterCountOutputType
    */
   select?: Prisma.ChapterCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ChapterCountOutputType without action
+ */
+export type ChapterCountOutputTypeCountNoteLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NoteChapterWhereInput
 }
 
 /**
@@ -813,6 +923,7 @@ export type ChapterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   sortOrder?: boolean
   wordCount?: boolean
   archived?: boolean
+  noteLinks?: boolean | Prisma.Chapter$noteLinksArgs<ExtArgs>
   volume?: boolean | Prisma.VolumeDefaultArgs<ExtArgs>
   scenes?: boolean | Prisma.Chapter$scenesArgs<ExtArgs>
   timelineEvents?: boolean | Prisma.Chapter$timelineEventsArgs<ExtArgs>
@@ -856,6 +967,7 @@ export type ChapterSelectScalar = {
 
 export type ChapterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "volumeId" | "title" | "summary" | "status" | "sortOrder" | "wordCount" | "archived", ExtArgs["result"]["chapter"]>
 export type ChapterInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  noteLinks?: boolean | Prisma.Chapter$noteLinksArgs<ExtArgs>
   volume?: boolean | Prisma.VolumeDefaultArgs<ExtArgs>
   scenes?: boolean | Prisma.Chapter$scenesArgs<ExtArgs>
   timelineEvents?: boolean | Prisma.Chapter$timelineEventsArgs<ExtArgs>
@@ -871,6 +983,7 @@ export type ChapterIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
 export type $ChapterPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Chapter"
   objects: {
+    noteLinks: Prisma.$NoteChapterPayload<ExtArgs>[]
     volume: Prisma.$VolumePayload<ExtArgs>
     scenes: Prisma.$ScenePayload<ExtArgs>[]
     timelineEvents: Prisma.$TimelineEventPayload<ExtArgs>[]
@@ -1278,6 +1391,7 @@ readonly fields: ChapterFieldRefs;
  */
 export interface Prisma__ChapterClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  noteLinks<T extends Prisma.Chapter$noteLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$noteLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NoteChapterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   volume<T extends Prisma.VolumeDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.VolumeDefaultArgs<ExtArgs>>): Prisma.Prisma__VolumeClient<runtime.Types.Result.GetResult<Prisma.$VolumePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   scenes<T extends Prisma.Chapter$scenesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$scenesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ScenePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   timelineEvents<T extends Prisma.Chapter$timelineEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Chapter$timelineEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TimelineEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1714,6 +1828,30 @@ export type ChapterDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Limit how many Chapters to delete.
    */
   limit?: number
+}
+
+/**
+ * Chapter.noteLinks
+ */
+export type Chapter$noteLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NoteChapter
+   */
+  select?: Prisma.NoteChapterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NoteChapter
+   */
+  omit?: Prisma.NoteChapterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NoteChapterInclude<ExtArgs> | null
+  where?: Prisma.NoteChapterWhereInput
+  orderBy?: Prisma.NoteChapterOrderByWithRelationInput | Prisma.NoteChapterOrderByWithRelationInput[]
+  cursor?: Prisma.NoteChapterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NoteChapterScalarFieldEnum | Prisma.NoteChapterScalarFieldEnum[]
 }
 
 /**

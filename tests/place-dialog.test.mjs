@@ -4,14 +4,13 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("shared dialog surface stays opaque in both theme palettes", () => {
+test("shared dialog surface uses the single opaque fixed identity", () => {
   const css = read("app/globals.css");
-  assert.match(css, /\.dialog-surface\s*\{\s*background-color: hsl\(var\(--popover\) \/ 1\);/);
-  for (const selector of [":root", ".dark"]) {
-    const block = css.slice(css.indexOf(`${selector} {`)).split("}")[0];
-    assert.match(block, /--popover: \d+ \d+% \d+%;/);
-    assert.match(block, /--popover-foreground: \d+ \d+% \d+%;/);
-  }
+  assert.match(css, /\.dialog-surface\s*\{\s*background-color: rgb\(var\(--popover\)\);/);
+  const block = css.slice(css.indexOf(":root {")).split("}")[0];
+  assert.match(block, /--popover: var\(--surface\);/);
+  assert.match(block, /--popover-foreground: var\(--text-primary\);/);
+  assert.doesNotMatch(css, /\.dark\s*\{/);
   const dialog = read("components/ui/dialog.tsx");
   const surface = dialog.split('"dialog-surface')[1].split('"')[0];
   assert.doesNotMatch(surface, /opacity-|fade-|animate-/);

@@ -72,6 +72,11 @@ export type Scene = Prisma.SceneModel
  */
 export type SceneVersion = Prisma.SceneVersionModel
 /**
+ * Model ScenePlace
+ * 
+ */
+export type ScenePlace = Prisma.ScenePlaceModel
+/**
  * Model WritingActivity
  * 
  */
@@ -107,10 +112,60 @@ export type Relationship = Prisma.RelationshipModel
  */
 export type TimelineEvent = Prisma.TimelineEventModel
 /**
+ * Model TimelineEventCharacter
+ * 
+ */
+export type TimelineEventCharacter = Prisma.TimelineEventCharacterModel
+/**
+ * Model TimelineEventPlace
+ * 
+ */
+export type TimelineEventPlace = Prisma.TimelineEventPlaceModel
+/**
  * Model Note
  * 
  */
 export type Note = Prisma.NoteModel
+/**
+ * Model Tag
+ * 
+ */
+export type Tag = Prisma.TagModel
+/**
+ * Model NoteTag
+ * 
+ */
+export type NoteTag = Prisma.NoteTagModel
+/**
+ * Model NoteVolume
+ * 
+ */
+export type NoteVolume = Prisma.NoteVolumeModel
+/**
+ * Model NoteChapter
+ * 
+ */
+export type NoteChapter = Prisma.NoteChapterModel
+/**
+ * Model NoteScene
+ * 
+ */
+export type NoteScene = Prisma.NoteSceneModel
+/**
+ * Model NoteCharacter
+ * 
+ */
+export type NoteCharacter = Prisma.NoteCharacterModel
+/**
+ * Model NotePlace
+ * 
+ */
+export type NotePlace = Prisma.NotePlaceModel
+/**
+ * Model NoteTimelineEvent
+ * 
+ */
+export type NoteTimelineEvent = Prisma.NoteTimelineEventModel
 /**
  * Model Backup
  * 
@@ -121,6 +176,11 @@ export type Backup = Prisma.BackupModel
  * 
  */
 export type AppSetting = Prisma.AppSettingModel
+/**
+ * Model LocalDataMigration
+ * 
+ */
+export type LocalDataMigration = Prisma.LocalDataMigrationModel
 /**
  * Model StudioConfiguration
  * 

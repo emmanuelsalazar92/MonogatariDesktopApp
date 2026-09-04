@@ -28,7 +28,6 @@ export const defaultExportDefaults: ExportDefaults = {
 };
 
 const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = {
-  theme: ["light", "dark", "system"],
   language: ["en", "es"],
   sidebarState: ["expanded", "compact", "hidden"],
   editorFontSize: ["16 px", "18 px", "20 px", "22 px"],
@@ -37,7 +36,6 @@ const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = 
   autosaveInterval: ["10 seconds", "30 seconds", "60 seconds", "Manual only"],
   editorInspectorOpen: ["true", "false"],
   defaultFocusMode: ["Writing", "Reading", "Off"],
-  defaultReadingMode: ["Light", "Dark", "Sepia"],
   backupRetention: backupRetentionPolicies,
   exportDefaults: [],
   typewriterFont: ["true", "false"],
