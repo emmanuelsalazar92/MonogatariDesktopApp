@@ -41,9 +41,8 @@ test("Scene–Place mutation input allowlists IDs and bounded, disjoint deltas",
 test("Place scene selectors and derived queries never select manuscript bodies", () => {
   const db = readFileSync(new URL("../lib/db/scene-places.ts", import.meta.url), "utf8");
   assert.doesNotMatch(db, /content:|summary:|notes:/);
-  const ui = readFileSync(new URL("../components/studio/place-scenes.tsx", import.meta.url), "utf8");
+  const ui = readFileSync(new URL("../components/studio/place-connections.tsx", import.meta.url), "utf8");
   assert.match(ui, /routeForPage\("editor", place.novelId, scene.id\)/);
-  assert.match(ui, /type="checkbox"/);
-  assert.match(ui, /addSceneIds:/);
-  assert.match(ui, /removeSceneIds:/);
+  assert.match(ui, /addSceneIds: \[selectedId\], removeSceneIds: \[\]/);
+  assert.match(ui, /addSceneIds: \[\], removeSceneIds: \[id\]/);
 });

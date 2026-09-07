@@ -2,9 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { PlaceScenes } from "@/components/studio/place-scenes";
-import { PlaceCharacters } from "@/components/studio/place-characters";
-import { PlaceStoryEvents } from "@/components/studio/place-story-events";
+import { PlaceConnections } from "@/components/studio/place-connections";
 import { PlaceCatalogEmptyState } from "@/components/studio/place-catalog-empty-state";
 import { PlaceLifecycle } from "@/components/studio/place-lifecycle";
 import { defaultPlaceCatalogState, filterAndSortPlaces, parsePlaceCatalogState, placeSortLabels, resolvePlaceSelection, routeForPlaceCatalog, serializePlaceCatalogState, type PlaceCatalogState, type PlaceSort } from "@/lib/place-catalog";
@@ -18,7 +16,7 @@ import { TimelineEventDialog } from "@/components/studio/timeline-event-dialog";
 import { NoteFormDialog } from "@/components/studio/note-form-dialog";
 import { NoteCaptureContext, NoteUpdatesContext, AddStoryNoteButton } from "@/components/studio/note-capture";
 import { SelectionCaptureMenu, type ManuscriptSelection } from "@/components/studio/selection-capture-menu";
-import { CharacterHighlightPreview } from "@/components/studio/character-highlight-preview";
+import { CharacterHighlightOverlay, CharacterHighlightPreview } from "@/components/studio/character-highlight-preview";
 import { SceneAnnotations } from "@/components/studio/scene-annotations";
 import { StoryNotes } from "@/components/studio/story-notes";
 import { createNoteCapture, type NoteCaptureDraft, type NoteCaptureTarget } from "@/lib/note-capture";
@@ -143,6 +141,7 @@ import { SettingsScreen } from "@/components/studio/settings-screen";
 import { StructureScreen } from "@/components/studio/structure-screen";
 import {
   EmptyState,
+  cardTopRightBadgeClass,
   FieldLine,
   MapIcon,
   ProgressBar,
@@ -346,6 +345,7 @@ function PrivateNovelStudioContent() {
   // never restore an earlier route or replace the scene the author selected next.
   const editorSceneRequestRef = React.useRef(0);
   const [creatingBackup, setCreatingBackup] = React.useState(false);
+  const [restoringBackup, setRestoringBackup] = React.useState(false);
   const [enabledExportOptions, setEnabledExportOptions] = React.useState(
     new Set(["Include cover", "Include table of contents", "Include metadata"])
   );
@@ -1145,6 +1145,62 @@ function PrivateNovelStudioContent() {
     }
   }, [currentNovel.id, refreshStudioData, showToast, setNotionPublishState, setNotionAutosyncStatus]);
 
+  const connectCurrentNovelToNotion = React.useCallback(async (mode: "create" | "existing") => {
+    if (!currentNovel.id || notionSyncInFlightRef.current) return;
+    notionSyncInFlightRef.current = true;
+    setNotionPublishState("publishing");
+    try {
+      const response = await fetch("/api/integrations/notion/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ novelId: currentNovel.id, mode })
+      });
+      const result = (await response.json()) as { ok?: boolean; message?: string };
+      if (!response.ok || !result.ok) throw new Error(result.message ?? "Could not connect this novel to Notion.");
+      setNotionPublishState("success");
+      await refreshStudioData(false);
+      showToast(result.message ?? "Initial publish completed. This novel is connected to Notion.");
+    } catch (error) {
+      setNotionPublishState("error");
+      showToast(error instanceof Error ? error.message : "Could not connect this novel to Notion.");
+    } finally {
+      notionSyncInFlightRef.current = false;
+    }
+  }, [currentNovel.id, refreshStudioData, setNotionPublishState, showToast]);
+
+  const disconnectCurrentNovelFromNotion = React.useCallback(async () => {
+    if (!currentNovel.id || notionSyncInFlightRef.current) return;
+    notionSyncInFlightRef.current = true;
+    setNotionPublishState("publishing");
+    try {
+      const response = await fetch("/api/integrations/notion/disconnect", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ novelId: currentNovel.id })
+      });
+      const result = (await response.json()) as { ok?: boolean; message?: string };
+      if (!response.ok || !result.ok) throw new Error(result.message ?? "Could not disconnect this novel from Notion.");
+      setNotionPublishState("idle");
+      await refreshStudioData(false);
+      showToast(result.message ?? "This novel is now local only.");
+    } catch (error) {
+      setNotionPublishState("error");
+      showToast(error instanceof Error ? error.message : "Could not disconnect this novel from Notion.");
+    } finally { notionSyncInFlightRef.current = false; }
+  }, [currentNovel.id, refreshStudioData, setNotionPublishState, showToast]);
+
+  const [syncingAllConnected, setSyncingAllConnected] = React.useState(false);
+  const syncAllConnectedNovels = React.useCallback(async () => {
+    if (syncingAllConnected) return;
+    setSyncingAllConnected(true);
+    try {
+      const response = await fetch("/api/integrations/notion/sync-all", { method: "POST" });
+      const result = (await response.json()) as { ok?: boolean; message?: string };
+      if (!response.ok || !result.ok) throw new Error(result.message ?? "Could not sync connected novels.");
+      await refreshStudioData(false);
+      showToast(result.message ?? "Connected novels synchronized.");
+    } catch (error) { showToast(error instanceof Error ? error.message : "Could not sync connected novels."); }
+    finally { setSyncingAllConnected(false); }
+  }, [refreshStudioData, showToast, syncingAllConnected]);
+
   React.useEffect(() => {
     if (dataStatus !== "ready" || currentNotionSyncState?.syncStatus !== "syncing") return;
 
@@ -1158,6 +1214,7 @@ function PrivateNovelStudioContent() {
     if (
       !currentNovel.id ||
       !currentNotionSyncState?.isDirty ||
+      !currentNotionSyncState?.mapped ||
       currentNotionSyncState.syncStatus === "syncing" ||
       currentNotionSyncState.syncStatus === "remote-changes" ||
       !studioSettings.notionRootPageId ||
@@ -1214,6 +1271,7 @@ function PrivateNovelStudioContent() {
   }, [
     currentNovel.id,
     currentNotionSyncState?.isDirty,
+    currentNotionSyncState?.mapped,
     currentNotionSyncState?.syncStatus,
     notionAutosyncStatus,
     refreshStudioData,
@@ -1520,13 +1578,24 @@ function PrivateNovelStudioContent() {
       }
 
       await refreshStudioData(false);
-      showToast("SQLite snapshot created");
+      showToast("Backup created and verified");
     } catch {
-      showToast("Could not create backup");
+      showToast("Backup was not created or verified");
     } finally {
       setCreatingBackup(false);
     }
   }, [refreshStudioData, showToast]);
+  const restoreBackup = React.useCallback(async (backupId: string, name: string) => {
+    if (!window.confirm(`Restore ${name}? A verified Pre-restore backup will be created first. The application will reload after a successful restore.`)) return;
+    setRestoringBackup(true);
+    try {
+      const response = await fetch("/api/backups/restore", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ backupId, confirmed: true }) });
+      const details = await response.json().catch(() => null) as { error?: string; reloadRequired?: boolean } | null;
+      if (!response.ok) throw new Error(details?.error ?? "Restore failed");
+      window.location.reload();
+    } catch (error) { showToast(error instanceof Error ? error.message : "Restore failed; current data was kept."); }
+    finally { setRestoringBackup(false); }
+  }, [showToast]);
 
   React.useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -1819,6 +1888,8 @@ function PrivateNovelStudioContent() {
                   syncing={notionPublishState === "publishing" || observedNotionSyncStatus === "syncing"}
                   navigationPending={navigationPending}
                   onSyncNow={() => void publishCurrentNovelToNotion()}
+                  onConnectToNotion={(mode) => void connectCurrentNovelToNotion(mode)}
+                  onDisconnectFromNotion={() => void disconnectCurrentNovelFromNotion()}
                   onReviewNotionChanges={() => void pullCurrentNovelFromNotion()}
                   onSelectPage={selectPage}
                   onOpenScene={(sceneId) => void openSceneInEditor(sceneId)}
@@ -1968,6 +2039,8 @@ function PrivateNovelStudioContent() {
                 <BackupsScreen
                   onCreateBackup={createBackup}
                   creatingBackup={creatingBackup}
+                  onRestoreBackup={restoreBackup}
+                  restoringBackup={restoringBackup}
                   retentionPolicy={studioSettings.backupRetention}
                 />
               ) : null}
@@ -1985,6 +2058,10 @@ function PrivateNovelStudioContent() {
                   onNotionConnectionVerified={applyVerifiedNotionConnection}
                   notionAutosyncStatus={observedNotionSyncStatus}
                   notionAutosyncRetryAt={notionAutosyncRetryAt}
+                  notionNovels={studioData.novels}
+                  notionSyncStates={studioData.notionSyncStates}
+                  onSyncAllConnected={() => void syncAllConnectedNovels()}
+                  syncingAllConnected={syncingAllConnected}
                 />
               ) : null}
             </div>
@@ -2117,9 +2194,10 @@ function EditorScreen({
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
-  const activeVolume = data.volumes.find((volume) => volume.id === activeChapter.volumeId);
   const manuscriptRef = React.useRef<HTMLTextAreaElement>(null);
   const [manuscriptSelection, setManuscriptSelection] = React.useState<ManuscriptSelection>({ sceneId: "", start: 0, end: 0 });
+  const [characterHighlights, setCharacterHighlights] = React.useState(false);
+  const [manuscriptScrollTop, setManuscriptScrollTop] = React.useState(0);
   const noteTarget: NoteCaptureTarget = { novelId: data.settings.activeNovelId, type: "Scene", id: activeScene.id, title: activeScene.title };
   const navigationScenes = React.useMemo(() => getNovelSceneNavigation(data.settings.activeNovelId, data.volumes, data.chapters, data.scenes), [data.chapters, data.scenes, data.settings.activeNovelId, data.volumes]);
   const adjacentScenes = getAdjacentSceneIds(activeScene.id, navigationScenes.map((scene) => scene.id));
@@ -2362,64 +2440,26 @@ function EditorScreen({
         )}
       >
         <Card className="min-w-0 overflow-hidden">
-          <CardHeader className="border-b bg-card/70">
-            <div className="grid gap-3 xl:grid-cols-[1fr_auto] xl:items-center">
-              <div className="grid gap-3 sm:grid-cols-[1fr_190px]">
-                <div>
-                  <Label htmlFor="chapter-title">Title</Label>
-                  <Input
-                    id="chapter-title"
-                    value={title}
-                    disabled={!isDocumentReady}
-                    className="mt-2"
-                    onChange={(event) => {
-                      const nextTitle = event.target.value;
-                      draftRef.current = { ...draftRef.current, title: nextTitle };
-                      setTitle(nextTitle);
-                      markDirty();
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select
-                    value={status}
-                    disabled={!isDocumentReady}
-                    onValueChange={(value) => {
-                      const nextStatus = value as ChapterStatus;
-                      draftRef.current = { ...draftRef.current, status: nextStatus };
-                      setStatus(nextStatus);
-                      markDirty();
-                    }}
-                  >
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {chapterStatusOptions.map((chapterStatus) => (
-                        <SelectItem key={chapterStatus} value={chapterStatus}>
-                          {chapterStatus}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          <CardHeader className="border-b bg-card/70 p-4">
+            <div className="grid gap-3">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Scene</p><h1 className="truncate text-xl font-semibold">{title}</h1></div>
+                <Select value={status} disabled={!isDocumentReady} onValueChange={(value) => { const nextStatus = value as ChapterStatus; draftRef.current = { ...draftRef.current, status: nextStatus }; setStatus(nextStatus); markDirty(); }}>
+                  <SelectTrigger className="h-8 w-auto min-w-28 text-xs font-semibold uppercase"><SelectValue /></SelectTrigger>
+                  <SelectContent>{chapterStatusOptions.map((chapterStatus) => <SelectItem key={chapterStatus} value={chapterStatus}>{chapterStatus}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  onClick={onRequestSave}
-                  disabled={!dirty || saveStatus === "Saving…"}
-                >
-                  <Save className="size-4" />
-                  {saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
-                </Button>
-                <AddStoryNoteButton target={noteTarget} disabled={!activeScene.id} />
-                <Button variant="outline" onClick={() => void openVersions()}>
-                  <History className="size-4" />
-                  Version history
-                </Button>
+              <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+                <span className="mr-1 text-xs text-muted-foreground">{navigationScenes.findIndex((scene) => scene.id === activeScene.id) + 1} of {navigationScenes.length}</span>
+                <Button size="sm" variant="ghost" aria-label="Previous scene" disabled={!adjacentScenes.previousId} onClick={() => adjacentScenes.previousId && onNavigateScene(adjacentScenes.previousId)}><ChevronLeft className="size-4" />Previous</Button>
+                <Button size="sm" variant="ghost" aria-label="Next scene" disabled={!adjacentScenes.nextId} onClick={() => adjacentScenes.nextId && onNavigateScene(adjacentScenes.nextId)}>Next<ChevronRight className="size-4" /></Button>
+                <Select value={activeScene.id} onValueChange={onNavigateScene}><SelectTrigger aria-label="Scene" className="h-8 w-44"><SelectValue /></SelectTrigger><SelectContent>{navigationScenes.map((scene) => <SelectItem key={scene.id} value={scene.id}>{scene.title}</SelectItem>)}</SelectContent></Select>
+                <div className="ml-auto flex flex-wrap items-center gap-2">
+                  <CharacterHighlightPreview novelId={data.settings.activeNovelId} content={content} onEnabledChange={setCharacterHighlights} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
+                  <SceneAnnotations novelId={data.settings.activeNovelId} sceneId={activeScene.id} content={content} manuscriptRef={manuscriptRef} compact />
+                  <span aria-live="polite" className="text-xs text-muted-foreground">{saveStatus}</span>
+                  {saveStatus === "Save failed — Retry" ? <Button size="sm" variant="outline" onClick={onRequestSave}>Retry</Button> : null}
+                  <Button size="sm" variant="outline" onClick={onFocus}><MaximizeIcon />Focus</Button>
                 <Button variant="ghost" size="icon" aria-label="More editor options" onClick={() => setMoreActionsOpen(true)}>
                   <MoreHorizontal className="size-4" />
                 </Button>
@@ -2436,28 +2476,22 @@ function EditorScreen({
                     <PanelRightOpen className="size-4" />
                   )}
                 </Button>
+                </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="p-4">
-              <div className="mx-auto mb-3 max-w-4xl text-sm text-muted-foreground">
-                {activeVolume?.title} / {activeChapter.title} / <span className="font-medium text-foreground">{activeScene.title}</span>
-              </div>
-              <div className="mx-auto mb-3 max-w-4xl">
-                <Label htmlFor="editor-scene-selector">Scene</Label>
-                <Select value={activeScene.id} onValueChange={onNavigateScene}>
-                  <SelectTrigger id="editor-scene-selector" className="mt-2"><SelectValue /></SelectTrigger>
-                  <SelectContent>{navigationScenes.map((scene) => { const chapter = data.chapters.find((item) => item.id === scene.chapterId); const volume = data.volumes.find((item) => item.id === chapter?.volumeId); return <SelectItem key={scene.id} value={scene.id}>{volume?.title} / {chapter?.title} / {scene.title}</SelectItem>; })}</SelectContent>
-                </Select>
-              </div>
               <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
                 {!isDocumentReady ? <p role="status" className="mb-3 text-sm text-muted-foreground">Loading scene manuscript…</p> : null}
+                <div className="relative">
+                <CharacterHighlightOverlay content={content} enabled={characterHighlights} scrollTop={manuscriptScrollTop} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
                 <Textarea
                   aria-label="Scene manuscript"
                   ref={manuscriptRef}
                   data-scene-id={activeScene.id}
                   onSelect={event => { const input = event.currentTarget; setManuscriptSelection({ sceneId: activeScene.id, start: input.selectionStart, end: input.selectionEnd }); }}
+                  onScroll={(event) => setManuscriptScrollTop(event.currentTarget.scrollTop)}
                   value={content}
                   disabled={!isDocumentReady}
                   onChange={(event) => {
@@ -2466,13 +2500,12 @@ function EditorScreen({
                     setContent(nextContent);
                     markDirty();
                   }}
-                  className="manuscript-editor min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 text-editor-foreground shadow-none focus-visible:ring-0 sm:text-lg"
+                  className={cn("manuscript-editor relative z-10 min-h-[520px] border-0 bg-transparent p-0 font-typewriter text-base leading-8 shadow-none focus-visible:ring-0 sm:text-lg", characterHighlights ? "text-transparent caret-editor-foreground selection:bg-primary/35" : "text-editor-foreground")}
                   style={{ fontSize: `${editorFontSize}px` }}
                 />
+                </div>
               </div>
               {isDocumentReady ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
-              <SceneAnnotations novelId={data.settings.activeNovelId} sceneId={activeScene.id} content={content} manuscriptRef={manuscriptRef} />
-              <CharacterHighlightPreview novelId={data.settings.activeNovelId} content={content} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-wrap justify-between gap-3 border-t bg-card/70 p-4">
@@ -2541,7 +2574,7 @@ function EditorScreen({
 
       <StoryNotes target={noteTarget} />
       <Dialog open={moreActionsOpen} onOpenChange={setMoreActionsOpen}>
-        <DialogContent><DialogHeader><DialogTitle>More editor actions</DialogTitle><DialogDescription>Less frequent actions stay out of the writing toolbar.</DialogDescription></DialogHeader><Button variant="outline"><Download className="size-4" />Export chapter</Button><Button variant="outline" onClick={() => { setMoreActionsOpen(false); setShortcutsOpen(true); }}><Keyboard className="size-4" />Keyboard shortcuts</Button><DialogFooter><Button variant="outline" onClick={() => setMoreActionsOpen(false)}>Close</Button></DialogFooter></DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>More editor actions</DialogTitle><DialogDescription>Less frequent actions stay out of the writing toolbar.</DialogDescription></DialogHeader><AddStoryNoteButton target={noteTarget} disabled={!activeScene.id} /><Button variant="outline" onClick={() => { setMoreActionsOpen(false); void openVersions(); }}><History className="size-4" />Version history</Button><Button variant="outline" onClick={onReader}><BookOpen className="size-4" />Reader preview</Button><Button variant="outline" onClick={() => void openChapterPreview()}><Eye className="size-4" />Chapter preview</Button><Button variant="outline"><Download className="size-4" />Export chapter</Button><Button variant="outline" onClick={() => { setMoreActionsOpen(false); setShortcutsOpen(true); }}><Keyboard className="size-4" />Keyboard shortcuts</Button><DialogFooter><Button variant="outline" onClick={() => setMoreActionsOpen(false)}>Close</Button></DialogFooter></DialogContent>
       </Dialog>
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
         <DialogContent><DialogHeader><DialogTitle>Keyboard shortcuts</DialogTitle><DialogDescription>Writing shortcuts remain local to Monogatari.</DialogDescription></DialogHeader><div className="grid gap-2 text-sm"><p><kbd>Ctrl / Cmd + S</kbd> Save scene</p><p><kbd>Ctrl / Cmd + Enter</kbd> Focus mode</p><p><kbd>Ctrl / Cmd + \\</kbd> Cycle sidebar</p><p><kbd>Escape</kbd> Exit focus or close dialogs</p></div><DialogFooter><Button onClick={() => setShortcutsOpen(false)}>Close shortcuts</Button></DialogFooter></DialogContent>
@@ -2569,6 +2602,8 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
   const [timelineEventId, setTimelineEventId] = React.useState("none");
   const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved" | "error">("idle");
   const [metadataLoading, setMetadataLoading] = React.useState(true);
+  const [editing, setEditing] = React.useState(false);
+  const savedInspectorRef = React.useRef({ summary: "", objective: "", notes: "", characterIds: [] as string[], locationIds: [] as string[], timelineEventId: "none" });
 
   const characters = data.characters.filter((character) => character.novelId === novelId);
   const locations = data.locations.filter((location) => location.novelId === novelId);
@@ -2596,6 +2631,7 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
         setExpectedLocationIds(inspector.locationIds);
         setTimelineEventId(inspector.timelineEventId ?? "none");
         setNotes(inspector.notes);
+        savedInspectorRef.current = { summary: activeScene.summary, objective: activeScene.objective, notes: inspector.notes, characterIds: inspector.characterIds, locationIds: inspector.locationIds, timelineEventId: inspector.timelineEventId ?? "none" };
         setMetadataLoading(false);
       })
       .catch(() => {
@@ -2617,18 +2653,31 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
       if (!response.ok) throw new Error("Could not save scene metadata");
       setExpectedLocationIds(locationIds);
       setSaveState("saved");
+      savedInspectorRef.current = { summary, objective, notes, characterIds, locationIds, timelineEventId };
+      setEditing(false);
       onRefresh();
     } catch {
       setSaveState("error");
     }
   };
 
+  const cancelMetadataEdit = () => {
+    const saved = savedInspectorRef.current;
+    setSummary(saved.summary); setObjective(saved.objective); setNotes(saved.notes);
+    setCharacterIds(saved.characterIds); setLocationIds(saved.locationIds); setExpectedLocationIds(saved.locationIds);
+    setTimelineEventId(saved.timelineEventId); setSaveState("idle"); setEditing(false);
+  };
+
+  if (!editing) {
+    const linkedCharacters = characterIds.map((id) => characters.find((character) => character.id === id)?.name).filter(Boolean).join(", ");
+    const linkedPlaces = locationIds.map((id) => locations.find((location) => location.id === id)?.name).filter(Boolean).join(", ");
+    const timeline = timelineEventId === "none" ? "" : timelineEvents.find((event) => event.id === timelineEventId)?.title ?? "";
+    return <Card className="min-w-0 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto"><CardHeader><div className="flex items-center justify-between gap-3"><div><CardTitle>Scene inspector</CardTitle><CardDescription>Local story metadata for continuity</CardDescription></div><Button type="button" size="sm" variant="outline" disabled={metadataLoading} onClick={() => setEditing(true)}>Edit</Button></div></CardHeader><CardContent className="grid gap-4 text-sm"><InspectorValue label="Summary" value={summary} empty="No summary yet" /><InspectorValue label="Characters" value={linkedCharacters} empty="No characters linked" /><InspectorValue label="Places" value={linkedPlaces} empty="No places linked" /><InspectorValue label="Timeline" value={timeline} empty="No timeline moment" /><InspectorValue label="Objective" value={objective} empty="No objective yet" /><InspectorValue label="Notes" value={notes} empty="No notes yet" />{saveState === "error" ? <p role="alert" className="text-destructive">Metadata could not be loaded. Retry from Edit.</p> : null}</CardContent></Card>;
+  }
+
   return (
     <Card className="min-w-0 xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto">
-      <CardHeader>
-        <CardTitle>Scene inspector</CardTitle>
-        <CardDescription>Local story metadata for continuity</CardDescription>
-      </CardHeader>
+      <CardHeader><div className="flex items-center justify-between gap-3"><div><CardTitle>Scene inspector</CardTitle><CardDescription>Editing local story metadata</CardDescription></div><Button type="button" size="sm" variant="ghost" onClick={cancelMetadataEdit}>Cancel</Button></div></CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-2"><Label htmlFor="scene-summary">Scene summary</Label><Textarea id="scene-summary" value={summary} onChange={(event) => setSummary(event.target.value)} /></div>
         <div className="grid gap-2"><Label>Linked characters</Label><div className="flex flex-wrap gap-2">{characterIds.map((id) => { const character = characters.find((item) => item.id === id); return character ? <Badge key={id} variant="outline" className="gap-1">{character.name}<button type="button" aria-label={`Remove ${character.name}`} onClick={() => setCharacterIds((ids) => ids.filter((item) => item !== id))}><X className="size-3" /></button></Badge> : null; })}</div><Select value="" onValueChange={(id) => setCharacterIds((ids) => ids.includes(id) ? ids : [...ids, id])}><SelectTrigger aria-label="Add linked character"><SelectValue placeholder="Add character" /></SelectTrigger><SelectContent>{characters.filter((character) => !characterIds.includes(character.id)).map((character) => <SelectItem key={character.id} value={character.id}>{character.name}</SelectItem>)}</SelectContent></Select></div>
@@ -2637,10 +2686,14 @@ function EditorInspector({ onRefresh }: { onRefresh: () => void }) {
         <div className="grid gap-2"><Label htmlFor="scene-objective">Objective</Label><Textarea id="scene-objective" value={objective} onChange={(event) => setObjective(event.target.value)} /></div>
         <div className="grid gap-2"><Label htmlFor="scene-notes">Notes</Label><Textarea id="scene-notes" value={notes} onChange={(event) => setNotes(event.target.value)} /></div>
         {saveState === "error" ? <p role="alert" className="text-sm text-destructive">Metadata could not be saved. Your changes remain here; retry when ready.</p> : null}
-        <Button className="w-full" onClick={() => void saveMetadata()} disabled={metadataLoading || saveState === "saving"}>{metadataLoading ? "Loading metadata…" : saveState === "saving" ? "Saving metadata…" : saveState === "saved" ? "Saved metadata" : "Save metadata"}</Button>
+        <Button className="w-full" onClick={() => void saveMetadata()} disabled={metadataLoading || saveState === "saving"}>{metadataLoading ? "Loading metadata…" : saveState === "saving" ? "Saving metadata…" : "Save metadata"}</Button>
       </CardContent>
     </Card>
   );
+}
+
+function InspectorValue({ label, value, empty }: { label: string; value: string; empty: string }) {
+  return <div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</p><p className="mt-1 whitespace-pre-wrap break-words text-foreground">{value || <span className="text-muted-foreground">{empty}</span>}</p></div>;
 }
 
 function WritingFocusMode({
@@ -3610,7 +3663,7 @@ function PlacesScreen({
           <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             {places.slice(0, visibleCount).map((place) => (
               <Card key={place.id} className="min-w-0">
-                <CardContent className="space-y-4 p-4">
+                <CardContent className="space-y-4 p-5">
                   <div className="flex items-start gap-3">
                     <div className="grid size-12 shrink-0 place-items-center rounded-md border bg-editor text-primary">
                       <MapIcon className="size-6" />
@@ -3623,7 +3676,7 @@ function PlacesScreen({
                           </h3>
                           <p className="text-sm text-muted-foreground">{place.parent?.name ?? "No parent place"}</p>
                         </div>
-                        <Badge variant="outline">{placeTypeLabels[place.type]}</Badge>
+                        <Badge variant="outline" className={cardTopRightBadgeClass}>{placeTypeLabels[place.type]}</Badge>
                       </div>
                     </div>
                   </div>
@@ -3686,7 +3739,7 @@ function PlaceDetailPanel({ place, catalogState, onEdit, onScenesChanged }: { pl
         <Link href={routeForPlaceCatalog(place.novelId, catalogState)} className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">Back to catalog</Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <CardTitle ref={titleRef} id={titleId} tabIndex={-1} className="min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{place.name}</CardTitle>
-          <div className="flex flex-wrap gap-2"><AddStoryNoteButton target={{ novelId: place.novelId, type: "Place", id: place.id, title: place.name }} /><Button type="button" variant="outline" size="sm" onClick={onEdit}>Edit place</Button></div>
+          <div className="flex flex-wrap items-center gap-2"><AddStoryNoteButton target={{ novelId: place.novelId, type: "Place", id: place.id, title: place.name }} /><Button type="button" variant="outline" size="sm" onClick={onEdit}>Edit place</Button><PlaceLifecycle key={place.id} place={place} catalogState={catalogState} onChanged={onScenesChanged} compact /></div>
         </div>
         <CardDescription>
           {placeTypeLabels[place.type]} · {place.region}
@@ -3710,7 +3763,6 @@ function PlaceDetailPanel({ place, catalogState, onEdit, onScenesChanged }: { pl
           {hierarchy.children.map((child) => <li key={child.id}><Link href={routeForPlaceCatalog(child.novelId, catalogState, child.id)} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-ring">{child.name}</Link>{child.status === "archived" ? " (Archived)" : ""}</li>)}
         </ul> : "No child places yet"} />
         <FieldLine label="Status" value={placeStatusLabels[place.status]} />
-        <PlaceLifecycle key={place.id} place={place} catalogState={catalogState} onChanged={onScenesChanged} />
         <FieldLine label="Description" value={place.description} />
         <FieldLine label="Region" value={place.region} />
         <FieldLine label="Importance" value={place.importance} />
@@ -3721,9 +3773,7 @@ function PlaceDetailPanel({ place, catalogState, onEdit, onScenesChanged }: { pl
         <FieldLine label="Parent place" value={parent ? <Link href={routeForPlaceCatalog(parent.novelId, catalogState, parent.id)} className="text-primary hover:underline">{parent.name}</Link> : place.parentPlaceId ? "Parent place unavailable" : "None"} />
         <FieldLine label="First appearance" value={place.firstAppearance || "Not linked yet"} />
         <FieldLine label="Scene count" value={place.sceneCount ?? 0} />
-        <PlaceScenes key={place.id} place={place} onChanged={onScenesChanged} />
-        <PlaceCharacters key={place.id} place={place} characters={data.characters} links={data.characterPlaceLinks} onChanged={onScenesChanged} />
-        <PlaceStoryEvents key={place.id} place={place} events={data.timelineEvents} onChanged={onScenesChanged} />
+        <PlaceConnections key={place.id} place={place} characters={data.characters} links={data.characterPlaceLinks} events={data.timelineEvents} onChanged={onScenesChanged} />
       </CardContent>
     </Card>
   );
@@ -4052,10 +4102,14 @@ function ExportScreen({
 function BackupsScreen({
   onCreateBackup,
   creatingBackup,
+  onRestoreBackup,
+  restoringBackup,
   retentionPolicy
 }: {
   onCreateBackup: () => void;
   creatingBackup: boolean;
+  onRestoreBackup: (backupId: string, name: string) => void;
+  restoringBackup: boolean;
   retentionPolicy: string;
 }) {
   const data = useStudioData();
@@ -4081,7 +4135,7 @@ function BackupsScreen({
             <CardDescription>Every day at 22:00</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <FieldLine label="Backup location" value="D:\\Writing\\PrivateNovelStudio\\backups" />
+            <FieldLine label="Backup location" value="prisma/backups (project-local)" />
             <FieldLine label="Retention" value={retentionPolicy} />
             <div className="flex items-center justify-between rounded-md border bg-background/35 p-3">
               <span className="text-sm">Automatic backup settings</span>
@@ -4150,9 +4204,9 @@ function BackupsScreen({
                   <Download className="size-4" />
                   Download
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled={restoringBackup || !backup.id || !backup.status.endsWith("Valid")} onClick={() => onRestoreBackup(backup.id!, backup.name)}>
                   <RotateCcw className="size-4" />
-                  Restore
+                  {restoringBackup ? "Restoring…" : "Restore"}
                 </Button>
                 <Button variant="outline" size="sm">
                   <Trash2 className="size-4" />

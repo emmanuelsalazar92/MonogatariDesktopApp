@@ -7,10 +7,11 @@ import {
   markNotionSynced,
   refreshNotionSyncLease
 } from "@/lib/db/notion-sync";
-import { getNotionPublishSource } from "@/lib/db/notion-publish";
+import { getNotionPublishSource, isNotionNovelConnected } from "@/lib/db/notion-publish";
 import { NotionApiError } from "@/lib/notion";
 import { NotionPublishError, publishNovelToNotion } from "@/lib/notion-publish";
-import { getNotionRemoteChanges } from "@/lib/notion-pull";
+import { NotionPullError, pullNovelFromNotion } from "@/lib/notion-pull";
+import { prisma } from "@/lib/db/prisma";
 
 const inFlightSyncs = new Map<string, Promise<NotionSyncResult>>();
 
@@ -76,13 +77,20 @@ async function runNotionSync(
   }
 
   if (protectRemoteChanges) {
-    const remote = await getNotionRemoteChanges(novelId);
-    if (remote.changed) {
-      throw new NotionSyncError(
-        409,
-        "REMOTE_CHANGES_DETECTED",
-        "Notion changed remotely. Review it with Update from Notion before syncing local changes."
-      );
+    // Reconcile remote-only chapter changes first. pullNovelFromNotion compares
+    // both sides with the persisted per-chapter baseline and refuses to apply a
+    // chapter changed independently on both sides.
+    try {
+      await pullNovelFromNotion(novelId);
+    } catch (error) {
+      if (error instanceof NotionPullError && error.code === "PULL_CONFLICT") {
+        throw new NotionSyncError(
+          409,
+          "REMOTE_CHANGES_DETECTED",
+          "A Notion change conflicts with local writing. Review the changes before syncing."
+        );
+      }
+      throw error;
     }
   }
 
@@ -145,6 +153,13 @@ export function syncNovelToNotion(
     if (!(await getNotionPublishSource(novelId))) {
       throw new NotionPublishError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
     }
+    if (!(await isNotionNovelConnected(novelId))) {
+      throw new NotionSyncError(
+        409,
+        "NOVEL_NOT_CONNECTED",
+        "This novel is local only. Connect this novel to Notion before syncing."
+      );
+    }
 
     const operation = await beginNotionSyncOperation(novelId, force);
     if (operation.kind === "existing") {
@@ -188,6 +203,45 @@ export function syncNovelToNotion(
   });
   inFlightSyncs.set(novelId, sync);
   return sync;
+}
+
+/** The sole entry point permitted to create a novel's Notion mapping. */
+export async function initialPublishNovelToNotion(novelId: string) {
+  if (await isNotionNovelConnected(novelId)) {
+    throw new NotionSyncError(409, "NOVEL_ALREADY_CONNECTED", "This novel is already connected to Notion.");
+  }
+
+  // The pull may have safely persisted Notion-only edits, so load the source
+  // afterward. This lets the same operation publish independent local edits.
+  const source = await getNotionPublishSource(novelId);
+  if (!source) throw new NotionPublishError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
+
+  const operation = await beginNotionSyncOperation(novelId, true);
+  if (operation.kind === "existing") {
+    return { skipped: true, operationStatus: "syncing" as const, message: "A Notion operation is already running." };
+  }
+
+  try {
+    return await runNotionSync(novelId, false, operation.operationId!, operation.snapshotRevision!);
+  } catch (error) {
+    await failNotionSyncOperation(novelId, operation.operationId!, "error");
+    throw error;
+  }
+}
+
+/** Sync only explicitly connected novels; local-only novels are never considered. */
+export async function syncAllConnectedNovels() {
+  const connections = await prisma.notionMapping.findMany({ where: { entityType: "novel" }, select: { novelId: true } });
+  const results: Array<{ novelId: string; ok: boolean; message: string }> = [];
+  for (const { novelId } of connections) {
+    try {
+      const result = await syncNovelToNotion(novelId, false);
+      results.push({ novelId, ok: result.operationStatus !== "error" && result.operationStatus !== "remote-changes", message: result.message });
+    } catch (error) {
+      results.push({ novelId, ok: false, message: error instanceof Error ? error.message : "Sync failed." });
+    }
+  }
+  return results;
 }
 
 export { NotionApiError, NotionPublishError };

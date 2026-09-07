@@ -25,8 +25,8 @@ export function PlaceDeleteImpactSummary({ impact }: { impact: PlaceDeleteImpact
   </>;
 }
 
-export function PlaceLifecycle({ place, catalogState, onChanged }: {
-  place: Location; catalogState: PlaceCatalogState; onChanged: () => Promise<void>;
+export function PlaceLifecycle({ place, catalogState, onChanged, compact = false }: {
+  place: Location; catalogState: PlaceCatalogState; onChanged: () => Promise<void>; compact?: boolean;
 }) {
   const router = useRouter();
   const [action, setAction] = React.useState<Action | null>(null);
@@ -89,10 +89,16 @@ export function PlaceLifecycle({ place, catalogState, onChanged }: {
   };
 
   return <>
-    <div className="flex flex-wrap gap-2" aria-label="Place lifecycle">
+    {compact ? <details className="relative shrink-0" aria-label="Place actions">
+      <summary aria-label={`Place actions: ${place.name}`} aria-haspopup="menu" className="flex size-8 cursor-pointer list-none items-center justify-center rounded border text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">•••</summary>
+      <div role="menu" className="absolute right-0 z-30 mt-1 grid w-48 rounded-md border bg-popover p-1 text-sm text-popover-foreground shadow-lift">
+        <button type="button" role="menuitem" className="rounded px-3 py-2 text-left hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); open(place.status === "archived" ? "restore" : "archive", event.currentTarget); }}>{place.status === "archived" ? "Restore place" : "Archive place"}</button>
+        <button type="button" role="menuitem" className="rounded px-3 py-2 text-left text-destructive hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); open("delete", event.currentTarget); }}>Delete place…</button>
+      </div>
+    </details> : <div className="flex flex-wrap gap-2" aria-label="Place lifecycle">
       <Button type="button" variant="outline" size="sm" onClick={(event) => open(place.status === "archived" ? "restore" : "archive", event.currentTarget)}>{place.status === "archived" ? "Restore place" : "Archive place"}</Button>
       <Button type="button" variant="outline" size="sm" onClick={(event) => open("delete", event.currentTarget)}>Delete place…</Button>
-    </div>
+    </div>}
     <Dialog open={action !== null} onOpenChange={(open) => { if (!open && !pending) { request.current?.abort(); setAction(null); } }}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto [overflow-wrap:anywhere]" closeDisabled={pending} onCloseAutoFocus={(event) => { event.preventDefault(); invoker.current?.focus(); }}
         onEscapeKeyDown={(event) => { if (pending) event.preventDefault(); }} onInteractOutside={(event) => { if (pending) event.preventDefault(); }}>

@@ -7,10 +7,14 @@ import {
 } from "@/lib/notion-conflict";
 import { NotionApiError } from "@/lib/notion";
 import { NotionPublishError } from "@/lib/notion-publish";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 type ResolutionBody = { novelId?: unknown; chapterId?: unknown; resolution?: unknown };
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ ok: false, code: "UNTRUSTED_ORIGIN", message: "Cross-origin mutation rejected." }, { status: 403 });
+  }
   let body: ResolutionBody;
   try {
     body = (await request.json()) as ResolutionBody;

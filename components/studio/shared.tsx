@@ -24,15 +24,21 @@ const statusClass: Record<NovelStatus | ChapterStatus | Character["status"], str
   Inactive: "bg-muted/85 text-muted-foreground"
 };
 
+// Upper-right card badges sit beside title content, not on the card edge. Keep
+// this inset shared across catalog cards so selection and status states align.
+export const cardTopRightBadgeClass = "mt-1 shrink-0 max-w-full";
+
 export function StatusBadge({
   status,
-  translate
+  translate,
+  className
 }: {
   status: keyof typeof statusClass;
   translate?: (value: string) => string;
+  className?: string;
 }) {
   return (
-    <Badge className={cn("border-transparent", statusClass[status])}>
+    <Badge className={cn("border-transparent", statusClass[status], className)}>
       {translate ? translate(status) : status}
     </Badge>
   );

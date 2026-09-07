@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 
 import { isNotionConfigured, testNotionConnection } from "@/lib/notion";
 import { saveValidatedNotionConnection } from "@/lib/db/studio";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 export async function GET() {
   return NextResponse.json({ configured: isNotionConfigured() });
 }
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ ok: false, code: "UNTRUSTED_ORIGIN", message: "Cross-origin mutation rejected." }, { status: 403 });
+  }
   let body: { rootPage?: unknown };
 
   try {

@@ -409,7 +409,7 @@ test("Places API and SQLite preserve canonical entities, ownership, revisions an
   assert.equal(characterPlace.derivePlaceCharacters(fincaShared, characterMetadata, joined)[0].relationshipType, "Lives at");
   assert.equal((await sharedRoute.POST(cpRequest("POST", { ...cpBody, relationshipType: "Works at" }, `places/${fincaShared.id}`), cpContext)).status, 200);
   assert.equal(await prisma.characterPlace.count({ where: { characterId: "cp-juana", locationId: fincaShared.id } }), 1);
-  assert.equal((await studio.listCharacterPlaces("cp-juana", "novel-a"))[0].relationshipType, "Lives at", "duplicate linking never overwrites metadata");
+  assert.equal((await studio.listCharacterPlaces("cp-juana", "novel-a"))[0].relationshipType, "Works at", "an explicit relink updates the relationship without duplicating the join");
   await prisma.character.update({ where: { id: "cp-juana" }, data: { name: "Juana renamed" } });
   await db.updatePlace("novel-a", fincaShared.id, 0, { name: "Finca renamed" });
   const renamedCharacters = await prisma.character.findMany({ select: { id: true, novelId: true, name: true } });

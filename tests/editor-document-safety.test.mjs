@@ -28,6 +28,7 @@ test("a loaded document remains saveable when the author intentionally makes it 
 
 test("editor snapshots, hydration, and navigation keep document identity explicit", () => {
   const snapshot = read("lib/db/studio.ts");
+  const persistence = read("lib/scene-persistence.ts");
   const page = read("app/page.tsx");
 
   assert.match(snapshot, /contentLoaded: scene\.id === activeScene\?\.id/);
@@ -36,5 +37,6 @@ test("editor snapshots, hydration, and navigation keep document identity explici
   assert.match(page, /documentLoaded: true/);
   assert.match(page, /const requestId = \+\+editorSceneRequestRef\.current/);
   assert.match(page, /editorSceneRequestRef\.current !== requestId/);
-  assert.match(snapshot, /input\.content === "" && existing\.content !== "" && input\.documentLoaded !== true/);
+  assert.match(snapshot, /prepareSceneWrite\(existing, input\)/);
+  assert.match(persistence, /input\.content === "" && existing\.content !== "" && input\.documentLoaded !== true/);
 });

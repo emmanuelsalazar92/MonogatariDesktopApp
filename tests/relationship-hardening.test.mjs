@@ -32,6 +32,18 @@ test("LAN origin check handles Next localhost canonicalization without trusting 
   assert.equal(check("null", "127.0.0.1:3012"), false);
 });
 
+test("all mutation routes accept same-instance LAN origins after Next canonicalizes its request URL", () => {
+  const request = new Request("http://0.0.0.0:3012/api/scenes/scene-a", {
+    method: "PATCH",
+    headers: { origin: "http://192.168.50.27:3012", host: "192.168.50.27:3012", "sec-fetch-site": "same-origin" }
+  });
+  assert.equal(security.isTrustedMutationRequest(request), true);
+  assert.equal(security.isTrustedMutationRequest(new Request("http://0.0.0.0:3012/api/scenes/scene-a", {
+    method: "PATCH",
+    headers: { origin: "https://evil.example", host: "192.168.50.27:3012", "sec-fetch-site": "cross-site" }
+  })), false);
+});
+
 test("Catalog fetch scopes IDs, fails closed on malformed rows and strips accidental private fields", async (t) => {
   const original = globalThis.fetch; t.after(() => { globalThis.fetch = original; });
   const signal = new AbortController().signal;

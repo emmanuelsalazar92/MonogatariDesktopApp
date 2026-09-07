@@ -58,11 +58,11 @@ test("Migration failure rolls back copied associations and completion marker", (
 
 test("Timeline/Places use canonical arrays, ID filters, semantic links and metadata-only join projections", () => {
   const read = file => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
-  const page = read("app/page.tsx"), places = read("components/studio/place-story-events.tsx"), db = read("lib/db/timeline-places.ts");
+  const page = read("app/page.tsx"), places = read("components/studio/place-connections.tsx"), db = read("lib/db/timeline-places.ts");
   const catalog = read("lib/timeline-catalog.ts");
   assert.match(catalog, /event.characterIds.includes\(state.character\)/); assert.match(catalog, /event.locationIds.includes\(state.place\)/);
   assert.match(page, /routeForCharacter\(person.novelId, person.id\)/); assert.match(page, /routeForPlace\(place.novelId, place.id\)/);
-  assert.match(places, /!event.locationIds.includes\(place.id\)/); assert.match(places, /linked: link, expectedLinked: !link/);
+  assert.match(places, /!event.locationIds.includes\(place.id\)/); assert.match(places, /linked: true, expectedLinked: false/); assert.match(places, /linked: false, expectedLinked: true/);
   const projection = db.slice(db.indexOf("export const timelineLinksInclude"), db.indexOf("export async function setTimelineLinks"));
   assert.doesNotMatch(projection, /secret|notes|description|include: true/);
   assert.match(projection, /select: \{ novelId: true \}/);
