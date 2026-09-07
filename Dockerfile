@@ -26,7 +26,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends util-linux \
+  && apt-get install -y --no-install-recommends openssl util-linux \
   && rm -rf /var/lib/apt/lists/* \
   && chmod 755 ./docker-entrypoint.sh \
   && mkdir -p /data/backups \

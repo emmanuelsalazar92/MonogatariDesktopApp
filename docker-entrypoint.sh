@@ -12,7 +12,7 @@ chown -R node:node "$data_dir"
 # A fresh volume needs the schema. Existing databases are never reseeded or
 # reset; upgrades require an explicit compatible migration strategy.
 if [ ! -f "$db_path" ]; then
-  MONOGATARI_DATABASE_PATH="$db_path" ./node_modules/.bin/prisma db push --skip-generate
+  MONOGATARI_DATABASE_PATH="$db_path" ./node_modules/.bin/prisma db push
 fi
 
 # The schema initialization above needs to repair a freshly mounted /data, but
