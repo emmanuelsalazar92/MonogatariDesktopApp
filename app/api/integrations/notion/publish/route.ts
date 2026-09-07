@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { NotionApiError } from "@/lib/notion";
-import { NotionPublishError, publishNovelToNotion } from "@/lib/notion-publish";
+import { NotionApiError, NotionPublishError, NotionSyncError, initialPublishNovelToNotion } from "@/lib/notion-sync";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ ok: false, code: "UNTRUSTED_ORIGIN", message: "Cross-origin mutation rejected." }, { status: 403 });
+  }
   let body: { novelId?: unknown };
 
   try {
@@ -23,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await publishNovelToNotion(body.novelId);
+    const result = await initialPublishNovelToNotion(body.novelId);
     return NextResponse.json({
       ok: true,
       message: `Published ${result.createdPages} new page(s) and updated ${result.updatedPages} existing page(s).`,
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
       updatedPages: result.updatedPages
     });
   } catch (error) {
-    if (error instanceof NotionPublishError || error instanceof NotionApiError) {
+    if (error instanceof NotionPublishError || error instanceof NotionApiError || error instanceof NotionSyncError) {
       return NextResponse.json(
         { ok: false, code: error.code, message: error.message },
         { status: error.status }

@@ -1,34 +1,61 @@
-export function isTrustedMutationRequest(request: Request) {
-  if (request.headers.get("sec-fetch-site") === "cross-site") return false;
+function isLocalNetworkHost(hostname: string) {
+  const normalized = hostname.toLowerCase();
+  if (normalized === "localhost" || normalized === "[::1]") return true;
 
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
+  const ipv4 = normalized.split(".");
+  if (ipv4.length === 4 && ipv4.every((part) => /^\d{1,3}$/.test(part) && Number(part) <= 255)) {
+    const [first, second] = ipv4.map(Number);
+    return first === 127 || first === 10 || first === 169 && second === 254 || first === 192 && second === 168 || first === 172 && second >= 16 && second <= 31;
+  }
 
+  const ipv6 = normalized.replace(/^\[|\]$/g, "");
+  return ipv6 === "::1" || /^f[cd][0-9a-f:]*$/.test(ipv6) || /^fe[89ab][0-9a-f:]*$/.test(ipv6);
+}
+
+function configuredOrigins() {
+  return new Set(
+    (process.env.MONOGATARI_TRUSTED_ORIGINS ?? "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  );
+}
+
+// Next may build request.url from its bind address (for example localhost or
+// 0.0.0.0), rather than from the Host header sent by a LAN browser. A browser
+// cannot forge Host or Origin for a same-origin request, so compare them when
+// the exposed host is a literal local-network address. Named proxy hosts must
+// be explicitly configured; forwarded headers are never trusted here.
+function isTrustedCanonicalizedLocalOrigin(request: Request, origin: URL) {
+  const host = request.headers.get("host")?.toLowerCase();
   try {
-    return new URL(origin).origin === new URL(request.url).origin;
+    return Boolean(
+      host &&
+      origin.host === host &&
+      origin.port === new URL(request.url).port &&
+      isLocalNetworkHost(origin.hostname)
+    );
   } catch {
     return false;
   }
 }
 
-// Next can canonicalize a LAN request URL to localhost while preserving its actual Host.
-// Permit only same-origin browser requests to literal LAN/loopback hosts on the same port.
-// Forwarded headers are intentionally not trusted. This is CSRF protection, not LAN authentication.
-export function isTrustedLanMutationRequest(request: Request) {
+export function isTrustedMutationRequest(request: Request) {
   if (request.headers.get("sec-fetch-site") === "cross-site") return false;
-  if (isTrustedMutationRequest(request)) return true;
-  const origin = request.headers.get("origin"), host = request.headers.get("host");
-  if (!origin || !host) return false;
-  const isLocalHost = (hostname: string) => {
-    if (hostname === "localhost" || hostname === "[::1]") return true;
-    const parts = hostname.split(".");
-    if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part) || Number(part) > 255)) return false;
-    const [a, b] = parts.map(Number);
-    return a === 127 || a === 10 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31);
-  };
+
+  const rawOrigin = request.headers.get("origin");
+  if (!rawOrigin) return true;
+
   try {
-    const source = new URL(origin), target = new URL(request.url);
-    return source.origin === origin && source.host === host.toLowerCase() && source.protocol === target.protocol && source.port === target.port
-      && isLocalHost(source.hostname) && isLocalHost(target.hostname);
-  } catch { return false; }
+    const origin = new URL(rawOrigin);
+    if (origin.origin !== rawOrigin) return false;
+    if (origin.origin === new URL(request.url).origin) return true;
+    return isTrustedCanonicalizedLocalOrigin(request, origin) || configuredOrigins().has(origin.origin);
+  } catch {
+    return false;
+  }
 }
+
+// Kept for route compatibility. LAN and standard mutations share the same
+// host-agnostic CSRF policy.
+export const isTrustedLanMutationRequest = isTrustedMutationRequest;

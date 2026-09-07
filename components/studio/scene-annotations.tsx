@@ -10,7 +10,7 @@ import { NoteUpdatesContext } from "./note-capture";
 const preferenceKey = "monogatari:scene-annotation-markers:v1";
 type Response = { items: SceneAnnotationSummary[]; truncated: boolean };
 
-export function SceneAnnotations({ novelId, sceneId, content, manuscriptRef }: { novelId: string; sceneId: string; content: string; manuscriptRef: React.RefObject<HTMLTextAreaElement | null> }) {
+export function SceneAnnotations({ novelId, sceneId, content, manuscriptRef, compact = false }: { novelId: string; sceneId: string; content: string; manuscriptRef: React.RefObject<HTMLTextAreaElement | null>; compact?: boolean }) {
   const version = React.useContext(NoteUpdatesContext);
   const [data, setData] = React.useState<Response | null>(null), [error, setError] = React.useState(false), [retry, setRetry] = React.useState(0);
   const [visible, setVisible] = React.useState(true), [selected, setSelected] = React.useState<SceneAnnotationSummary | null>(null);
@@ -35,6 +35,7 @@ export function SceneAnnotations({ novelId, sceneId, content, manuscriptRef }: {
   }, [manuscriptRef, selected]);
   const open = (note: SceneAnnotationSummary) => setSelected(note);
   const close = () => { setSelected(null); requestAnimationFrame(() => manuscriptRef.current?.focus({ preventScroll: true })); };
+  if (compact) return <Button type="button" size="sm" variant={visible ? "secondary" : "outline"} aria-pressed={visible} onClick={() => setMarkers(!visible)}>{visible ? "Annotations On" : "Annotations"}</Button>;
   return <section aria-label="Scene annotations" className="mx-auto mt-3 grid max-w-4xl min-w-0 gap-2 rounded-lg border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2"><div><h3 className="font-medium">Scene annotations</h3><p className="text-xs text-muted-foreground">Exact quotes are resolved locally on every render; positions are never saved.</p></div><Button type="button" size="sm" variant="outline" aria-pressed={visible} onClick={() => setMarkers(!visible)}>{visible ? "Annotation markers On" : "Annotation markers Off"}</Button></div>
     {error ? <div role="alert" className="text-sm">Annotations are temporarily unavailable. Notes remain safe. <Button type="button" size="sm" variant="outline" onClick={() => setRetry(value => value + 1)}>Retry</Button></div> : null}

@@ -3,10 +3,14 @@ import { NextResponse } from "next/server";
 import { NotionApiError } from "@/lib/notion";
 import { NotionPullError, pullNovelFromNotion } from "@/lib/notion-pull";
 import { NotionPublishError } from "@/lib/notion-publish";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 
 type PullBody = { novelId?: unknown; chapterId?: unknown };
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ ok: false, code: "UNTRUSTED_ORIGIN", message: "Cross-origin mutation rejected." }, { status: 403 });
+  }
   let body: PullBody;
   try {
     body = (await request.json()) as PullBody;

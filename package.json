@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
+    "start": "next start --hostname 0.0.0.0",
     "build": "next build",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-tests.mjs",
     "test:routes": "node --test tests/studio-routes.test.mjs",
     "test:relationship-dialog": "node --test tests/relationship-dialog.test.mjs",
     "test:relationship-types": "node --test tests/relationship-types.test.mjs",

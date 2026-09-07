@@ -39,6 +39,35 @@ export async function getNotionMappings(novelId: string) {
   return prisma.notionMapping.findMany({ where: { novelId } });
 }
 
+/** A novel is connected only when its own root page has been recorded. */
+export async function isNotionNovelConnected(novelId: string) {
+  const mapping = await prisma.notionMapping.findUnique({
+    where: { localId: `novel:${novelId}` },
+    select: { novelId: true, entityType: true }
+  });
+  return mapping?.novelId === novelId && mapping.entityType === "novel";
+}
+
+/** Disconnect is deliberately local-only: neither Notion pages nor manuscript data are deleted. */
+export async function disconnectNotionNovel(novelId: string) {
+  return prisma.$transaction(async (tx) => {
+    await tx.notionMapping.deleteMany({ where: { novelId } });
+    return tx.notionSyncState.upsert({
+      where: { novelId },
+      update: {
+        isDirty: true,
+        syncStatus: "idle",
+        syncOperationId: null,
+        syncStartedAt: null,
+        syncLeaseExpiresAt: null,
+        syncSnapshotRevision: null,
+        lastSyncError: null
+      },
+      create: { novelId, isDirty: true }
+    });
+  });
+}
+
 export async function upsertNotionMapping(input: {
   localId: string;
   entityType: string;

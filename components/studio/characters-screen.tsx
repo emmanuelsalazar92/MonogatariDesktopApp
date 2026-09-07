@@ -8,6 +8,7 @@ import { AlertTriangle, Archive, ArchiveRestore, Check, ExternalLink, Link2, Pen
 
 import {
   EmptyState,
+  cardTopRightBadgeClass,
   FieldLine,
   SectionHeader,
   StatusBadge
@@ -188,7 +189,7 @@ export function CharactersScreen({
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6">
       <SectionHeader
         eyebrow={translate("Characters")}
         title={translate("Character bible")}
@@ -271,7 +272,7 @@ export function CharactersScreen({
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_400px]">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
         {catalogCharacters.length ? (
           <div className="grid content-start gap-3 2xl:grid-cols-2">
             {catalogCharacters.map((character) => (
@@ -293,7 +294,7 @@ export function CharactersScreen({
           />
         )}
 
-        <div className="hidden xl:block">
+        <div className="hidden min-w-0 xl:block">
           {detailLoading ? (
             <CharacterDetailLoading translate={translate} />
           ) : detailError ? (
@@ -397,7 +398,7 @@ function CharacterCard({
           selected && "border-primary/75 bg-primary/[0.07] shadow-lift"
         )}
       >
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-[52px_1fr]">
+        <CardContent className="grid gap-3 p-5 sm:grid-cols-[52px_minmax(0,1fr)]">
           <div className="grid size-[3.25rem] place-items-center rounded-full border border-border/55 bg-surface-elevated text-primary shadow-paper-sm">
             <UserRound className="size-6" />
           </div>
@@ -408,12 +409,12 @@ function CharacterCard({
                 <p className="truncate text-sm text-muted-foreground">{translate(character.role)}</p>
               </div>
               {selected ? (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground">
+                <span className={cn(cardTopRightBadgeClass, "flex items-center gap-1 rounded-full bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground")}>
                   <Check className="size-3" aria-hidden="true" />
                   {translate("Selected")}
                 </span>
               ) : (
-                <StatusBadge status={character.status} translate={translate} />
+                <StatusBadge status={character.status} translate={translate} className={cardTopRightBadgeClass} />
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -666,16 +667,16 @@ function CharacterDetailPanel({
 
   return (
     <>
-    <Card className={cn("surface-elevated min-w-0 xl:sticky xl:top-24", className)}>
+    <Card className={cn("surface-elevated w-full min-w-0 max-w-full xl:sticky xl:top-24", className)}>
       <CardHeader>
-        <div className="grid gap-4 sm:grid-cols-[90px_1fr]">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-[90px_minmax(0,1fr)]">
           <div className="grid size-[5.5rem] place-items-center rounded-xl border border-border/55 bg-surface-elevated text-primary shadow-paper-sm">
             <UserRound className="size-10" />
           </div>
-          <div>
-            <div className="flex items-start justify-between gap-3">
-              <CardTitle ref={titleRef} tabIndex={-1}>{character.name}</CardTitle>
-              <div className="flex flex-wrap justify-end gap-2">
+          <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+              <CardTitle ref={titleRef} tabIndex={-1} className="min-w-0 break-words [overflow-wrap:anywhere]">{character.name}</CardTitle>
+              <div className="flex min-w-0 flex-wrap justify-start gap-2 sm:justify-end">
                 <AddStoryNoteButton target={{ novelId: character.novelId, type: "Character", id: character.id, title: character.name }} disabled={lifecyclePending} />
                 {character.status === "Archived" ? (
                   <Button type="button" size="sm" variant="outline" disabled={lifecyclePending} onClick={() => void runLifecycleAction("restore")}>
@@ -707,14 +708,14 @@ function CharacterDetailPanel({
       <CardContent className="space-y-6">
         <StoryNotes target={{ novelId: character.novelId, type: "Character", id: character.id, title: character.name }} />
         <DetailSection title={translate("Identity")}>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             <FieldLine label={translate("Age")} value={valueOrFallback(character.age)} />
             {character.narrativeStatus ? (
               <FieldLine label={translate("Narrative state")} value={translate(character.narrativeStatus)} />
             ) : null}
             <FieldLine
               label={translate("First appearance")}
-              value={character.firstAppearance || translate("Not linked yet")}
+              value={<span className="block break-words [overflow-wrap:anywhere]">{character.firstAppearance || translate("Not linked yet")}</span>}
             />
           </div>
         </DetailSection>
@@ -734,10 +735,10 @@ function CharacterDetailPanel({
           </div>
         </DetailSection>
         <DetailSection title={translate("Story connections")}>
-          <div className="grid gap-3">
-            <div className="space-y-3 rounded-lg border border-border/60 bg-background/45 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+          <div className="grid min-w-0 gap-3">
+            <div className="min-w-0 space-y-3 rounded-lg border border-border/60 bg-background/45 p-3">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-sm font-medium">{translate("Linked scenes")}</p>
                   <p className="text-xs text-muted-foreground">{linkedScenes.length} {translate("Scenes").toLowerCase()}</p>
                 </div>
@@ -748,14 +749,14 @@ function CharacterDetailPanel({
                 <p className="text-sm text-muted-foreground">{translate("No linked scenes yet")}</p>
               ) : null}
               {linkedScenes.map((scene) => (
-                <div key={scene.sceneId} className="flex items-center gap-2 rounded-md border border-border/50 bg-card p-2">
+                <div key={scene.sceneId} className="flex min-w-0 items-start gap-2 rounded-md border border-border/50 bg-card p-2">
                   <Link
                     href={routeForPage("editor", character.novelId, scene.sceneId)}
                     className="min-w-0 flex-1 text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={`${translate("Open scene in editor")}: ${scene.sceneTitle}`}
                   >
-                    <span className="flex items-center gap-1.5 text-sm font-medium"><span className="truncate">{scene.sceneTitle}</span><ExternalLink className="size-3 shrink-0" /></span>
-                    <span className="block truncate text-xs text-muted-foreground">{scene.volumeTitle} · {scene.chapterTitle}</span>
+                    <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium"><span className="min-w-0 break-words [overflow-wrap:anywhere]">{scene.sceneTitle}</span><ExternalLink className="size-3 shrink-0" /></span>
+                    <span className="mt-0.5 block break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">{scene.volumeTitle} · {scene.chapterTitle}</span>
                   </Link>
                   <Button
                     type="button"
@@ -769,25 +770,25 @@ function CharacterDetailPanel({
                   </Button>
                 </div>
               ))}
-              <div className="flex items-end gap-2">
+              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end">
                 <Select value={selectedSceneId} onValueChange={setSelectedSceneId} disabled={sceneLinkPending || availableScenes.length === 0}>
                   <SelectTrigger aria-label={translate("Select scene to link")} className="min-w-0 flex-1"><SelectValue placeholder={translate("Link scene")} /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] [overflow-wrap:anywhere]">
                     {availableScenes.map((scene) => {
                       const context = sceneContext(scene.id);
                       return <SelectItem key={scene.id} value={scene.id}>{context.volume?.title} · {context.chapter?.title} · {scene.title}</SelectItem>;
                     })}
                   </SelectContent>
                 </Select>
-                <Button type="button" size="sm" disabled={!selectedSceneId || sceneLinkPending} onClick={() => void updateSceneLink("POST", selectedSceneId)}>
+                <Button type="button" size="sm" className="self-start sm:self-auto" disabled={!selectedSceneId || sceneLinkPending} onClick={() => void updateSceneLink("POST", selectedSceneId)}>
                   <Plus className="size-4" /> {translate("Link")}
                 </Button>
               </div>
               {sceneLinkError ? <p role="alert" className="text-sm text-destructive">{sceneLinkError}</p> : null}
             </div>
-            <div className="space-y-3 rounded-lg border border-border/60 bg-background/45 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+            <div className="min-w-0 space-y-3 rounded-lg border border-border/60 bg-background/45 p-3">
+              <div className="flex min-w-0 items-center justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-sm font-medium">{translate("Linked places")}</p>
                   <p className="text-xs text-muted-foreground">{linkedPlaces.length} {translate("Places").toLowerCase()}</p>
                 </div>
@@ -798,14 +799,14 @@ function CharacterDetailPanel({
                 <p className="text-sm text-muted-foreground">{translate("No linked places yet")}</p>
               ) : null}
               {linkedPlaces.map((place) => (
-                <div key={place.locationId} className="flex items-center gap-2 rounded-md border border-border/50 bg-card p-2">
+                <div key={place.locationId} className="flex min-w-0 items-start gap-2 rounded-md border border-border/50 bg-card p-2">
                   <Link
                     href={routeForPlace(character.novelId, place.locationId)}
                     className="min-w-0 flex-1 text-left hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label={`${translate("Open place")}: ${place.name}`}
                   >
-                    <span className="flex items-center gap-1.5 text-sm font-medium"><span className="truncate">{place.name}</span><ExternalLink className="size-3 shrink-0" /></span>
-                    <span className="block truncate text-xs text-muted-foreground">{translate(place.relationshipType)}{place.region ? ` · ${place.region}` : ""}</span>
+                    <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium"><span className="min-w-0 break-words [overflow-wrap:anywhere]">{place.name}</span><ExternalLink className="size-3 shrink-0" /></span>
+                    <span className="mt-0.5 block break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">{translate(place.relationshipType)}{place.region ? ` · ${place.region}` : ""}</span>
                   </Link>
                   <Button
                     type="button"
@@ -819,7 +820,7 @@ function CharacterDetailPanel({
                   </Button>
                 </div>
               ))}
-              <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <div className="grid min-w-0 gap-2">
                 <Select value={selectedPlaceId} onValueChange={setSelectedPlaceId} disabled={placeLinkPending || availablePlaces.length === 0}>
                   <SelectTrigger aria-label={translate("Select place to link")} className="min-w-0"><SelectValue placeholder={translate("Link place")} /></SelectTrigger>
                   <SelectContent>
@@ -827,12 +828,12 @@ function CharacterDetailPanel({
                   </SelectContent>
                 </Select>
                 <Select value={selectedPlaceRelationshipType} onValueChange={(value) => setSelectedPlaceRelationshipType(value as CharacterPlaceRelationshipType)} disabled={placeLinkPending}>
-                  <SelectTrigger aria-label={translate("Place relationship type")}><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger aria-label={translate("Place relationship type")} className="min-w-0"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] [overflow-wrap:anywhere]">
                     {characterPlaceRelationshipTypes.map((type) => <SelectItem key={type} value={type}>{translate(type)}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Button type="button" size="sm" disabled={!selectedPlaceId || placeLinkPending} onClick={() => void updatePlaceLink("POST", selectedPlaceId)}>
+                <Button type="button" size="sm" className="justify-self-start" disabled={!selectedPlaceId || placeLinkPending} onClick={() => void updatePlaceLink("POST", selectedPlaceId)}>
                   <Plus className="size-4" /> {translate("Link")}
                 </Button>
               </div>
@@ -841,7 +842,7 @@ function CharacterDetailPanel({
             <FieldLine
               label={translate("Relationships")}
               value={relationships.length ? (
-                <span className="flex min-w-0 flex-wrap gap-x-2 gap-y-1 overflow-hidden">
+                <span className="flex min-w-0 flex-wrap gap-x-2 gap-y-1 [overflow-wrap:anywhere]">
                   {relationships.map(({ id, character: relatedCharacter, label }) =>
                     relatedCharacter ? (
                       <Link
@@ -958,7 +959,7 @@ function CharacterDetailError({
 
 function DetailSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3">
+    <section className="min-w-0 space-y-3">
       <h4 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
         {title}
       </h4>

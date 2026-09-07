@@ -1013,11 +1013,11 @@ test("character place links are normalized, allowlisted, novel-scoped, and navig
   assert.equal(characterPlace.parseCharacterPlaceRelationshipType("Invented"), null);
   assert.doesNotMatch(charactersSource, /timelineEvents[\s\S]*Linked places/);
   assert.match(charactersSource, /routeForPlace\(character\.novelId, place\.locationId\)/);
-  assert.match(pageSource, /<PlaceCharacters[^>]*characters=\{data.characters\} links=\{data.characterPlaceLinks\}/);
-  const placesSource = await readFile(resolve(process.cwd(), "components/studio/place-characters.tsx"), "utf8");
+  assert.match(pageSource, /<PlaceConnections[^>]*characters=\{data.characters\} links=\{data.characterPlaceLinks\} events=\{data.timelineEvents\}/);
+  const placesSource = await readFile(resolve(process.cwd(), "components/studio/place-connections.tsx"), "utf8");
   assert.match(placesSource, /\/api\/characters\/\$\{encodeURIComponent\(id\)\}\/places/);
   assert.match(placesSource, /routeForCharacter\(place.novelId, character.characterId\)/);
-  assert.match(placesSource, /mutate\("DELETE", character.characterId\)/);
+  assert.match(placesSource, /mutate\("unlink-character", character.characterId\)/);
   assert.match(placesSource, /characterPlaceRelationshipTypes\.map/);
   assert.match(pageSource, /selectedPlaceId=\{activeRoute\?\.placeId \?\? null\}/);
 });

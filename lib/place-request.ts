@@ -17,7 +17,14 @@ export function resolvePlaceNovelId(request: Request, bodyNovelId?: unknown):
     try {
       const source = new URL(referer);
       const match = /^\/novels\/([^/]+)(?:\/|$)/.exec(source.pathname);
-      if (source.origin !== url.origin || (match && decodeURIComponent(match[1]) !== novelId)) {
+      // Next can canonicalize request.url to its bind address (such as
+      // localhost) even though the browser reached this instance through its
+      // LAN address or a proxy hostname. Host is the externally requested
+      // authority; use it only as a same-instance fallback for this workspace
+      // path check. Entity ownership is still enforced by the database query.
+      const requestHost = request.headers.get("host")?.toLowerCase();
+      const sameInstance = source.origin === url.origin || Boolean(requestHost && source.host === requestHost);
+      if (!sameInstance || (match && decodeURIComponent(match[1]) !== novelId)) {
         return { ok: false, error: "Novel context does not match the open workspace", status: 409 };
       }
     } catch {

@@ -49,6 +49,12 @@ import {
   type RelationshipTypeKey
 } from "@/lib/character-relationship";
 import type { NovelMetadataInput } from "@/lib/novel-metadata";
+import {
+  prepareSceneWrite,
+  SceneRevisionConflictError
+} from "@/lib/scene-persistence";
+
+export { SceneDocumentNotLoadedError, SceneRevisionConflictError } from "@/lib/scene-persistence";
 
 function parseList(value: string): string[] {
   try {
@@ -61,11 +67,6 @@ function parseList(value: string): string[] {
 
 function dateOnly(value: Date) {
   return value.toISOString().slice(0, 10);
-}
-
-function countWords(value: string) {
-  const words = value.trim().match(/\S+/g);
-  return words?.length ?? 0;
 }
 
 async function markNotionDirty(tx: Prisma.TransactionClient, novelId: string) {
@@ -205,8 +206,6 @@ function serializeNovel(novel: {
     updatedAt: dateOnly(novel.updatedAt)
   };
 }
-
-export class SceneDocumentNotLoadedError extends Error {}
 
 const novelArchiveStatusSettingKey = (novelId: string) => `novel:${novelId}:status-before-archive`;
 const restorableNovelStatuses = new Set<NovelStatus>([
@@ -1119,7 +1118,9 @@ export async function linkCharacterPlace(
     });
     await tx.characterPlace.upsert({
       where: { characterId_locationId: { characterId, locationId } },
-      update: {},
+      // Re-linking an existing pair is the explicit relationship edit operation.
+      // The composite key and ownership checks above keep it scoped to this Place.
+      update: { relationshipType },
       create: { characterId, locationId, relationshipType }
     });
     return {
@@ -1508,19 +1509,7 @@ export async function updateScene(
         }
       }
     });
-    // A client must attest that it loaded the full document before it can turn
-    // a non-empty manuscript into an empty one. This is deliberately separate
-    // from revision checking: a placeholder can otherwise carry a valid revision.
-    if (input.content === "" && existing.content !== "" && input.documentLoaded !== true) {
-      throw new SceneDocumentNotLoadedError();
-    }
-    const nextWordCount =
-      typeof input.content === "string" ? countWords(input.content) : existing.wordCount;
-    const wordDelta = nextWordCount - existing.wordCount;
-    const expectedRevision = input.expectedRevision ?? existing.revision;
-    if (expectedRevision !== existing.revision) {
-      throw new SceneRevisionConflictError();
-    }
+    const { expectedRevision, nextWordCount, wordDelta } = prepareSceneWrite(existing, input);
     if (typeof input.content === "string") {
       await createRecoveryCheckpoint(tx, existing, input.content, "scene-update");
     }
@@ -1660,12 +1649,6 @@ export async function updateSceneInspector(
       notes: input.notes
     };
   });
-}
-
-export class SceneRevisionConflictError extends Error {
-  constructor() {
-    super("scene revision is stale");
-  }
 }
 
 export class SceneVersionValidationError extends Error {

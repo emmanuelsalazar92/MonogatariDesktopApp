@@ -18,7 +18,7 @@ import {
   type Language,
   uiCopy
 } from "@/lib/studio-i18n";
-import { type PersistedStudioSettings } from "@/lib/studio-data";
+import { type PersistedStudioSettings, type StudioData } from "@/lib/studio-data";
 import { exportFormats, exportOptions, type SidebarState } from "@/lib/studio-domain";
 import {
   backupRetentionPolicies,
@@ -41,7 +41,11 @@ export function SettingsScreen({
   settingsSaveMessage,
   onNotionConnectionVerified,
   notionAutosyncStatus,
-  notionAutosyncRetryAt
+  notionAutosyncRetryAt,
+  notionNovels,
+  notionSyncStates,
+  onSyncAllConnected,
+  syncingAllConnected
 }: {
   language: Language;
   sidebarState: SidebarState;
@@ -55,6 +59,10 @@ export function SettingsScreen({
   onNotionConnectionVerified: (pageId: string, pageTitle: string) => void;
   notionAutosyncStatus: "idle" | "syncing" | "synced" | "error" | "remote-changes";
   notionAutosyncRetryAt: number;
+  notionNovels: StudioData["novels"];
+  notionSyncStates: StudioData["notionSyncStates"];
+  onSyncAllConnected: () => void;
+  syncingAllConnected: boolean;
 }) {
   const copy = uiCopy[language];
   const settingsAreSaving = settingsSaveState === "saving";
@@ -371,6 +379,18 @@ export function SettingsScreen({
                     disabled={settingsAreSaving}
                   />
                 </div>
+              </div>
+              <div className="min-w-0 rounded-lg border border-border/60 bg-surface/74 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div><Label>{translate("Novels")}</Label><p className="mt-1 text-xs text-muted-foreground">{translate("Only connected novels are included in Sync all.")}</p></div>
+                  <Button type="button" variant="outline" size="sm" disabled={syncingAllConnected || !notionNovels.some((novel) => notionSyncStates.some((state) => state.novelId === novel.id && state.mapped))} onClick={onSyncAllConnected}>{syncingAllConnected ? translate("Syncing…") : translate("Sync all connected")}</Button>
+                </div>
+                <ul className="mt-3 divide-y divide-border/60 text-sm">
+                  {notionNovels.map((novel) => {
+                    const state = notionSyncStates.find((item) => item.novelId === novel.id);
+                    return <li key={novel.id} className="flex items-center justify-between gap-3 py-2"><span className="min-w-0 truncate text-foreground">{novel.title}</span><span className="shrink-0 text-muted-foreground">{state?.mapped ? (state.syncStatus === "error" ? translate("Needs attention") : translate("Connected")) : translate("Local only")}</span></li>;
+                  })}
+                </ul>
               </div>
             </CardContent>
           </Card>

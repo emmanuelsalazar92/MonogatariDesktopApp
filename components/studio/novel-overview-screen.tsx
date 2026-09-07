@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import * as React from "react";
 import {
   BookOpen,
   Boxes,
@@ -46,6 +47,8 @@ export function NovelOverviewScreen({
   syncing = false,
   navigationPending = false,
   onSyncNow,
+  onConnectToNotion,
+  onDisconnectFromNotion,
   onReviewNotionChanges,
   onSelectPage,
   onOpenScene,
@@ -60,11 +63,14 @@ export function NovelOverviewScreen({
   syncing?: boolean;
   navigationPending?: boolean;
   onSyncNow: () => void;
+  onConnectToNotion: (mode: "create" | "existing") => void;
+  onDisconnectFromNotion: () => void;
   onReviewNotionChanges: () => void;
   onSelectPage: (page: "structure" | "settings" | "characters" | "places" | "relationships" | "timeline" | "notes") => void;
   onOpenScene: (sceneId: string) => void;
   onEditDetails: () => void;
 }) {
+  const [connecting, setConnecting] = React.useState(false);
   const currentNovel = getCurrentNovel(data);
   const storedSyncStatus = currentNovelNotionStatus(notionSyncState, notionRootConfigured, hasNotionConflict);
   // A 409 from a manual sync is meaningful before the next snapshot returns.
@@ -146,8 +152,8 @@ export function NovelOverviewScreen({
       <section className="flex flex-col gap-3 rounded-lg border border-border/60 bg-surface/74 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between" aria-labelledby="notion-sync-heading" aria-live={syncStatus.kind === "error" ? "polite" : undefined}>
         <div className="min-w-0">
           <h2 id="notion-sync-heading" className="font-medium text-foreground">{translate("Notion sync")}</h2>
-          {syncStatus.kind === "not-configured" ? <p>{translate("Notion is not configured for this studio.")}</p> : null}
-          {syncStatus.kind === "local-only" ? <p>{translate("This novel is local only.")}</p> : null}
+          {syncStatus.kind === "not-configured" ? <p>{translate("Notion is not connected yet. Connect Monogatari to Notion before enabling sync for this novel.")}</p> : null}
+          {syncStatus.kind === "local-only" ? <p>{translate("This novel is not connected to Notion yet. Keep a Notion copy and synchronize changes when you are ready.")}</p> : null}
           {syncStatus.kind === "synced" ? <p>{translate("Synced")}{lastSuccessfulSync ? <> · {translate("Last successful sync")}: <time dateTime={syncStatus.lastSuccessfulSync ?? undefined}>{lastSuccessfulSync}</time></> : null}</p> : null}
           {syncStatus.kind === "pending" ? <p>{translate("Changes pending")}</p> : null}
           {syncStatus.kind === "syncing" ? <p>{translate("Syncing with Notion… You can keep writing.")}</p> : null}
@@ -155,14 +161,35 @@ export function NovelOverviewScreen({
           {syncStatus.kind === "conflict" ? <p>{translate("A Notion conflict needs your review.")}</p> : null}
           {syncStatus.kind === "error" ? <p>{translate("Notion sync needs attention. Your local writing is safe.")}</p> : null}
         </div>
-        {syncStatus.kind === "not-configured" || syncStatus.kind === "local-only" ? (
+        {syncStatus.kind === "not-configured" ? (
           <Button variant="outline" className="shrink-0" disabled={navigationPending} onClick={() => onSelectPage("settings")}>{translate("Open Settings")}</Button>
         ) : null}
+        {syncStatus.kind === "local-only" ? <Button variant="outline" className="shrink-0" onClick={() => setConnecting(true)}>{translate("Connect this novel")}</Button> : null}
+        {syncStatus.kind === "synced" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onSyncNow}>{syncing ? <><LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />Syncing…</> : translate("Sync now")}</Button> : null}
         {syncStatus.kind === "pending" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onSyncNow}>{syncing ? <><LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />Syncing…</> : translate("Sync now")}</Button> : null}
         {syncStatus.kind === "error" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onSyncNow}>{syncing ? <><LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />Syncing…</> : translate("Retry")}</Button> : null}
-        {syncStatus.kind === "remote-changes" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onReviewNotionChanges}>{syncing ? "Checking Notion…" : translate("Update from Notion")}</Button> : null}
+        {syncStatus.kind === "remote-changes" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onReviewNotionChanges}>{syncing ? "Checking Notion…" : translate("Review changes")}</Button> : null}
         {syncStatus.kind === "conflict" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onReviewNotionChanges}>{syncing ? "Checking Notion…" : translate("Review conflict")}</Button> : null}
       </section>
+
+      {connecting ? (
+        <section className="rounded-lg border border-primary/30 bg-primary/5 p-4" aria-labelledby="connect-notion-heading">
+          <h2 id="connect-notion-heading" className="font-medium text-foreground">{translate(`Connect “${currentNovel.title}” to Notion`)}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{translate("Choose how to establish the first connection. Existing content is never overwritten automatically.")}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button type="button" onClick={() => { setConnecting(false); onConnectToNotion("create"); }}>{translate("Create a new Notion page")}</Button>
+            <Button type="button" variant="outline" onClick={() => { setConnecting(false); onConnectToNotion("existing"); }}>{translate("Link an existing Notion page")}</Button>
+            <Button type="button" variant="ghost" onClick={() => setConnecting(false)}>{translate("Cancel")}</Button>
+          </div>
+        </section>
+      ) : null}
+
+      {syncStatus.kind === "synced" || syncStatus.kind === "pending" ? (
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="ghost" size="sm" disabled={syncing} onClick={onReviewNotionChanges}>{translate("Pull changes from Notion")}</Button>
+          <Button type="button" variant="ghost" size="sm" disabled={syncing} onClick={() => { if (window.confirm("Disconnect this novel from Notion? Your local novel and Notion pages will remain unchanged.")) onDisconnectFromNotion(); }}>{translate("Disconnect from Notion")}</Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-4">
         <section className="surface-panel flex min-w-0 gap-3 rounded-lg p-3 sm:items-center sm:gap-4 sm:p-4" aria-labelledby="novel-details-heading">
