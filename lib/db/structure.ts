@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { setScenePlaces, setLegacyScenePlace, scenePlaceLinksInclude } from "@/lib/db/scene-places";
 import type { ChapterStatus } from "@/lib/studio-domain";
 import { insertStructureItem, type StructureMovePosition } from "@/lib/structure-move";
+import { recordRecentActivity } from "@/lib/db/recent-activity";
 
 export type StructureItemType = "volume" | "chapter" | "scene";
 export type StructureAction = "move" | "duplicate" | "archive" | "restore";
@@ -117,6 +118,7 @@ export async function createStructureItem(input: CreateStructureInput) {
           sortOrder: (last._max.sortOrder ?? 0) + 1
         }
       });
+      await recordRecentActivity(tx, { novelId: novel.id, eventType: "structure-created", entityType: "volume", entityId: id, label: `Added volume ${input.title}` });
       await recalculateWordCounts(tx, novel.id);
       return { selection: { type: input.type, id } satisfies StructureSelection };
     }
@@ -141,6 +143,7 @@ export async function createStructureItem(input: CreateStructureInput) {
           sortOrder: (last._max.sortOrder ?? 0) + 1
         }
       });
+      await recordRecentActivity(tx, { novelId: volume.novelId, eventType: "structure-created", entityType: "chapter", entityId: id, label: `Added chapter ${input.title}` });
       await recalculateWordCounts(tx, volume.novelId);
       return { selection: { type: input.type, id } satisfies StructureSelection };
     }
@@ -175,6 +178,7 @@ export async function createStructureItem(input: CreateStructureInput) {
         sortOrder: (last._max.sortOrder ?? 0) + 1
       }
     });
+    await recordRecentActivity(tx, { novelId: chapter.volume.novelId, eventType: "structure-created", entityType: "scene", entityId: id, label: `Added scene ${input.title}` });
     if (input.locationId?.trim()) await setScenePlaces(tx, input.novelId, id, [input.locationId.trim()]);
     await recalculateWordCounts(tx, chapter.volume.novelId);
     return { selection: { type: input.type, id } satisfies StructureSelection };
@@ -252,6 +256,7 @@ export async function moveStructureItem(input: MoveStructureInput) {
       });
       const finalOrder = insertStructureItem(siblings.map((item) => item.id), source.id, input.position, input.referenceId);
       await Promise.all(finalOrder.map((id, index) => tx.volume.update({ where: { id }, data: { sortOrder: index + 1 } })));
+      await recordRecentActivity(tx, { novelId: source.novelId, eventType: "structure-moved", entityType: "volume", entityId: source.id, label: `Reordered volume ${source.title}` });
       await recalculateWordCounts(tx, source.novelId);
       return { selection: { type: input.type, id: source.id } satisfies StructureSelection };
     }
@@ -280,6 +285,7 @@ export async function moveStructureItem(input: MoveStructureInput) {
           ...finalDestination.map((id, index) => tx.chapter.update({ where: { id }, data: id === source.id ? { volumeId: destination.id, sortOrder: index + 1 } : { sortOrder: index + 1 } }))
         ]);
       }
+      await recordRecentActivity(tx, { novelId: source.volume.novelId, eventType: "structure-moved", entityType: "chapter", entityId: source.id, label: `Reordered chapter ${source.title}` });
       await recalculateWordCounts(tx, source.volume.novelId);
       return { selection: { type: input.type, id: source.id } satisfies StructureSelection };
     }
@@ -307,6 +313,7 @@ export async function moveStructureItem(input: MoveStructureInput) {
         ...finalDestination.map((id, index) => tx.scene.update({ where: { id }, data: id === source.id ? { chapterId: destination.id, sortOrder: index + 1 } : { sortOrder: index + 1 } }))
       ]);
     }
+    await recordRecentActivity(tx, { novelId: source.chapter.volume.novelId, eventType: "structure-moved", entityType: "scene", entityId: source.id, label: `Reordered scene ${source.title}` });
     await recalculateWordCounts(tx, source.chapter.volume.novelId);
     return { selection: { type: input.type, id: source.id } satisfies StructureSelection };
   });

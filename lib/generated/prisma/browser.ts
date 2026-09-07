@@ -172,3 +172,8 @@ export type NotionMapping = Prisma.NotionMappingModel
  * 
  */
 export type NotionSyncState = Prisma.NotionSyncStateModel
+/**
+ * Model RecentActivity
+ * 
+ */
+export type RecentActivity = Prisma.RecentActivityModel

@@ -121,7 +121,7 @@ test("Timeline Place API uses the canonical FK with ownership, stale checks and 
     "@/lib/timeline-event": eventContract,
     "@/lib/db/prisma": { prisma }, "@/lib/db/timeline-places": db, "node:crypto": require("node:crypto"),
     "@/lib/chapter-preview": {}, "@/lib/character-first-appearance": {}, "@/lib/db/places": {},
-    "@/lib/character-place": {}, "@/lib/db/scene-places": {}, "@/lib/reader-progress": {},
+    "@/lib/character-place": {}, "@/lib/db/scene-places": {}, "@/lib/reader-progress": {}, "@/lib/db/recent-activity": { recordRecentActivity: async () => {}, recentActivityLimit: 10 },
     "@/lib/studio-settings": {}, "@/lib/character-metadata": {}, "@/lib/character-relationship": {}
   });
   const errors = await loadTs("app/api/timeline-events/errors.ts", { "next/server": require("next/server"), "@/lib/db/timeline-places": db });

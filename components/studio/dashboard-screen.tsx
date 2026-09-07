@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { notionStatusLabel } from "@/lib/notion-status";
 import {
-  BadgeCheck,
   BookOpen,
   Boxes,
   Download,
@@ -28,6 +29,7 @@ import {
   type StudioData
 } from "@/lib/studio-data";
 import { type PageId } from "@/lib/studio-domain";
+import { routeForPage } from "@/lib/studio-routes";
 import { estimateReadingMinutes, getDailyWritingMetrics } from "@/lib/writing-metrics";
 import {
   CoverBlock,
@@ -37,27 +39,31 @@ import {
   StatusBadge
 } from "@/components/studio/shared";
 
-const dashboardActions = [
-  { label: "New novel", icon: Library, page: "library" as PageId },
-  { label: "Continue writing", icon: PenLine, page: "editor" as PageId },
-  { label: "Open reader", icon: BookOpen, page: "reader" as PageId },
-  { label: "Export latest version", icon: Download, page: "export" as PageId }
-];
-
 export function DashboardScreen({
   data,
   translate,
   dailyWordGoal,
   onSelectPage,
-  onOpenNovel
+  onOpenNovel,
+  onCreateNovel,
+  notionSyncState,
+  notionAutosyncStatus,
+  notionPublishState,
+  navigationPending = false
 }: {
   data: StudioData;
   translate: (value: string) => string;
   dailyWordGoal: string;
   onSelectPage: (page: PageId) => void;
   onOpenNovel: (novelId: string, nextPage?: PageId) => void;
+  onCreateNovel: () => void;
+  notionSyncState?: StudioData["notionSyncStates"][number];
+  notionAutosyncStatus?: string;
+  notionPublishState?: string;
+  navigationPending?: boolean;
 }) {
   const currentNovel = getCurrentNovel(data);
+  const syncLabel = notionStatusLabel(notionSyncState, currentNovel.id, notionAutosyncStatus, notionPublishState);
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
   const dailyMetrics = getDailyWritingMetrics(
@@ -93,7 +99,7 @@ export function DashboardScreen({
             {translate("Last edited chapter")}: {activeChapter.title}
           </p>
         </div>
-        <Button variant="outline" className="shrink-0" onClick={() => onOpenNovel(currentNovel.id, "overview")}>
+        <Button variant="outline" className="shrink-0" disabled={navigationPending} onClick={() => onOpenNovel(currentNovel.id, "overview")}>
           <Library className="size-4" />
           {translate("Current Novel")}
         </Button>
@@ -120,6 +126,7 @@ export function DashboardScreen({
         <Card className="group relative overflow-hidden surface-panel transition-all duration-150 hover:border-primary/35 hover:shadow-paper focus-within:border-primary/55 focus-within:shadow-paper">
           <button
             type="button"
+            disabled={navigationPending}
             aria-label={`${translate("Continue writing")}: ${activeScene.title}`}
             className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             onClick={() => onSelectPage("editor")}
@@ -168,6 +175,7 @@ export function DashboardScreen({
                 <Button
                   variant="outline"
                   className="pointer-events-auto relative z-20"
+                  disabled={navigationPending}
                   onClick={() => onSelectPage("reader")}
                 >
                   <BookOpen className="size-4" />
@@ -182,7 +190,9 @@ export function DashboardScreen({
           <CardHeader className="pb-4">
             <CardTitle>{translate("Daily writing progress")}</CardTitle>
             <CardDescription>
-              {formatNumber(dailyMetrics.wordsToday)} / {formatNumber(dailyMetrics.dailyGoal)} {translate("words")}
+              {dailyMetrics.dailyGoal === null
+                ? `${formatNumber(dailyMetrics.wordsToday)} ${translate("words today")}`
+                : `${formatNumber(dailyMetrics.wordsToday)} / ${formatNumber(dailyMetrics.dailyGoal)} ${translate("words")}`}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -193,9 +203,9 @@ export function DashboardScreen({
                 </p>
                 <p className="text-sm text-muted-foreground">{translate("words today")}</p>
               </div>
-              <Badge variant="accent">{dailyMetrics.progressPercent}%</Badge>
+              {dailyMetrics.progressPercent !== null ? <Badge variant="accent">{dailyMetrics.progressPercent}%</Badge> : null}
             </div>
-            <ProgressBar value={dailyMetrics.progressPercent} />
+            {dailyMetrics.progressPercent !== null ? <ProgressBar value={dailyMetrics.progressPercent} /> : null}
             <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
               <span className="text-muted-foreground">
                 {translate("Scenes touched")} <span className="font-medium text-foreground">{dailyMetrics.scenesTouched}</span>
@@ -208,82 +218,61 @@ export function DashboardScreen({
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <Card>
+      {syncLabel ? (
+        <p role="status" aria-live="polite" className="flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span>Notion: {translate(syncLabel)}</span>
+          {notionSyncState?.lastNotionSync ? <span>{translate("Last successful sync")}: <time dateTime={notionSyncState.lastNotionSync}>{notionSyncState.lastNotionSync.replace("T", " ").slice(0, 16)} UTC</time></span> : null}
+        </p>
+      ) : null}
+
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
+        <Card className="min-w-0">
           <CardHeader className="pb-4">
             <CardTitle>{translate("Recent novels")}</CardTitle>
             <CardDescription>{translate("Local projects edited on this device")}</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2">
+          <CardContent className="grid min-w-0 gap-2">
             {data.novels.slice(0, 3).map((novel) => (
-              <button
+              <Link
                 key={novel.id}
-                type="button"
-                onClick={() => onOpenNovel(novel.id, "overview")}
-                className="grid gap-3 rounded-lg border border-border/55 bg-surface/68 p-3 text-left transition-all duration-150 hover:border-primary/35 hover:bg-surface-elevated hover:shadow-paper-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:grid-cols-[auto_1fr_auto]"
+                href={routeForPage("overview", novel.id)}
+                prefetch={false}
+                className="grid min-w-0 gap-1.5 rounded-lg border border-border/55 bg-surface/68 px-3 py-3 text-left transition-colors hover:border-primary/35 hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                <CoverBlock title={novel.title} compact />
-                <div className="min-w-0">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <h3 className="truncate font-semibold">{novel.title}</h3>
-                    <StatusBadge status={novel.status} translate={translate} />
-                  </div>
-                  <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-                    {novel.synopsis}
-                  </p>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                  <h3 className="min-w-0 flex-1 basis-48 break-words font-semibold [overflow-wrap:anywhere]">{novel.title}</h3>
+                  <StatusBadge status={novel.status} translate={translate} />
                 </div>
-                <div className="text-sm text-muted-foreground sm:text-right">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <p>
                     {formatNumber(novel.wordCount)} {translate("words")}
                   </p>
                   <p>
-                    {translate("Last edited")} {novel.updatedAt}
+                    {translate("Last edited")} <time dateTime={novel.updatedAt}>{novel.updatedAt}</time>
                   </p>
                 </div>
-              </button>
+              </Link>
             ))}
+            {!data.novels.length ? <p className="text-sm text-muted-foreground">{translate("No recent novels yet.")}</p> : null}
           </CardContent>
         </Card>
 
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle>{translate("Quick actions")}</CardTitle>
-              <CardDescription>{translate("Common local-first writing tasks")}</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-2.5 sm:grid-cols-2">
-              {dashboardActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <Button
-                    key={action.label}
-                    variant="outline"
-                    className="justify-start"
-                    onClick={() => onSelectPage(action.page)}
-                  >
-                    <Icon className="size-4" />
-                    {translate(action.label)}
-                  </Button>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle>{translate("Local server status")}</CardTitle>
-              <CardDescription>{translate("Accessible inside the home network")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg border border-border/55 bg-surface/72 p-3">
-                <BadgeCheck className="size-5 text-primary" />
-                <span className="font-medium">{translate("Running on local network")}</span>
-              </div>
-              <FieldLine label={translate("Local URL")} value="http://novel.local" />
-              <FieldLine label={translate("IP URL")} value="http://192.168.1.50:3000" />
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="min-w-0">
+          <CardHeader className="pb-4">
+            <CardTitle>{translate("Quick actions")}</CardTitle>
+            <CardDescription>{translate("Common local-first writing tasks")}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex min-w-0 flex-wrap gap-2.5">
+            <Button type="button" className="h-auto whitespace-normal text-left" onClick={onCreateNovel}>
+              <Library aria-hidden="true" className="size-4" />
+              {translate("New novel")}
+            </Button>
+            {currentNovel.id ? <Button type="button" variant="outline" className="h-auto whitespace-normal text-left" onClick={() => onSelectPage("export")}>
+              <Download aria-hidden="true" className="size-4" />
+              {translate("Export center")}
+            </Button> : null}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

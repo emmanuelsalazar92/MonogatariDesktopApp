@@ -184,6 +184,7 @@ export const scenes: Scene[] = [
     title: "Scene 1: Llegada a la Academia Seiryu",
     content:
       "â€”No debiste abrir esa puerta â€”dijo Reina.\nYo, por supuesto, abrÃ­ la puerta.\n\nLa bisagra respondiÃ³ con un gemido tan antiguo que por un instante pensÃ© que toda la Academia Seiryu habÃ­a contenido la respiraciÃ³n. DetrÃ¡s no habÃ­a un aula vacÃ­a, ni un pasillo cubierto de polvo, sino una escalera de piedra iluminada por una luz azul que no venÃ­a de ninguna lÃ¡mpara.\n\nReina Tsukishiro me tomÃ³ de la manga. Sus dedos estaban frÃ­os.\n\nâ€”Akira, si bajas, la torre recordarÃ¡ tu nombre.\n\nEn una escuela normal, aquella frase habrÃ­a bastado para llamar a un profesor. En Seiryu, solo logrÃ³ que mi corazÃ³n se adelantara un paso antes que yo.",
+    contentLoaded: true,
     summary: "Akira abre una puerta prohibida junto a Reina.",
     status: "Writing",
     locationId: "place-torre",
@@ -199,6 +200,7 @@ export const scenes: Scene[] = [
     title: "Scene 2: La advertencia de Reina",
     content:
       "Reina no gritÃ³ cuando la campana sonÃ³ bajo nuestros pies. Eso fue lo primero que me inquietÃ³. Lo segundo fue que la campana pronunciÃ³ mi apellido con la voz de mi hermana.",
+    contentLoaded: true,
     summary: "La torre imita una voz familiar.",
     status: "Draft",
     locationId: "place-torre",
@@ -214,6 +216,7 @@ export const scenes: Scene[] = [
     title: "Scene 1: El mapa invisible",
     content:
       "Mika extendiÃ³ el mapa sobre el escritorio y colocÃ³ cuatro monedas en las esquinas. La tinta invisible apareciÃ³ como si la pÃ¡gina hubiera decidido recordar.",
+    contentLoaded: true,
     summary: "Mika encuentra rutas ocultas bajo el campus.",
     status: "Idea",
     locationId: "place-biblioteca",

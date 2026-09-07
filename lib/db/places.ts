@@ -5,6 +5,7 @@ import { placeParentError, type PlaceMetadataInput } from "@/lib/place-metadata"
 import { normalizePlaceType, normalizePlaceStatus } from "@/lib/place-classification";
 import { scenePlaceSelect, scenePlaceOrder, isActivePlaceScene, summarizePlaceScene } from "@/lib/db/scene-places";
 import { canDeletePlace, placeImpactKeys, type PlaceDeleteImpact, type PlaceDeleteConfirmation } from "@/lib/place-lifecycle";
+import { recordRecentActivity } from "@/lib/db/recent-activity";
 
 export class PlaceError extends Error {
   constructor(message: string, public readonly status: number, public readonly code?: string, public readonly impact?: PlaceDeleteImpact) { super(message); }
@@ -108,6 +109,7 @@ export async function createPlace(novelId: string, metadata: PlaceMetadataInput)
     await checkParent(tx, novelId, id, metadata.parentPlaceId);
     const place = await tx.location.update({ where: { id }, data: { parentPlaceId: metadata.parentPlaceId }, include: placeInclude });
     await tx.novel.update({ where: { id: novelId }, data: { updatedAt: new Date() } });
+    await recordRecentActivity(tx, { novelId, eventType: "place-added", entityType: "place", entityId: id, label: `Added place ${place.name}` });
     return serializePlace(place);
   });
 }
@@ -129,6 +131,7 @@ export async function updatePlace(novelId: string, placeId: string, revision: nu
     }
     const place = await tx.location.findUniqueOrThrow({ where: { id: placeId }, include: placeInclude });
     await tx.novel.update({ where: { id: novelId }, data: { updatedAt: new Date() } });
+    await recordRecentActivity(tx, { novelId, eventType: "place-updated", entityType: "place", entityId: placeId, label: `Updated place ${place.name}` });
     return serializePlace(place);
   });
 }

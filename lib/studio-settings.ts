@@ -28,6 +28,7 @@ export const defaultExportDefaults: ExportDefaults = {
 };
 
 const allowedValues: Record<keyof PersistedStudioSettings, readonly string[]> = {
+  libraryView: ["grid", "list"],
   language: ["en", "es"],
   sidebarState: ["expanded", "compact", "hidden"],
   editorFontSize: ["16 px", "18 px", "20 px", "22 px"],

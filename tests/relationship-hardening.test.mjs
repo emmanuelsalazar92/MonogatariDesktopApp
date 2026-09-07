@@ -78,3 +78,20 @@ test("Narrow detail has modal isolation, explicit back navigation and focus rest
   const actions = read("components/studio/relationship-actions.tsx");
   assert.match(actions, /aria-label="Delete impact"/); assert.match(actions, /Characters deleted<\/dt><dd>0/);
 });
+
+test("Successful relationship mutations explicitly invalidate the canonical catalog without resetting the graph viewport", () => {
+  const page = read("app/page.tsx");
+  const explorer = read("components/studio/relationship-explorer.tsx");
+  const graph = read("components/studio/relationship-graph.tsx");
+  assert.match(page, /const \[relationshipRefreshVersion, setRelationshipRefreshVersion\] = React\.useState\(0\)/);
+  assert.match(page, /const refreshRelationships = React\.useCallback\(async \(\) => \{[\s\S]*?if \(!await refreshStudioData\(false\)\)[\s\S]*?setRelationshipRefreshVersion\(\(version\) => version \+ 1\)/);
+  assert.match(page, /await refreshRelationships\(\);\s*pendingRelationshipCreateRefreshRef\.current = null;\s*router\.push\(relationshipCatalogRoute/);
+  assert.match(page, /if \(pendingRelationshipCreateRefreshRef\.current !== currentNovel\.id\) \{[\s\S]*?method: "POST"[\s\S]*?pendingRelationshipCreateRefreshRef\.current = currentNovel\.id/);
+  assert.match(page, /onChanged=\{refreshRelationships\}\s*refreshVersion=\{relationshipRefreshVersion\}/);
+  assert.match(page, /RelationshipCatalogLoader[^>]*refreshKey=\{refreshVersion\}/);
+  assert.match(explorer, /selectedId && !edges\.some\(\(edge\) => edge\.id === selectedId\)/);
+  assert.match(explorer, /setSelectedId\(null\);\s*setDrawerOpen\(false\)/);
+  assert.doesNotMatch(explorer, /<RelationshipGraph key=/);
+  assert.match(graph, /onClick=\{\(\) => setCamera\(null\)\}>Reset \/ Fit<\/Button>/);
+  assert.doesNotMatch(page, /window\.location\.reload/);
+});

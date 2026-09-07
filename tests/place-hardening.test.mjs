@@ -125,7 +125,7 @@ test("Place forms, linking and lifecycle modals are bounded and keep modal keybo
   assert.match(hierarchy, /visited.has\(current\)/);
   assert.match(hierarchy, /breadcrumb.length === MAX_PLACE_DEPTH/);
   const studio = await read("lib/db/studio.ts");
-  assert.match(studio, /listPlaces\(\)/, "studio snapshot uses the same minimal Place catalog");
+  assert.match(studio, /listPlaces\(scopedNovelId\)/, "studio snapshot uses the same minimal Place catalog scoped to its Novel");
   for (const path of ["components/studio/place-form-dialog.tsx", "components/studio/place-characters.tsx", "components/studio/place-story-events.tsx"]) {
     const source = await read(path);
     assert.match(source, /max-w-\[calc\(100vw-2rem\)\]/);

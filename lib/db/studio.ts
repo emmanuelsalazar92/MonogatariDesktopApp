@@ -4,11 +4,13 @@ import { composeChapterPreview, orderChapterPreviewScenes } from "@/lib/chapter-
 import { deriveCharacterFirstAppearanceDetails } from "@/lib/character-first-appearance";
 import { listPlaces } from "@/lib/db/places";
 import { writeNote } from "@/lib/db/notes";
+import { recordRecentActivity, recentActivityLimit } from "@/lib/db/recent-activity";
 import { parseCharacterPlaceRelationshipType } from "@/lib/character-place";
 import { timelineLinksInclude, setTimelineLinks, TimelinePlaceError } from "@/lib/db/timeline-places";
 import { positionForCreate } from "@/lib/db/timeline-position";
 import { readTimelineEvent } from "@/lib/timeline-event";
 import { scenePlaceLinksInclude, setScenePlaces, setLegacyScenePlace } from "@/lib/db/scene-places";
+import { createRecoveryCheckpoint } from "@/lib/db/scene-recovery";
 import type { ReaderOutline, ReaderScope } from "@/lib/reader-document";
 import {
   clampReadingRatio,
@@ -46,6 +48,7 @@ import {
   type RelationshipSince,
   type RelationshipTypeKey
 } from "@/lib/character-relationship";
+import type { NovelMetadataInput } from "@/lib/novel-metadata";
 
 function parseList(value: string): string[] {
   try {
@@ -78,6 +81,7 @@ function serializeScene(scene: {
   chapterId: string;
   title: string;
   content?: string;
+  contentLoaded?: boolean;
   summary: string;
   status: string;
   placeLinks?: Array<{ locationId: string }>;
@@ -91,6 +95,7 @@ function serializeScene(scene: {
   return {
     ...metadata,
     content: scene.content ?? "",
+    contentLoaded: scene.contentLoaded ?? scene.content !== undefined,
     status: scene.status as ChapterStatus,
     locationId: locationIds[0] ?? "",
     locationIds
@@ -199,6 +204,99 @@ function serializeNovel(novel: {
     createdAt: dateOnly(novel.createdAt),
     updatedAt: dateOnly(novel.updatedAt)
   };
+}
+
+export class SceneDocumentNotLoadedError extends Error {}
+
+const novelArchiveStatusSettingKey = (novelId: string) => `novel:${novelId}:status-before-archive`;
+const restorableNovelStatuses = new Set<NovelStatus>([
+  "Idea",
+  "Planning",
+  "Writing",
+  "Revision",
+  "Complete"
+]);
+
+export class NovelLifecycleConflictError extends Error {}
+
+async function resolveSelectionAfterNovelArchive(tx: Prisma.TransactionClient, archivedNovelId: string) {
+  const activeSelection = await tx.appSetting.findUnique({
+    where: { key: "activeNovelId" },
+    select: { value: true }
+  });
+  if (activeSelection?.value !== archivedNovelId) return;
+
+  const replacement = await tx.novel.findFirst({
+    where: { status: { not: "Archived" } },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    select: { id: true }
+  });
+  if (replacement) {
+    await tx.appSetting.upsert({
+      where: { key: "activeNovelId" },
+      update: { value: replacement.id },
+      create: { key: "activeNovelId", value: replacement.id }
+    });
+    return;
+  }
+  await tx.appSetting.deleteMany({
+    where: {
+      key: { in: ["activeNovelId", "activeStructureType", "activeStructureId", "activeChapterId", "activeSceneId"] }
+    }
+  });
+}
+
+// Novel archival is deliberately narrow: it is a reversible lifecycle change, not
+// a content operation. Related manuscript, metadata, mappings and backups remain untouched.
+export async function changeNovelLifecycle(
+  novelId: string,
+  action: "archive" | "restore",
+  expectedStatus: NovelStatus
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.novel.findUnique({ where: { id: novelId } });
+    if (!existing) throw new NovelLifecycleConflictError("Novel was not found");
+    // A repeated restore after the first transaction committed is intentionally
+    // a no-op. It never recreates project data, mappings, or sync metadata.
+    if (action === "restore" && existing.status !== "Archived") {
+      if (restorableNovelStatuses.has(existing.status as NovelStatus)) return serializeNovel(existing);
+      throw new NovelLifecycleConflictError("Only an archived novel can be restored");
+    }
+    if (existing.status !== expectedStatus) {
+      throw new NovelLifecycleConflictError("Novel lifecycle changed; refresh Library and try again");
+    }
+
+    if (action === "archive") {
+      if (!restorableNovelStatuses.has(existing.status as NovelStatus)) {
+        throw new NovelLifecycleConflictError("Only an active novel can be archived");
+      }
+      await tx.appSetting.upsert({
+        where: { key: novelArchiveStatusSettingKey(novelId) },
+        update: { value: existing.status },
+        create: { key: novelArchiveStatusSettingKey(novelId), value: existing.status }
+      });
+      const archivedNovel = await tx.novel.update({
+        where: { id: novelId },
+        data: { status: "Archived" }
+      });
+      await resolveSelectionAfterNovelArchive(tx, novelId);
+      return serializeNovel(archivedNovel);
+    }
+
+    const priorStatus = await tx.appSetting.findUnique({
+      where: { key: novelArchiveStatusSettingKey(novelId) },
+      select: { value: true }
+    });
+    const restoredStatus = restorableNovelStatuses.has(priorStatus?.value as NovelStatus)
+      ? priorStatus!.value
+      : "Idea";
+    const novel = await tx.novel.update({
+      where: { id: novelId },
+      data: { status: restoredStatus }
+    });
+    await tx.appSetting.deleteMany({ where: { key: novelArchiveStatusSettingKey(novelId) } });
+    return serializeNovel(novel);
+  });
 }
 
 function serializeRelationship(relationship: {
@@ -310,7 +408,13 @@ function serializeTimelineEvent(event: {
   };
 }
 
-export async function getStudioSnapshot() {
+export async function getStudioSnapshot(options: {
+  includeActiveSceneContent?: boolean;
+  activeSceneContentId?: string;
+  activeSceneNovelId?: string;
+  novelId?: string;
+} = {}) {
+  const scopedNovelId = options.novelId;
   const [
     novels,
     volumes,
@@ -327,12 +431,16 @@ export async function getStudioSnapshot() {
     writingActivities,
     settings,
     configuration,
-    notionSyncStates
+    notionSyncStates,
+    notionMappings,
+    overviewNotesCount,
+    recentActivities
   ] = await Promise.all([
-    prisma.novel.findMany({ orderBy: { updatedAt: "desc" } }),
-    prisma.volume.findMany({ orderBy: [{ novelId: "asc" }, { sortOrder: "asc" }] }),
-    prisma.chapter.findMany({ orderBy: [{ volumeId: "asc" }, { sortOrder: "asc" }] }),
+    prisma.novel.findMany({ where: scopedNovelId ? { id: scopedNovelId } : undefined, orderBy: { updatedAt: "desc" } }),
+    prisma.volume.findMany({ where: scopedNovelId ? { novelId: scopedNovelId } : undefined, orderBy: [{ novelId: "asc" }, { sortOrder: "asc" }] }),
+    prisma.chapter.findMany({ where: scopedNovelId ? { volume: { novelId: scopedNovelId } } : undefined, orderBy: [{ volumeId: "asc" }, { sortOrder: "asc" }] }),
     prisma.scene.findMany({
+      where: scopedNovelId ? { chapter: { volume: { novelId: scopedNovelId } } } : undefined,
       select: {
         id: true,
         chapterId: true,
@@ -349,6 +457,7 @@ export async function getStudioSnapshot() {
       orderBy: [{ chapterId: "asc" }, { sortOrder: "asc" }]
     }),
     prisma.character.findMany({
+      where: scopedNovelId ? { novelId: scopedNovelId } : undefined,
       select: {
         id: true,
         novelId: true,
@@ -369,27 +478,65 @@ export async function getStudioSnapshot() {
       orderBy: [{ novelId: "asc" }, { name: "asc" }]
     }),
     prisma.sceneCharacter.findMany({
+      where: scopedNovelId ? { character: { novelId: scopedNovelId } } : undefined,
       select: { characterId: true, sceneId: true },
       orderBy: [{ characterId: "asc" }, { sceneId: "asc" }]
     }),
-    prisma.characterPlace.findMany({ orderBy: [{ characterId: "asc" }, { locationId: "asc" }] }),
-    listPlaces(),
-    listRelationshipSummaries(),
-    listTimelineEventSummaries(),
+    prisma.characterPlace.findMany({ where: scopedNovelId ? { character: { novelId: scopedNovelId } } : undefined, orderBy: [{ characterId: "asc" }, { locationId: "asc" }] }),
+    listPlaces(scopedNovelId),
+    listRelationshipSummaries(scopedNovelId),
+    listTimelineEventSummaries(scopedNovelId),
     Promise.resolve([]), // Notes catalog/detail are fetched on demand, scoped to the active Novel.
-    prisma.backup.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.writingActivity.findMany({ orderBy: { createdAt: "desc" } }),
+    scopedNovelId ? Promise.resolve([]) : prisma.backup.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.writingActivity.findMany({ where: scopedNovelId ? { novelId: scopedNovelId } : undefined, orderBy: { createdAt: "desc" } }),
     prisma.appSetting.findMany({ orderBy: { key: "asc" } }),
     prisma.studioConfiguration.findUnique({ where: { id: STUDIO_CONFIGURATION_ID } }),
-    prisma.notionSyncState.findMany({ orderBy: { novelId: "asc" } })
+    prisma.notionSyncState.findMany({ where: scopedNovelId ? { novelId: scopedNovelId } : undefined, orderBy: { novelId: "asc" } }),
+    prisma.notionMapping.findMany({ where: { entityType: "novel", ...(scopedNovelId ? { novelId: scopedNovelId } : {}) }, select: { novelId: true } }),
+    scopedNovelId ? prisma.note.count({ where: { novelId: scopedNovelId } }) : Promise.resolve(0),
+    scopedNovelId
+      // Activity is contextual enrichment for the overview. A stale or unavailable
+      // activity table must never make the local writing workspace unavailable.
+      ? prisma.recentActivity.findMany({ where: { novelId: scopedNovelId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: recentActivityLimit }).catch(() => [])
+      : Promise.resolve([])
   ]);
   const studioSettings = configuration && configuration.version === STUDIO_CONFIGURATION_VERSION
     ? parseStudioSettings(configuration.values)
     : applyStudioSettings(parseStudioSettings(null), Object.fromEntries(settings.map((item) => [item.key, item.value])));
-  const activeSceneId = settings.find((setting) => setting.key === "activeSceneId")?.value;
-  const activeScene = activeSceneId
-    ? await prisma.scene.findUnique({ where: { id: activeSceneId }, select: { id: true, content: true } })
-    : null;
+  const persistedActiveSceneId = settings.find((setting) => setting.key === "activeSceneId")?.value;
+  const routeScene =
+    options.includeActiveSceneContent === false ||
+    !options.activeSceneContentId ||
+    !options.activeSceneNovelId
+      ? null
+      : await prisma.scene.findFirst({
+          where: {
+            id: options.activeSceneContentId,
+            archived: false,
+            chapter: {
+              archived: false,
+              volume: {
+                novelId: options.activeSceneNovelId,
+                archived: false,
+                novel: { status: { not: "Archived" } }
+              }
+            }
+          },
+          select: { id: true, content: true }
+        });
+  const hasExplicitRouteScene = Boolean(options.activeSceneContentId && options.activeSceneNovelId);
+  const activeScene =
+    options.includeActiveSceneContent === false
+      ? null
+      : hasExplicitRouteScene
+        ? routeScene
+        :
+        (persistedActiveSceneId
+          ? await prisma.scene.findUnique({
+              where: { id: persistedActiveSceneId },
+              select: { id: true, content: true }
+            })
+          : null);
   const characterFirstAppearances = deriveCharacterFirstAppearanceDetails(
     characters,
     volumes,
@@ -411,7 +558,8 @@ export async function getStudioSnapshot() {
     })),
     scenes: scenes.map((scene) => serializeScene({
       ...scene,
-      content: scene.id === activeScene?.id ? activeScene.content : ""
+      content: scene.id === activeScene?.id ? activeScene.content : "",
+      contentLoaded: scene.id === activeScene?.id
     })),
     characters: characters.map((character) =>
       serializeCharacterSummary(
@@ -429,6 +577,7 @@ export async function getStudioSnapshot() {
     relationships,
     timelineEvents,
     notes,
+    overviewNotesCount,
     backups: backups.map((backup) => ({
       ...backup,
       date: dateOnly(backup.createdAt),
@@ -438,12 +587,21 @@ export async function getStudioSnapshot() {
       ...activity,
       createdAt: activity.createdAt.toISOString()
     })),
+    recentActivities: recentActivities.map((activity) => ({
+      ...activity,
+      createdAt: activity.createdAt.toISOString()
+    })),
     studioSettings,
     settings: Object.fromEntries(settings.map((setting) => [setting.key, setting.value])),
     notionSyncStates: notionSyncStates.map((state) => ({
       novelId: state.novelId,
       isDirty: state.isDirty,
       revision: state.revision,
+      lastSyncedRevision: state.lastSyncedRevision,
+      syncStatus: state.syncStatus,
+      syncStartedAt: state.syncStartedAt?.toISOString() ?? null,
+      lastSyncError: state.lastSyncError,
+      mapped: notionMappings.some((mapping) => mapping.novelId === state.novelId),
       lastNotionSync: state.lastNotionSync?.toISOString() ?? null
     }))
   };
@@ -518,6 +676,22 @@ export async function createNovel(input: {
   return serializeNovel(novel);
 }
 
+// Editorial details live on Novel itself. This transaction intentionally never
+// reads or writes the manuscript hierarchy, so metadata failures cannot affect
+// volumes, chapters, or scenes.
+export async function updateNovelMetadata(novelId: string, input: NovelMetadataInput) {
+  const novel = await prisma.novel.update({
+    where: { id: novelId },
+    data: {
+      title: input.title,
+      synopsis: input.synopsis,
+      genre: input.genre,
+      tags: JSON.stringify(input.tags)
+    }
+  });
+  return serializeNovel(novel);
+}
+
 export async function createCharacter(input: {
   novelId: string;
   metadata: CharacterMetadataInput;
@@ -550,6 +724,13 @@ export async function createCharacter(input: {
       where: { id: input.novelId },
       data: { updatedAt: new Date() }
     });
+    await recordRecentActivity(tx, {
+      novelId: input.novelId,
+      eventType: "character-added",
+      entityType: "character",
+      entityId: id,
+      label: `Added character ${input.metadata.name}`
+    });
     if (input.markExternalDirty !== false) await markNotionDirty(tx, input.novelId);
 
     return createdCharacter;
@@ -579,6 +760,13 @@ export async function updateCharacter(characterId: string, metadata: CharacterMe
       }
     });
     await tx.novel.update({ where: { id: existing.novelId }, data: { updatedAt: new Date() } });
+    await recordRecentActivity(tx, {
+      novelId: existing.novelId,
+      eventType: "character-updated",
+      entityType: "character",
+      entityId: characterId,
+      label: `Updated character ${updated.name}`
+    });
     await markNotionDirty(tx, existing.novelId);
     return {
       ...updated,
@@ -1249,7 +1437,8 @@ export async function sceneBelongsToNovelForRoute(novelId: string, sceneId: stri
     await prisma.scene.findFirst({
       where: {
         id: sceneId,
-        chapter: { volume: { novelId } }
+        archived: false,
+        chapter: { archived: false, volume: { novelId, archived: false, novel: { status: { not: "Archived" } } } }
       },
       select: { id: true }
     })
@@ -1305,6 +1494,7 @@ export async function updateScene(
     objective?: string;
     locationId?: string;
     expectedRevision?: number;
+    documentLoaded?: boolean;
   }
 ) {
   const updatedScene = await prisma.$transaction(async (tx) => {
@@ -1318,10 +1508,22 @@ export async function updateScene(
         }
       }
     });
+    // A client must attest that it loaded the full document before it can turn
+    // a non-empty manuscript into an empty one. This is deliberately separate
+    // from revision checking: a placeholder can otherwise carry a valid revision.
+    if (input.content === "" && existing.content !== "" && input.documentLoaded !== true) {
+      throw new SceneDocumentNotLoadedError();
+    }
     const nextWordCount =
       typeof input.content === "string" ? countWords(input.content) : existing.wordCount;
     const wordDelta = nextWordCount - existing.wordCount;
     const expectedRevision = input.expectedRevision ?? existing.revision;
+    if (expectedRevision !== existing.revision) {
+      throw new SceneRevisionConflictError();
+    }
+    if (typeof input.content === "string") {
+      await createRecoveryCheckpoint(tx, existing, input.content, "scene-update");
+    }
     const update = await tx.scene.updateMany({
       where: { id: sceneId, revision: expectedRevision },
       data: {
@@ -1372,6 +1574,15 @@ export async function updateScene(
           sceneId: existing.id,
           wordDelta
         }
+      });
+    }
+    if (typeof input.content === "string" && input.content !== existing.content) {
+      await recordRecentActivity(tx, {
+        novelId: existing.chapter.volume.novelId,
+        eventType: "scene-edited",
+        entityType: "scene",
+        entityId: existing.id,
+        label: `Edited scene ${scene.title}`
       });
     }
     await markNotionDirty(tx, existing.chapter.volume.novelId);
@@ -1485,7 +1696,9 @@ export async function restoreSceneVersion(sceneId: string, versionId: string) {
     const current = await tx.scene.findUniqueOrThrow({ where: { id: sceneId }, include: { chapter: { include: { volume: true } } } });
     const version = await tx.sceneVersion.findFirst({ where: { id: versionId, sceneId } });
     if (!version) throw new SceneVersionValidationError();
-    await tx.sceneVersion.create({ data: { id: `scene-version-${crypto.randomUUID()}`, sceneId, title: current.title, content: current.content, wordCount: current.wordCount, label: "", origin: "before restore" } });
+    if (version.content !== current.content) {
+      await createRecoveryCheckpoint(tx, current, version.content, "version-restore", "version-restore");
+    }
     const restored = await tx.scene.update({ where: { id: sceneId }, data: { title: version.title, content: version.content, wordCount: version.wordCount, revision: { increment: 1 } }, include: scenePlaceLinksInclude });
     await markNotionDirty(tx, current.chapter.volume.novelId);
     return restored;

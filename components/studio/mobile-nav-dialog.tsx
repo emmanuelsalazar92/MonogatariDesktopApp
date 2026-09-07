@@ -3,6 +3,7 @@
 import * as React from "react";
 import { BookMarked, ChevronDown, ChevronRight } from "lucide-react";
 
+import { BrandLockup } from "@/components/studio/brand-mark";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export function MobileNavDialog({
   description,
   hasNovelContext,
   readerOptimized = false,
+  navigationPending = false,
   onOpenChange,
   onSelectPage
 }: {
@@ -40,6 +42,7 @@ export function MobileNavDialog({
   description: string;
   hasNovelContext: boolean;
   readerOptimized?: boolean;
+  navigationPending?: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectPage: (page: PageId) => void;
 }) {
@@ -58,6 +61,7 @@ export function MobileNavDialog({
         <button
           key={item.id}
           type="button"
+          disabled={navigationPending}
           onClick={() => onSelectPage(item.id)}
           aria-current={active ? "page" : undefined}
           className={cn(
@@ -84,7 +88,7 @@ export function MobileNavDialog({
         className="left-0 top-0 grid h-full max-h-none w-[88vw] max-w-sm translate-x-0 translate-y-0 grid-rows-[auto_minmax(0,1fr)] gap-0 rounded-none border-y-0 border-l-0 p-0"
       >
         <DialogHeader className="border-b border-border/55 px-5 py-4 pr-12">
-          <DialogTitle>Private Novel Studio</DialogTitle>
+          <DialogTitle><BrandLockup markClassName="size-7" /></DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <nav aria-label="Studio navigation" className="hide-scrollbar min-h-0 overflow-y-auto px-3 py-4">

@@ -112,7 +112,8 @@ test("Relationship API enforces ownership, canonical inverse uniqueness and non-
     "@/lib/db/prisma": { prisma }, "node:crypto": require("node:crypto"),
     "@/lib/chapter-preview": {}, "@/lib/character-first-appearance": { deriveCharacterFirstAppearanceDetails: () => new Map() }, "@/lib/db/places": { listPlaces: async () => [] }, "@/lib/character-place": {},
     "@/lib/timeline-event": {}, "@/lib/db/timeline-position": {}, "@/lib/db/timeline-places": {}, "@/lib/db/scene-places": {}, "@/lib/reader-progress": {}, "@/lib/studio-settings": { STUDIO_CONFIGURATION_ID: "studio", STUDIO_CONFIGURATION_VERSION: 1, parseStudioSettings: () => ({}), applyStudioSettings: () => ({}) },
-    "@/lib/character-metadata": createJiti(import.meta.url)("../lib/character-metadata.ts"), "@/lib/character-relationship": types
+    "@/lib/character-metadata": createJiti(import.meta.url)("../lib/character-metadata.ts"), "@/lib/character-relationship": types,
+    "@/lib/db/recent-activity": { recordRecentActivity: async () => {}, recentActivityLimit: 10 }
   });
   const route = await load("app/api/relationships/route.ts", {
     "@/lib/studio-routes": await load("lib/studio-routes.ts"),

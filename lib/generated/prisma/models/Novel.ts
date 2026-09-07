@@ -265,6 +265,7 @@ export type NovelWhereInput = {
   notes?: Prisma.NoteListRelationFilter
   backups?: Prisma.BackupListRelationFilter
   writingActivities?: Prisma.WritingActivityListRelationFilter
+  recentActivities?: Prisma.RecentActivityListRelationFilter
   readingProgress?: Prisma.XOR<Prisma.ReadingProgressNullableScalarRelationFilter, Prisma.ReadingProgressWhereInput> | null
 }
 
@@ -288,6 +289,7 @@ export type NovelOrderByWithRelationInput = {
   notes?: Prisma.NoteOrderByRelationAggregateInput
   backups?: Prisma.BackupOrderByRelationAggregateInput
   writingActivities?: Prisma.WritingActivityOrderByRelationAggregateInput
+  recentActivities?: Prisma.RecentActivityOrderByRelationAggregateInput
   readingProgress?: Prisma.ReadingProgressOrderByWithRelationInput
 }
 
@@ -314,6 +316,7 @@ export type NovelWhereUniqueInput = Prisma.AtLeast<{
   notes?: Prisma.NoteListRelationFilter
   backups?: Prisma.BackupListRelationFilter
   writingActivities?: Prisma.WritingActivityListRelationFilter
+  recentActivities?: Prisma.RecentActivityListRelationFilter
   readingProgress?: Prisma.XOR<Prisma.ReadingProgressNullableScalarRelationFilter, Prisma.ReadingProgressWhereInput> | null
 }, "id">
 
@@ -371,6 +374,7 @@ export type NovelCreateInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -394,6 +398,7 @@ export type NovelUncheckedCreateInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -417,6 +422,7 @@ export type NovelUpdateInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -440,6 +446,7 @@ export type NovelUncheckedUpdateInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -697,6 +704,20 @@ export type NovelUpdateOneWithoutBackupsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.NovelUpdateToOneWithWhereWithoutBackupsInput, Prisma.NovelUpdateWithoutBackupsInput>, Prisma.NovelUncheckedUpdateWithoutBackupsInput>
 }
 
+export type NovelCreateNestedOneWithoutRecentActivitiesInput = {
+  create?: Prisma.XOR<Prisma.NovelCreateWithoutRecentActivitiesInput, Prisma.NovelUncheckedCreateWithoutRecentActivitiesInput>
+  connectOrCreate?: Prisma.NovelCreateOrConnectWithoutRecentActivitiesInput
+  connect?: Prisma.NovelWhereUniqueInput
+}
+
+export type NovelUpdateOneRequiredWithoutRecentActivitiesNestedInput = {
+  create?: Prisma.XOR<Prisma.NovelCreateWithoutRecentActivitiesInput, Prisma.NovelUncheckedCreateWithoutRecentActivitiesInput>
+  connectOrCreate?: Prisma.NovelCreateOrConnectWithoutRecentActivitiesInput
+  upsert?: Prisma.NovelUpsertWithoutRecentActivitiesInput
+  connect?: Prisma.NovelWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NovelUpdateToOneWithWhereWithoutRecentActivitiesInput, Prisma.NovelUpdateWithoutRecentActivitiesInput>, Prisma.NovelUncheckedUpdateWithoutRecentActivitiesInput>
+}
+
 export type NovelCreateWithoutReadingProgressInput = {
   id: string
   title: string
@@ -717,6 +738,7 @@ export type NovelCreateWithoutReadingProgressInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
 }
 
 export type NovelUncheckedCreateWithoutReadingProgressInput = {
@@ -739,6 +761,7 @@ export type NovelUncheckedCreateWithoutReadingProgressInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
 }
 
 export type NovelCreateOrConnectWithoutReadingProgressInput = {
@@ -777,6 +800,7 @@ export type NovelUpdateWithoutReadingProgressInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelUncheckedUpdateWithoutReadingProgressInput = {
@@ -799,6 +823,7 @@ export type NovelUncheckedUpdateWithoutReadingProgressInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
 }
 
 export type NovelCreateWithoutVolumesInput = {
@@ -820,6 +845,7 @@ export type NovelCreateWithoutVolumesInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -842,6 +868,7 @@ export type NovelUncheckedCreateWithoutVolumesInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -880,6 +907,7 @@ export type NovelUpdateWithoutVolumesInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -902,6 +930,7 @@ export type NovelUncheckedUpdateWithoutVolumesInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -924,6 +953,7 @@ export type NovelCreateWithoutWritingActivitiesInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -946,6 +976,7 @@ export type NovelUncheckedCreateWithoutWritingActivitiesInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -984,6 +1015,7 @@ export type NovelUpdateWithoutWritingActivitiesInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1006,6 +1038,7 @@ export type NovelUncheckedUpdateWithoutWritingActivitiesInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1028,6 +1061,7 @@ export type NovelCreateWithoutCharactersInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1050,6 +1084,7 @@ export type NovelUncheckedCreateWithoutCharactersInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1088,6 +1123,7 @@ export type NovelUpdateWithoutCharactersInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1110,6 +1146,7 @@ export type NovelUncheckedUpdateWithoutCharactersInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1132,6 +1169,7 @@ export type NovelCreateWithoutLocationsInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1154,6 +1192,7 @@ export type NovelUncheckedCreateWithoutLocationsInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1192,6 +1231,7 @@ export type NovelUpdateWithoutLocationsInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1214,6 +1254,7 @@ export type NovelUncheckedUpdateWithoutLocationsInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1236,6 +1277,7 @@ export type NovelCreateWithoutRelationshipsInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1258,6 +1300,7 @@ export type NovelUncheckedCreateWithoutRelationshipsInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1296,6 +1339,7 @@ export type NovelUpdateWithoutRelationshipsInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1318,6 +1362,7 @@ export type NovelUncheckedUpdateWithoutRelationshipsInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1340,6 +1385,7 @@ export type NovelCreateWithoutTimelineEventsInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1362,6 +1408,7 @@ export type NovelUncheckedCreateWithoutTimelineEventsInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1400,6 +1447,7 @@ export type NovelUpdateWithoutTimelineEventsInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1422,6 +1470,7 @@ export type NovelUncheckedUpdateWithoutTimelineEventsInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1444,6 +1493,7 @@ export type NovelCreateWithoutNotesInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1466,6 +1516,7 @@ export type NovelUncheckedCreateWithoutNotesInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1504,6 +1555,7 @@ export type NovelUpdateWithoutNotesInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1526,6 +1578,7 @@ export type NovelUncheckedUpdateWithoutNotesInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1548,6 +1601,7 @@ export type NovelCreateWithoutNoteTagsInput = {
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1570,6 +1624,7 @@ export type NovelUncheckedCreateWithoutNoteTagsInput = {
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1608,6 +1663,7 @@ export type NovelUpdateWithoutNoteTagsInput = {
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1630,6 +1686,7 @@ export type NovelUncheckedUpdateWithoutNoteTagsInput = {
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1652,6 +1709,7 @@ export type NovelCreateWithoutBackupsInput = {
   timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
 }
 
@@ -1674,6 +1732,7 @@ export type NovelUncheckedCreateWithoutBackupsInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
   writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  recentActivities?: Prisma.RecentActivityUncheckedCreateNestedManyWithoutNovelInput
   readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
 }
 
@@ -1712,6 +1771,7 @@ export type NovelUpdateWithoutBackupsInput = {
   timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
 }
 
@@ -1734,6 +1794,115 @@ export type NovelUncheckedUpdateWithoutBackupsInput = {
   timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
   notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
   writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
+  recentActivities?: Prisma.RecentActivityUncheckedUpdateManyWithoutNovelNestedInput
+  readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
+}
+
+export type NovelCreateWithoutRecentActivitiesInput = {
+  id: string
+  title: string
+  synopsis?: string
+  status?: string
+  coverImage?: string
+  genre?: string
+  tags?: string
+  wordCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  noteTags?: Prisma.TagCreateNestedManyWithoutNovelInput
+  volumes?: Prisma.VolumeCreateNestedManyWithoutNovelInput
+  characters?: Prisma.CharacterCreateNestedManyWithoutNovelInput
+  locations?: Prisma.LocationCreateNestedManyWithoutNovelInput
+  relationships?: Prisma.RelationshipCreateNestedManyWithoutNovelInput
+  timelineEvents?: Prisma.TimelineEventCreateNestedManyWithoutNovelInput
+  notes?: Prisma.NoteCreateNestedManyWithoutNovelInput
+  backups?: Prisma.BackupCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityCreateNestedManyWithoutNovelInput
+  readingProgress?: Prisma.ReadingProgressCreateNestedOneWithoutNovelInput
+}
+
+export type NovelUncheckedCreateWithoutRecentActivitiesInput = {
+  id: string
+  title: string
+  synopsis?: string
+  status?: string
+  coverImage?: string
+  genre?: string
+  tags?: string
+  wordCount?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  noteTags?: Prisma.TagUncheckedCreateNestedManyWithoutNovelInput
+  volumes?: Prisma.VolumeUncheckedCreateNestedManyWithoutNovelInput
+  characters?: Prisma.CharacterUncheckedCreateNestedManyWithoutNovelInput
+  locations?: Prisma.LocationUncheckedCreateNestedManyWithoutNovelInput
+  relationships?: Prisma.RelationshipUncheckedCreateNestedManyWithoutNovelInput
+  timelineEvents?: Prisma.TimelineEventUncheckedCreateNestedManyWithoutNovelInput
+  notes?: Prisma.NoteUncheckedCreateNestedManyWithoutNovelInput
+  backups?: Prisma.BackupUncheckedCreateNestedManyWithoutNovelInput
+  writingActivities?: Prisma.WritingActivityUncheckedCreateNestedManyWithoutNovelInput
+  readingProgress?: Prisma.ReadingProgressUncheckedCreateNestedOneWithoutNovelInput
+}
+
+export type NovelCreateOrConnectWithoutRecentActivitiesInput = {
+  where: Prisma.NovelWhereUniqueInput
+  create: Prisma.XOR<Prisma.NovelCreateWithoutRecentActivitiesInput, Prisma.NovelUncheckedCreateWithoutRecentActivitiesInput>
+}
+
+export type NovelUpsertWithoutRecentActivitiesInput = {
+  update: Prisma.XOR<Prisma.NovelUpdateWithoutRecentActivitiesInput, Prisma.NovelUncheckedUpdateWithoutRecentActivitiesInput>
+  create: Prisma.XOR<Prisma.NovelCreateWithoutRecentActivitiesInput, Prisma.NovelUncheckedCreateWithoutRecentActivitiesInput>
+  where?: Prisma.NovelWhereInput
+}
+
+export type NovelUpdateToOneWithWhereWithoutRecentActivitiesInput = {
+  where?: Prisma.NovelWhereInput
+  data: Prisma.XOR<Prisma.NovelUpdateWithoutRecentActivitiesInput, Prisma.NovelUncheckedUpdateWithoutRecentActivitiesInput>
+}
+
+export type NovelUpdateWithoutRecentActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  coverImage?: Prisma.StringFieldUpdateOperationsInput | string
+  genre?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUpdateManyWithoutNovelNestedInput
+  volumes?: Prisma.VolumeUpdateManyWithoutNovelNestedInput
+  characters?: Prisma.CharacterUpdateManyWithoutNovelNestedInput
+  locations?: Prisma.LocationUpdateManyWithoutNovelNestedInput
+  relationships?: Prisma.RelationshipUpdateManyWithoutNovelNestedInput
+  timelineEvents?: Prisma.TimelineEventUpdateManyWithoutNovelNestedInput
+  notes?: Prisma.NoteUpdateManyWithoutNovelNestedInput
+  backups?: Prisma.BackupUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUpdateManyWithoutNovelNestedInput
+  readingProgress?: Prisma.ReadingProgressUpdateOneWithoutNovelNestedInput
+}
+
+export type NovelUncheckedUpdateWithoutRecentActivitiesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  synopsis?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  coverImage?: Prisma.StringFieldUpdateOperationsInput | string
+  genre?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.StringFieldUpdateOperationsInput | string
+  wordCount?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  noteTags?: Prisma.TagUncheckedUpdateManyWithoutNovelNestedInput
+  volumes?: Prisma.VolumeUncheckedUpdateManyWithoutNovelNestedInput
+  characters?: Prisma.CharacterUncheckedUpdateManyWithoutNovelNestedInput
+  locations?: Prisma.LocationUncheckedUpdateManyWithoutNovelNestedInput
+  relationships?: Prisma.RelationshipUncheckedUpdateManyWithoutNovelNestedInput
+  timelineEvents?: Prisma.TimelineEventUncheckedUpdateManyWithoutNovelNestedInput
+  notes?: Prisma.NoteUncheckedUpdateManyWithoutNovelNestedInput
+  backups?: Prisma.BackupUncheckedUpdateManyWithoutNovelNestedInput
+  writingActivities?: Prisma.WritingActivityUncheckedUpdateManyWithoutNovelNestedInput
   readingProgress?: Prisma.ReadingProgressUncheckedUpdateOneWithoutNovelNestedInput
 }
 
@@ -1752,6 +1921,7 @@ export type NovelCountOutputType = {
   notes: number
   backups: number
   writingActivities: number
+  recentActivities: number
 }
 
 export type NovelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1764,6 +1934,7 @@ export type NovelCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   notes?: boolean | NovelCountOutputTypeCountNotesArgs
   backups?: boolean | NovelCountOutputTypeCountBackupsArgs
   writingActivities?: boolean | NovelCountOutputTypeCountWritingActivitiesArgs
+  recentActivities?: boolean | NovelCountOutputTypeCountRecentActivitiesArgs
 }
 
 /**
@@ -1839,6 +2010,13 @@ export type NovelCountOutputTypeCountWritingActivitiesArgs<ExtArgs extends runti
   where?: Prisma.WritingActivityWhereInput
 }
 
+/**
+ * NovelCountOutputType without action
+ */
+export type NovelCountOutputTypeCountRecentActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecentActivityWhereInput
+}
+
 
 export type NovelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1860,6 +2038,7 @@ export type NovelSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   notes?: boolean | Prisma.Novel$notesArgs<ExtArgs>
   backups?: boolean | Prisma.Novel$backupsArgs<ExtArgs>
   writingActivities?: boolean | Prisma.Novel$writingActivitiesArgs<ExtArgs>
+  recentActivities?: boolean | Prisma.Novel$recentActivitiesArgs<ExtArgs>
   readingProgress?: boolean | Prisma.Novel$readingProgressArgs<ExtArgs>
   _count?: boolean | Prisma.NovelCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["novel"]>
@@ -1914,6 +2093,7 @@ export type NovelInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   notes?: boolean | Prisma.Novel$notesArgs<ExtArgs>
   backups?: boolean | Prisma.Novel$backupsArgs<ExtArgs>
   writingActivities?: boolean | Prisma.Novel$writingActivitiesArgs<ExtArgs>
+  recentActivities?: boolean | Prisma.Novel$recentActivitiesArgs<ExtArgs>
   readingProgress?: boolean | Prisma.Novel$readingProgressArgs<ExtArgs>
   _count?: boolean | Prisma.NovelCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1932,6 +2112,7 @@ export type $NovelPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     notes: Prisma.$NotePayload<ExtArgs>[]
     backups: Prisma.$BackupPayload<ExtArgs>[]
     writingActivities: Prisma.$WritingActivityPayload<ExtArgs>[]
+    recentActivities: Prisma.$RecentActivityPayload<ExtArgs>[]
     readingProgress: Prisma.$ReadingProgressPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -2348,6 +2529,7 @@ export interface Prisma__NovelClient<T, Null = never, ExtArgs extends runtime.Ty
   notes<T extends Prisma.Novel$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   backups<T extends Prisma.Novel$backupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$backupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BackupPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   writingActivities<T extends Prisma.Novel$writingActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$writingActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WritingActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  recentActivities<T extends Prisma.Novel$recentActivitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$recentActivitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecentActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   readingProgress<T extends Prisma.Novel$readingProgressArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Novel$readingProgressArgs<ExtArgs>>): Prisma.Prisma__ReadingProgressClient<runtime.Types.Result.GetResult<Prisma.$ReadingProgressPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2992,6 +3174,30 @@ export type Novel$writingActivitiesArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.WritingActivityScalarFieldEnum | Prisma.WritingActivityScalarFieldEnum[]
+}
+
+/**
+ * Novel.recentActivities
+ */
+export type Novel$recentActivitiesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RecentActivity
+   */
+  select?: Prisma.RecentActivitySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RecentActivity
+   */
+  omit?: Prisma.RecentActivityOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecentActivityInclude<ExtArgs> | null
+  where?: Prisma.RecentActivityWhereInput
+  orderBy?: Prisma.RecentActivityOrderByWithRelationInput | Prisma.RecentActivityOrderByWithRelationInput[]
+  cursor?: Prisma.RecentActivityWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecentActivityScalarFieldEnum | Prisma.RecentActivityScalarFieldEnum[]
 }
 
 /**
