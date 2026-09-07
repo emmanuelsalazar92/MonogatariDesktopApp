@@ -1,6 +1,8 @@
 import "server-only";
 
-import { applyNotionChapterUpdates, type RemoteSceneUpdate } from "@/lib/db/notion-pull";
+import { createHash, randomUUID } from "node:crypto";
+
+import { applyNotionChapterUpdates, NotionPullApplyError } from "@/lib/db/notion-pull";
 import {
   getNotionContentBaselines,
   recordNotionPull,
@@ -13,16 +15,17 @@ import {
   getNotionChapterSyncSnapshots,
   NotionPublishError
 } from "@/lib/notion-publish";
-
-type NotionRemoteBlock = {
-  type?: string;
-  [key: string]: unknown;
-};
+import {
+  NotionRemoteContentError,
+  parseCompleteNotionChapterBlocks,
+  type NotionRemoteBlock,
+  type RemoteSceneUpdate
+} from "@/lib/notion-pull-safety";
 
 type NotionBlockList = {
-  results: NotionRemoteBlock[];
-  has_more: boolean;
-  next_cursor: string | null;
+  results?: unknown;
+  has_more?: unknown;
+  next_cursor?: unknown;
 };
 
 type PullTarget = {
@@ -30,6 +33,9 @@ type PullTarget = {
   title?: string;
   remote: string;
   scenes: RemoteSceneUpdate[];
+  pageId: string;
+  pageCount: number;
+  blockCount: number;
 };
 
 export type NotionPullConflict = {
@@ -38,6 +44,7 @@ export type NotionPullConflict = {
   code:
     | "BASELINE_REQUIRED"
     | "CONTENT_CONFLICT"
+    | "DESTRUCTIVE_REMOTE_EMPTY"
     | "UNSUPPORTED_REMOTE_STRUCTURE"
     | "STRUCTURE_CONFLICT";
   message: string;
@@ -64,6 +71,39 @@ function blockText(block: NotionRemoteBlock) {
   return (content?.rich_text ?? [])
     .map((item) => item.plain_text ?? item.text?.content ?? "")
     .join("");
+}
+
+function contentFingerprint(value: string) {
+  return createHash("sha256").update(value).digest("hex").slice(0, 16);
+}
+
+function logPullDecision(input: {
+  operationId: string;
+  novelId: string;
+  chapterId: string;
+  sceneId?: string;
+  pageId: string;
+  pageCount?: number;
+  blockCount?: number;
+  localContent?: string;
+  remoteContent?: string;
+  decision: "apply" | "preserve" | "conflict" | "error";
+  reason?: string;
+}) {
+  console.info("notion_pull_scene_decision", {
+    operationId: input.operationId,
+    novelId: input.novelId,
+    chapterId: input.chapterId,
+    ...(input.sceneId ? { sceneId: input.sceneId } : {}),
+    direction: "pull",
+    remoteReadSuccess: input.decision !== "error",
+    ...(input.pageCount !== undefined ? { pageCount: input.pageCount } : {}),
+    ...(input.blockCount !== undefined ? { blockCount: input.blockCount } : {}),
+    ...(input.localContent !== undefined ? { localContentLength: input.localContent.length, localContentFingerprint: contentFingerprint(input.localContent) } : {}),
+    ...(input.remoteContent !== undefined ? { remoteContentLength: input.remoteContent.length, remoteContentFingerprint: contentFingerprint(input.remoteContent) } : {}),
+    decision: input.decision,
+    ...(input.reason ? { reason: input.reason } : {})
+  });
 }
 
 function remoteSnapshot(blocks: NotionRemoteBlock[]) {
@@ -113,57 +153,46 @@ function formatRemoteContent(snapshot: string) {
   }
 }
 
-function scenesFromRemoteBlocks(
-  blocks: NotionRemoteBlock[],
-  localScenes: Array<{ summary: string }>
-) {
-  const scenes: Array<RemoteSceneUpdate & { paragraphs: string[] }> = [];
-  let current: (RemoteSceneUpdate & { paragraphs: string[] }) | null = null;
-
-  for (const block of blocks) {
-    if (block.type === "heading_2") {
-      current = { title: blockText(block), content: "", paragraphs: [] };
-      scenes.push(current);
-      continue;
-    }
-    if (block.type === "paragraph" && current) {
-      current.paragraphs.push(blockText(block));
-    }
-  }
-
-  return scenes.map((scene, index) => {
-    const paragraphs =
-      scene.paragraphs[0] === localScenes[index]?.summary
-        ? scene.paragraphs.slice(1)
-        : scene.paragraphs;
-    return { title: scene.title, content: paragraphs.join("\n\n") };
-  });
-}
-
-function chapterTitleFromRemoteBlocks(blocks: NotionRemoteBlock[]) {
-  const remoteTitle = blocks.find((block) => block.type === "heading_1");
-  if (!remoteTitle) return undefined;
-  return blockText(remoteTitle).replace(/^\d{2}\.\d{2}\s+—\s+/, "").trim() || undefined;
-}
-
 async function getPageBlocks(pageId: string, rootPageId: string) {
   await assertNotionPageWithinRoot(pageId, rootPageId);
   const blocks: NotionRemoteBlock[] = [];
   let cursor: string | null = null;
+  const seenCursors = new Set<string>();
+  let pageCount = 0;
 
   do {
     const query = new URLSearchParams({ page_size: "100" });
     if (cursor) query.set("start_cursor", cursor);
     const page = await requestNotion<NotionBlockList>(`/v1/blocks/${pageId}/children?${query}`);
-    blocks.push(...page.results);
-    cursor = page.has_more ? page.next_cursor : null;
+    pageCount += 1;
+    if (!Array.isArray(page.results) || typeof page.has_more !== "boolean") {
+      throw new NotionRemoteContentError("REMOTE_READ_INCOMPLETE", "Notion returned an incomplete block page.");
+    }
+    const pageBlocks = page.results.filter((block): block is NotionRemoteBlock =>
+      Boolean(block) && typeof block === "object" && !Array.isArray(block)
+    );
+    if (pageBlocks.length !== page.results.length) {
+      throw new NotionRemoteContentError("REMOTE_READ_INCOMPLETE", "Notion returned an invalid block entry.");
+    }
+    blocks.push(...pageBlocks);
+    if (!page.has_more) {
+      cursor = null;
+      continue;
+    }
+    if (typeof page.next_cursor !== "string" || !page.next_cursor || seenCursors.has(page.next_cursor)) {
+      throw new NotionRemoteContentError("REMOTE_READ_INCOMPLETE", "Notion did not provide a complete block pagination cursor.");
+    }
+    seenCursors.add(page.next_cursor);
+    cursor = page.next_cursor;
   } while (cursor);
 
-  return blocks;
+  return { blocks, pageCount, blockCount: blocks.length };
 }
 
 export async function getNotionRemoteChanges(novelId: string) {
   const rootPageId = await getAuthorizedNotionRootPageId();
+  const source = await getNotionPublishSource(novelId);
+  if (!source) throw new NotionPullError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
   const baselines = await getNotionContentBaselines(novelId);
   const mappings = (await getNotionMappings(novelId)).filter((mapping) => mapping.entityType === "chapter");
 
@@ -172,7 +201,12 @@ export async function getNotionRemoteChanges(novelId: string) {
     const baseline = baselines[chapterId];
     if (!baseline) return { changed: true, chapterId };
 
-    const remote = remoteSnapshot(await getPageBlocks(mapping.notionPageId, rootPageId));
+    const localScenes = source.scenes
+      .filter((scene) => scene.chapterId === chapterId)
+      .map((scene) => ({ id: scene.id, summary: scene.summary }));
+    const remoteRead = await getPageBlocks(mapping.notionPageId, rootPageId);
+    parseCompleteNotionChapterBlocks(remoteRead.blocks, localScenes);
+    const remote = remoteSnapshot(remoteRead.blocks);
     if (remote !== baseline.remote) return { changed: true, chapterId };
   }
 
@@ -187,6 +221,7 @@ export async function pullNovelFromNotion(
     beforeApply?: () => Promise<void>;
   } = {}
 ) {
+  const operationId = randomUUID();
   const rootPageId = await getAuthorizedNotionRootPageId();
   const source = await getNotionPublishSource(novelId);
   if (!source) {
@@ -228,40 +263,106 @@ export async function pullNovelFromNotion(
       continue;
     }
 
-    const remoteBlocks = await getPageBlocks(mapping.notionPageId, rootPageId);
-    const remote = remoteSnapshot(remoteBlocks);
+    let remoteRead: Awaited<ReturnType<typeof getPageBlocks>>;
+    try {
+      remoteRead = await getPageBlocks(mapping.notionPageId, rootPageId);
+    } catch (error) {
+      logPullDecision({
+        operationId,
+        novelId,
+        chapterId: current.chapterId,
+        pageId: mapping.notionPageId,
+        decision: "error",
+        reason: error instanceof Error ? error.message : "remote_read_failed"
+      });
+      if (error instanceof NotionRemoteContentError) {
+        throw new NotionPullError(422, error.code, error.message);
+      }
+      throw error;
+    }
+    const remote = remoteSnapshot(remoteRead.blocks);
     const localScenes = source.scenes
       .filter((scene) => scene.chapterId === current?.chapterId)
-      .map((scene) => ({ summary: scene.summary }));
-    const scenes = scenesFromRemoteBlocks(remoteBlocks, localScenes);
-    const title = chapterTitleFromRemoteBlocks(remoteBlocks);
+      .map((scene) => ({ id: scene.id, summary: scene.summary, content: scene.content }));
+    let parsedRemote: ReturnType<typeof parseCompleteNotionChapterBlocks>;
+    try {
+      parsedRemote = parseCompleteNotionChapterBlocks(remoteRead.blocks, localScenes);
+    } catch (error) {
+      logPullDecision({
+        operationId,
+        novelId,
+        chapterId: current.chapterId,
+        pageId: mapping.notionPageId,
+        pageCount: remoteRead.pageCount,
+        blockCount: remoteRead.blockCount,
+        decision: "error",
+        reason: error instanceof Error ? error.message : "remote_parse_failed"
+      });
+      if (error instanceof NotionRemoteContentError) {
+        throw new NotionPullError(422, error.code, error.message);
+      }
+      throw error;
+    }
+    const scenes = parsedRemote.scenes;
+    const title = parsedRemote.chapterTitle || undefined;
     const remoteChanged = remote !== baseline.remote;
     const localChanged = current.local !== baseline.local;
+    const target = {
+      chapterId: current.chapterId,
+      title,
+      remote,
+      scenes,
+      pageId: mapping.notionPageId,
+      pageCount: remoteRead.pageCount,
+      blockCount: remoteRead.blockCount
+    };
+    const destructiveEmptyScenes = scenes.filter((scene) =>
+      scene.content === "" && localScenes.find((local) => local.id === scene.localSceneId)?.content.trim()
+    );
 
-    if (remoteChanged && scenes.length === 0) {
+    if (remoteChanged && destructiveEmptyScenes.length > 0) {
+      if (options.resolution === "accept-remote") {
+        targets.push({
+          ...target,
+          scenes: scenes.map((scene) => ({
+            ...scene,
+            allowEmptyOverwrite: destructiveEmptyScenes.some((empty) => empty.localSceneId === scene.localSceneId)
+          }))
+        });
+        resolvedConflict = true;
+        continue;
+      }
+      if (options.resolution === "keep-local" || options.resolution === "cancel") {
+        acknowledgedTargets.push(target);
+        resolvedConflict = true;
+        continue;
+      }
+      for (const scene of destructiveEmptyScenes) {
+        const local = localScenes.find((item) => item.id === scene.localSceneId)!;
+        logPullDecision({
+          operationId,
+          novelId,
+          chapterId: current.chapterId,
+          sceneId: scene.localSceneId,
+          pageId: mapping.notionPageId,
+          pageCount: remoteRead.pageCount,
+          blockCount: remoteRead.blockCount,
+          localContent: local.content,
+          remoteContent: scene.content,
+          decision: "conflict",
+          reason: "remote_empty_requires_explicit_resolution"
+        });
+      }
       conflicts.push({
         chapterId: current.chapterId,
         chapterTitle: source.chapters.find((chapter) => chapter.id === current.chapterId)?.title ?? "Unknown chapter",
-        code: "UNSUPPORTED_REMOTE_STRUCTURE",
-        message: "The Notion page no longer has scene headings that Monogatari can safely apply."
-      });
-      continue;
-    }
-    if (
-      remoteChanged &&
-      scenes.length !== source.scenes.filter((scene) => scene.chapterId === current.chapterId).length
-    ) {
-      conflicts.push({
-        chapterId: current.chapterId,
-        chapterTitle: source.chapters.find((chapter) => chapter.id === current.chapterId)?.title ?? "Unknown chapter",
-        code: "STRUCTURE_CONFLICT",
-        message: "The Notion page changed its scene structure and needs manual review."
+        code: "DESTRUCTIVE_REMOTE_EMPTY",
+        message: "Notion would replace non-empty local manuscript content with an empty document. Review and explicitly accept the remote version to continue."
       });
       continue;
     }
 
     if (remoteChanged && localChanged) {
-      const target = { chapterId: current.chapterId, title, remote, scenes };
       if (options.resolution === "accept-remote") {
         targets.push(target);
         resolvedConflict = true;
@@ -283,7 +384,7 @@ export async function pullNovelFromNotion(
       continue;
     }
     if (remoteChanged) {
-      targets.push({ chapterId: current.chapterId, title, remote, scenes });
+      targets.push(target);
     }
   }
 
@@ -305,14 +406,52 @@ export async function pullNovelFromNotion(
 
   if (targets.length > 0) await options.beforeApply?.();
   if (targets.length > 0) {
-    await applyNotionChapterUpdates(
-      novelId,
-      targets.map((target) => ({
-        chapterId: target.chapterId,
-        title: target.title,
-        scenes: target.scenes
-      }))
-    );
+    try {
+      await applyNotionChapterUpdates(
+        novelId,
+        targets.map((target) => ({
+          chapterId: target.chapterId,
+          title: target.title,
+          scenes: target.scenes
+        }))
+      );
+    } catch (error) {
+      for (const target of targets) {
+        for (const scene of target.scenes) {
+          logPullDecision({
+            operationId,
+            novelId,
+            chapterId: target.chapterId,
+            sceneId: scene.localSceneId,
+            pageId: target.pageId,
+            pageCount: target.pageCount,
+            blockCount: target.blockCount,
+            remoteContent: scene.content,
+            decision: "preserve",
+            reason: error instanceof Error ? error.message : "apply_failed"
+          });
+        }
+      }
+      if (error instanceof NotionPullApplyError) {
+        throw new NotionPullError(409, "PULL_APPLY_BLOCKED", "Notion content was not applied because its local mapping or safety proof changed.");
+      }
+      throw error;
+    }
+    for (const target of targets) {
+      for (const scene of target.scenes) {
+        logPullDecision({
+          operationId,
+          novelId,
+          chapterId: target.chapterId,
+          sceneId: scene.localSceneId,
+          pageId: target.pageId,
+          pageCount: target.pageCount,
+          blockCount: target.blockCount,
+          remoteContent: scene.content,
+          decision: "apply"
+        });
+      }
+    }
   }
 
   const nextSource = await getNotionPublishSource(novelId);

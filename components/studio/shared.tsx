@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { BookMarked, LayoutDashboard } from "lucide-react";
+import Image from "next/image";
+import { LayoutDashboard } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,28 +40,44 @@ export function StatusBadge({
 
 export function CoverBlock({
   title,
+  coverImage = "",
   compact = false
 }: {
   title: string;
+  coverImage?: string;
   compact?: boolean;
 }) {
+  const [imageFailed, setImageFailed] = React.useState(false);
+  const safeTitle = typeof title === "string" && title.trim() ? title : "Untitled novel";
+  const safeCoverImage = typeof coverImage === "string" ? coverImage : "";
+  React.useEffect(() => setImageFailed(false), [safeCoverImage]);
+  const accent = [
+    "from-primary/80 via-primary/35 to-transparent",
+    "from-accent/70 via-primary/30 to-transparent",
+    "from-amber-700/60 via-primary/25 to-transparent",
+    "from-violet-700/60 via-primary/25 to-transparent"
+  ][Array.from(safeTitle).reduce((total, character) => total + character.charCodeAt(0), 0) % 4];
+  // Covers are supplied by the app's local upload/storage flow. Do not turn a
+  // metadata field into a client-side fetcher for arbitrary remote URLs.
+  const coverSource = safeCoverImage.startsWith("/") ? safeCoverImage : "";
+  const hasCover = Boolean(coverSource) && !imageFailed;
+
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border/60 bg-editor shadow-paper-sm",
-        compact ? "h-28 w-20" : "aspect-[3/4] min-h-48"
+        "relative shrink-0 overflow-hidden rounded-md border border-border/60 bg-editor shadow-paper-sm",
+        compact ? "h-20 w-14" : "h-28 w-20"
       )}
     >
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.4),rgba(255,255,255,0))]" />
-      <div className="absolute inset-0 paper-texture opacity-60" />
-      <div className="absolute inset-x-3 top-3 h-1 rounded-full bg-primary/55" />
-      <div className="absolute inset-x-3 bottom-3 h-10 rounded-md border border-border/50 bg-background/58" />
-      <div className="absolute inset-0 flex items-center justify-center p-4 text-center">
-        <div>
-          <BookMarked className="mx-auto mb-3 size-7 text-primary/90" />
-          <p className="text-sm font-semibold leading-snug text-foreground/95">{title}</p>
+      {hasCover ? <Image src={coverSource} alt={`Cover of ${safeTitle}`} fill sizes="56px" className="object-cover" onError={() => setImageFailed(true)} /> : (
+        <div aria-hidden="true" className={cn("absolute inset-0 bg-gradient-to-br", accent)}>
+          <div className="absolute inset-0 paper-texture opacity-45" />
+          <div className="absolute inset-x-2 top-2 h-px bg-background/70" />
+          <div className="absolute inset-x-2 bottom-2 text-center text-[9px] font-semibold leading-tight text-foreground/90 [overflow-wrap:anywhere]">
+            {safeTitle.slice(0, 28)}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -149,10 +166,11 @@ export function MetricCard({
 }
 
 export function TagList({ tags }: { tags: string[] }) {
+  const safeTags = Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string" && Boolean(tag.trim())) : [];
   return (
-    <div className="flex flex-wrap gap-2">
-      {tags.map((tag) => (
-        <Badge key={tag} variant="outline" className="bg-background/45">
+    <div className="flex min-w-0 flex-wrap gap-1.5">
+      {safeTags.map((tag) => (
+        <Badge key={tag} variant="outline" className="max-w-full break-words bg-background/45 [overflow-wrap:anywhere]">
           {tag}
         </Badge>
       ))}
@@ -189,17 +207,20 @@ export function ProgressBar({
 export function EmptyState({
   icon: Icon,
   title,
-  description
+  description,
+  action
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   description: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-dashed border-border/70 bg-surface/70 p-8 text-center">
       <Icon className="mx-auto mb-4 size-8 text-muted-foreground" />
       <h3 className="font-semibold text-foreground">{title}</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">{description}</p>
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );
 }

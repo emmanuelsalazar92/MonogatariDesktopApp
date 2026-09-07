@@ -8,7 +8,8 @@ import type {
   Scene,
   TimelineEventSummary,
   Volume,
-  WritingActivity
+  WritingActivity,
+  RecentActivity
 } from "@/lib/studio-domain";
 import { relationshipSummary } from "@/lib/character-relationship";
 
@@ -33,14 +34,22 @@ export type StudioData = {
   relationships: RelationshipSummary[];
   timelineEvents: TimelineEventSummary[];
   notes: import("@/lib/studio-domain").Note[];
+  overviewNotesCount: number;
   backups: StudioBackup[];
   writingActivities: WritingActivity[];
+  recentActivities: RecentActivity[];
   studioSettings: PersistedStudioSettings;
   settings: Record<string, string>;
   notionSyncStates: Array<{
     novelId: string;
     isDirty: boolean;
     revision: number;
+    lastSyncedRevision: number;
+    syncStatus: "idle" | "syncing" | "error" | "remote-changes";
+    syncStartedAt: string | null;
+    lastSyncError: string | null;
+    mapped?: boolean;
+    configured?: boolean;
     lastNotionSync: string | null;
   }>;
 };
@@ -48,6 +57,7 @@ export type StudioData = {
 export type DataStatus = "loading" | "ready" | "fallback";
 
 export type PersistedStudioSettings = {
+  libraryView: "grid" | "list";
   language: "en" | "es";
   sidebarState: "expanded" | "compact" | "hidden";
   editorFontSize: string;
@@ -77,8 +87,10 @@ export const emptyStudioData: StudioData = {
   relationships: [],
   timelineEvents: [],
   notes: [],
+  overviewNotesCount: 0,
   backups: [],
   writingActivities: [],
+  recentActivities: [],
   studioSettings: {} as PersistedStudioSettings,
   settings: {},
   notionSyncStates: []
@@ -113,6 +125,7 @@ export const emptyScene: Scene = {
   chapterId: "",
   title: "No scene loaded",
   content: "",
+  contentLoaded: false,
   summary: "",
   status: "Idea",
   locationId: "",
@@ -124,6 +137,7 @@ export const emptyScene: Scene = {
 };
 
 export const defaultPersistedStudioSettings: PersistedStudioSettings = {
+  libraryView: "grid",
   language: "en",
   sidebarState: "expanded",
   editorFontSize: "18 px",
@@ -142,9 +156,115 @@ export const defaultPersistedStudioSettings: PersistedStudioSettings = {
   dailyWordGoal: "1500"
 };
 
+const novelStatuses = new Set<Novel["status"]>([
+  "Idea",
+  "Planning",
+  "Writing",
+  "Revision",
+  "Complete",
+  "Archived"
+]);
+
+function record(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function text(value: unknown, fallback = "", limit = 5_000) {
+  return typeof value === "string" ? value.slice(0, limit) : fallback;
+}
+
+function wholeNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
+}
+
+function normalizeNovel(value: unknown): Novel | null {
+  const source = record(value);
+  if (!source || !text(source.id)) return null;
+
+  const status = text(source.status);
+  return {
+    id: text(source.id, "", 200),
+    title: text(source.title, "Untitled novel", 160) || "Untitled novel",
+    synopsis: text(source.synopsis),
+    status: novelStatuses.has(status as Novel["status"]) ? status as Novel["status"] : "Idea",
+    coverImage: text(source.coverImage, "", 2_000),
+    genre: text(source.genre, "", 120),
+    tags: Array.isArray(source.tags)
+      ? source.tags.filter((tag): tag is string => typeof tag === "string").map((tag) => tag.slice(0, 60)).slice(0, 20)
+      : [],
+    wordCount: wholeNumber(source.wordCount),
+    createdAt: text(source.createdAt, "", 80),
+    updatedAt: text(source.updatedAt, "", 80)
+  };
+}
+
+function normalizeRecentActivity(value: unknown): RecentActivity | null {
+  const source = record(value);
+  const createdAt = text(source?.createdAt, "", 80);
+  if (
+    !source ||
+    !text(source.id) ||
+    !text(source.novelId) ||
+    !text(source.label) ||
+    !Number.isFinite(new Date(createdAt).getTime())
+  ) return null;
+
+  return {
+    id: text(source.id, "", 200),
+    novelId: text(source.novelId, "", 200),
+    eventType: text(source.eventType, "activity", 80),
+    entityType: text(source.entityType, "", 80),
+    entityId: typeof source.entityId === "string" ? source.entityId.slice(0, 200) : null,
+    label: text(source.label, "Activity updated", 180),
+    createdAt
+  };
+}
+
+function normalizeSettings(value: unknown) {
+  const source = record(value);
+  if (!source) return emptyStudioData.settings;
+  return Object.fromEntries(
+    Object.entries(source).filter(([, setting]) => typeof setting === "string")
+  ) as Record<string, string>;
+}
+
+function normalizeNotionSyncStates(value: unknown): StudioData["notionSyncStates"] {
+  if (!Array.isArray(value)) return [];
+  const allowedStatuses = new Set(["idle", "syncing", "error", "remote-changes"]);
+  return value.flatMap((item) => {
+    const source = record(item);
+    const novelId = text(source?.novelId, "", 200);
+    if (!source || !novelId) return [];
+    const syncStatus = text(source.syncStatus);
+    return [{
+      novelId,
+      isDirty: source.isDirty === true,
+      revision: wholeNumber(source.revision),
+      lastSyncedRevision: wholeNumber(source.lastSyncedRevision),
+      syncStatus: allowedStatuses.has(syncStatus)
+        ? syncStatus as StudioData["notionSyncStates"][number]["syncStatus"]
+        : "idle",
+      syncStartedAt: typeof source.syncStartedAt === "string" ? source.syncStartedAt : null,
+      lastSyncError: typeof source.lastSyncError === "string" ? source.lastSyncError.slice(0, 500) : null,
+      mapped: source.mapped === true,
+      configured: source.configured === true,
+      lastNotionSync: typeof source.lastNotionSync === "string" ? source.lastNotionSync : null
+    }];
+  });
+}
+
 export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
   return {
-    novels: Array.isArray(payload.novels) ? payload.novels : emptyStudioData.novels,
+    novels: Array.isArray(payload.novels)
+      ? payload.novels.flatMap((novel) => {
+          const normalized = normalizeNovel(novel);
+          return normalized ? [normalized] : [];
+        })
+      : emptyStudioData.novels,
     volumes: Array.isArray(payload.volumes) ? payload.volumes : emptyStudioData.volumes,
     chapters: Array.isArray(payload.chapters) ? payload.chapters : emptyStudioData.chapters,
     scenes: Array.isArray(payload.scenes) ? payload.scenes : emptyStudioData.scenes,
@@ -162,21 +282,26 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
       ? payload.timelineEvents
       : emptyStudioData.timelineEvents,
     notes: Array.isArray(payload.notes) ? payload.notes : emptyStudioData.notes,
+    overviewNotesCount:
+      typeof payload.overviewNotesCount === "number" && Number.isFinite(payload.overviewNotesCount)
+        ? Math.max(0, Math.floor(payload.overviewNotesCount))
+        : 0,
     backups: Array.isArray(payload.backups) ? payload.backups : emptyStudioData.backups,
     writingActivities: Array.isArray(payload.writingActivities)
       ? payload.writingActivities
       : emptyStudioData.writingActivities,
+    recentActivities: Array.isArray(payload.recentActivities)
+      ? payload.recentActivities.flatMap((activity) => {
+          const normalized = normalizeRecentActivity(activity);
+          return normalized ? [normalized] : [];
+        })
+      : emptyStudioData.recentActivities,
     studioSettings:
       payload.studioSettings && typeof payload.studioSettings === "object"
         ? { ...defaultPersistedStudioSettings, ...payload.studioSettings }
         : defaultPersistedStudioSettings,
-    settings:
-      payload.settings && typeof payload.settings === "object"
-        ? payload.settings
-        : emptyStudioData.settings,
-    notionSyncStates: Array.isArray(payload.notionSyncStates)
-      ? payload.notionSyncStates
-      : emptyStudioData.notionSyncStates
+    settings: normalizeSettings(payload.settings),
+    notionSyncStates: normalizeNotionSyncStates(payload.notionSyncStates)
   };
 }
 
@@ -217,13 +342,16 @@ export function getScopedStudioData(data: StudioData): StudioData {
     timelineEvents: data.timelineEvents.filter((event) => event.novelId === activeNovelId),
     notes: data.notes.filter((note) => note.novelId === activeNovelId),
     backups: data.backups,
-    writingActivities: data.writingActivities.filter((activity) => activity.novelId === activeNovelId)
+    writingActivities: data.writingActivities.filter((activity) => activity.novelId === activeNovelId),
+    recentActivities: data.recentActivities.filter((activity) => activity.novelId === activeNovelId)
   };
 }
 
 export function getCurrentNovel(data: StudioData) {
   const activeNovelId = data.settings.activeNovelId;
-  return data.novels.find((novel) => novel.id === activeNovelId) ?? data.novels[0] ?? emptyNovel;
+  const selected = data.novels.find((novel) => novel.id === activeNovelId);
+  if (selected && selected.status !== "Archived") return selected;
+  return data.novels.find((novel) => novel.status !== "Archived") ?? emptyNovel;
 }
 
 export function getActiveChapter(data: StudioData) {

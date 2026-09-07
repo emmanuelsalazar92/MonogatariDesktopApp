@@ -58,6 +58,10 @@ export function SettingsScreen({
 }) {
   const copy = uiCopy[language];
   const settingsAreSaving = settingsSaveState === "saving";
+  const [accessOrigin, setAccessOrigin] = React.useState("");
+  React.useEffect(() => {
+    setAccessOrigin(window.location.origin);
+  }, []);
   const [notionRootPage, setNotionRootPage] = React.useState(settings.notionRootPageId);
   const [notionConfigured, setNotionConfigured] = React.useState<boolean | null>(null);
   const [notionConnectionState, setNotionConnectionState] =
@@ -189,6 +193,7 @@ export function SettingsScreen({
             <CardDescription>{copy.interfaceDefaults}</CardDescription>
           </CardHeader>
           <CardContent className="grid min-w-0 gap-4 md:grid-cols-2">
+            <SettingsSelect label={translate("Library view")} value={settings.libraryView} values={[{ value: "grid", label: "Grid" }, { value: "list", label: "List" }]} translate={translate} onChange={(value) => onSettingChange("libraryView", value)} disabled={settingsAreSaving} />
             <div className="min-w-0">
               <Label>{copy.uiLanguage}</Label>
               <Select value={language} onValueChange={(value) => onLanguageChange(value as Language)} disabled={settingsAreSaving}>
@@ -427,6 +432,14 @@ export function SettingsScreen({
               <div className="rounded-xl border border-border/55 bg-surface-elevated/95 p-4 text-sm leading-7 text-editor-foreground shadow-paper-sm">
                 {copy.localFirstCopy}
               </div>
+              <details className="mt-4 min-w-0 text-sm">
+                <summary className="cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{translate("Connection diagnostics")}</summary>
+                <dl className="mt-3 space-y-1">
+                  <dt className="text-muted-foreground">{translate("Current access address")}</dt>
+                  <dd className="break-all">{accessOrigin || translate("Unavailable")}</dd>
+                </dl>
+                <p className="mt-2 text-muted-foreground">{translate("Address used by this browser, not a LAN availability check.")}</p>
+              </details>
             </CardContent>
           </Card>
         </div>

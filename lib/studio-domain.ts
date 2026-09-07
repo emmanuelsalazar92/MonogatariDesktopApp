@@ -99,6 +99,9 @@ export interface Scene {
   chapterId: string;
   title: string;
   content: string;
+  // A summary may carry an empty content field for transport efficiency. Only a
+  // loaded document may use an empty string to mean an intentionally blank scene.
+  contentLoaded: boolean;
   summary: string;
   status: ChapterStatus;
   locationId: string;
@@ -115,6 +118,16 @@ export interface WritingActivity {
   novelId: string;
   sceneId: string;
   wordDelta: number;
+  createdAt: string;
+}
+
+export interface RecentActivity {
+  id: string;
+  novelId: string;
+  eventType: string;
+  entityType: string;
+  entityId: string | null;
+  label: string;
   createdAt: string;
 }
 

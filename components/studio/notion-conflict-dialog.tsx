@@ -13,6 +13,7 @@ import {
 export type NotionConflictChoice = "keep-local" | "accept-remote" | "cancel";
 
 export type NotionConflictPreview = {
+  novelId: string;
   chapterId: string;
   chapterTitle: string;
   localContent: string;

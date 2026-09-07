@@ -50,7 +50,12 @@ export function RelationshipExplorer({ novelId, characters, relationships, showS
   React.useEffect(() => {
     if (focusId !== "All characters") headingRef.current?.focus({ preventScroll: true });
   }, [focusId]);
-  const topologyKey = JSON.stringify([model.egoId, model.nodes.map((n) => n.id), model.edges.map((e) => [e.id, e.from, e.to])]);
+  React.useEffect(() => {
+    if (selectedId && !edges.some((edge) => edge.id === selectedId)) {
+      setSelectedId(null);
+      setDrawerOpen(false);
+    }
+  }, [edges, selectedId]);
   const detail = selected ? <RelationshipDetailLoader key={selected.id} summary={selected} showSpoilers={showSpoilers}>
     {(relationship) => <RelationshipDetail relationship={relationship} novelId={novelId} characters={characters} showSpoilers={showSpoilers} sinceOptions={sinceOptions} onFocusCharacter={onFocusCharacter} onChanged={onChanged} />}
   </RelationshipDetailLoader> : <p className="text-sm text-muted-foreground">Select a line in the graph or a relationship in the list to read its details.</p>;
@@ -62,7 +67,7 @@ export function RelationshipExplorer({ novelId, characters, relationships, showS
         <Link className="text-primary underline focus-visible:ring-2 focus-visible:ring-ring" href={routeForCharacter(novelId, model.egoId)}>Open Character</Link>
         {focusId !== "All characters" ? <Button size="sm" variant="outline" onClick={() => onFocusCharacter("All characters")}>All characters</Button> : null}
       </div> : null}
-      <RelationshipGraph key={topologyKey} model={model} selectedId={selectedEdge?.id ?? null} onSelectEdge={select} onSelectCharacter={onFocusCharacter} />
+      <RelationshipGraph model={model} selectedId={selectedEdge?.id ?? null} onSelectEdge={select} onSelectCharacter={onFocusCharacter} />
     </div>
     <section ref={listRef} tabIndex={-1} className="min-w-0 rounded-lg border bg-card p-4 focus-visible:ring-2 focus-visible:ring-ring lg:col-start-1 lg:row-start-2" aria-label="Complete filtered relationship list">
       <h2 className="text-lg font-semibold">Relationships · {edges.length}</h2>

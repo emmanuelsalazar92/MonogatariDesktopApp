@@ -414,7 +414,8 @@ export const ModelName = {
   LocalDataMigration: 'LocalDataMigration',
   StudioConfiguration: 'StudioConfiguration',
   NotionMapping: 'NotionMapping',
-  NotionSyncState: 'NotionSyncState'
+  NotionSyncState: 'NotionSyncState',
+  RecentActivity: 'RecentActivity'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -430,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "scenePlace" | "writingActivity" | "character" | "sceneCharacter" | "characterPlace" | "location" | "relationship" | "timelineEvent" | "timelineEventCharacter" | "timelineEventPlace" | "note" | "tag" | "noteTag" | "noteVolume" | "noteChapter" | "noteScene" | "noteCharacter" | "notePlace" | "noteTimelineEvent" | "backup" | "appSetting" | "localDataMigration" | "studioConfiguration" | "notionMapping" | "notionSyncState"
+    modelProps: "novel" | "readingProgress" | "volume" | "chapter" | "scene" | "sceneVersion" | "scenePlace" | "writingActivity" | "character" | "sceneCharacter" | "characterPlace" | "location" | "relationship" | "timelineEvent" | "timelineEventCharacter" | "timelineEventPlace" | "note" | "tag" | "noteTag" | "noteVolume" | "noteChapter" | "noteScene" | "noteCharacter" | "notePlace" | "noteTimelineEvent" | "backup" | "appSetting" | "localDataMigration" | "studioConfiguration" | "notionMapping" | "notionSyncState" | "recentActivity"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2728,6 +2729,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RecentActivity: {
+      payload: Prisma.$RecentActivityPayload<ExtArgs>
+      fields: Prisma.RecentActivityFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RecentActivityFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RecentActivityFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>
+        }
+        findFirst: {
+          args: Prisma.RecentActivityFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RecentActivityFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>
+        }
+        findMany: {
+          args: Prisma.RecentActivityFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>[]
+        }
+        create: {
+          args: Prisma.RecentActivityCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>
+        }
+        createMany: {
+          args: Prisma.RecentActivityCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RecentActivityCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>[]
+        }
+        delete: {
+          args: Prisma.RecentActivityDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>
+        }
+        update: {
+          args: Prisma.RecentActivityUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>
+        }
+        deleteMany: {
+          args: Prisma.RecentActivityDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RecentActivityUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RecentActivityUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>[]
+        }
+        upsert: {
+          args: Prisma.RecentActivityUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RecentActivityPayload>
+        }
+        aggregate: {
+          args: Prisma.RecentActivityAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRecentActivity>
+        }
+        groupBy: {
+          args: Prisma.RecentActivityGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecentActivityGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RecentActivityCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RecentActivityCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3136,10 +3211,29 @@ export const NotionSyncStateScalarFieldEnum = {
   lastSyncedRevision: 'lastSyncedRevision',
   lastNotionSync: 'lastNotionSync',
   lastKnownContent: 'lastKnownContent',
+  syncStatus: 'syncStatus',
+  syncOperationId: 'syncOperationId',
+  syncStartedAt: 'syncStartedAt',
+  syncLeaseExpiresAt: 'syncLeaseExpiresAt',
+  syncSnapshotRevision: 'syncSnapshotRevision',
+  lastSyncError: 'lastSyncError',
   updatedAt: 'updatedAt'
 } as const
 
 export type NotionSyncStateScalarFieldEnum = (typeof NotionSyncStateScalarFieldEnum)[keyof typeof NotionSyncStateScalarFieldEnum]
+
+
+export const RecentActivityScalarFieldEnum = {
+  id: 'id',
+  novelId: 'novelId',
+  eventType: 'eventType',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  label: 'label',
+  createdAt: 'createdAt'
+} as const
+
+export type RecentActivityScalarFieldEnum = (typeof RecentActivityScalarFieldEnum)[keyof typeof RecentActivityScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3339,6 +3433,7 @@ export type GlobalOmitConfig = {
   studioConfiguration?: Prisma.StudioConfigurationOmit
   notionMapping?: Prisma.NotionMappingOmit
   notionSyncState?: Prisma.NotionSyncStateOmit
+  recentActivity?: Prisma.RecentActivityOmit
 }
 
 /* Types for Logging */

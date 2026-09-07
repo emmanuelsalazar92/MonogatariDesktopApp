@@ -1,4 +1,4 @@
-# Monogatari Desktop App
+# Monogatari
 
 Local-first novel planning, writing, and reading studio built with Next.js, Prisma, and SQLite.
 

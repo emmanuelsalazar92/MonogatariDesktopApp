@@ -8,9 +8,9 @@ import {
   ChevronsLeft,
   PanelLeftClose,
   PanelLeftOpen,
-  PenLine
 } from "lucide-react";
 
+import { BrandLockup, BrandMark } from "@/components/studio/brand-mark";
 import { ToolbarIconButton } from "@/components/studio/shared";
 import { navigationItems, type PageId, type SidebarState } from "@/lib/studio-domain";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ export function Sidebar({
   copy,
   hasNovelContext,
   readerOptimized = false,
+  navigationPending = false,
   onSelectPage,
   onSidebarStateChange
 }: {
@@ -49,6 +50,7 @@ export function Sidebar({
   copy: SidebarCopy;
   hasNovelContext: boolean;
   readerOptimized?: boolean;
+  navigationPending?: boolean;
   onSelectPage: (page: PageId) => void;
   onSidebarStateChange: (state: SidebarState) => void;
 }) {
@@ -70,6 +72,7 @@ export function Sidebar({
         <button
           key={item.id}
           type="button"
+          disabled={navigationPending}
           onClick={() => onSelectPage(item.id)}
           aria-current={active ? "page" : undefined}
           className={cn(
@@ -97,15 +100,12 @@ export function Sidebar({
     >
       <div className="flex h-full min-h-0 flex-col">
         <div className={cn("flex items-center gap-3 border-b border-border/55 px-4 py-4", compact && "justify-center")}>
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-paper-sm">
-            <PenLine className="size-5" />
-          </div>
           {!compact ? (
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold text-foreground">Private Novel Studio</p>
-              <p className="truncate text-xs text-muted-foreground">{copy.appSubtitle}</p>
+              <BrandLockup />
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{copy.appSubtitle}</p>
             </div>
-          ) : null}
+          ) : <BrandMark className="size-10" />}
         </div>
 
         <nav aria-label="Studio navigation" className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-3">

@@ -169,7 +169,8 @@ test("Places API and SQLite preserve canonical entities, ownership, revisions an
   prisma.$on("query", (event) => { if (event.query.startsWith("SELECT")) readQueries.push(event.query); });
   after(async () => { await prisma.$disconnect(); await rm(directory, { recursive: true, force: true }); });
   const scenePlaces = await loadTs("lib/db/scene-places.ts", { "@/lib/db/prisma": { prisma } });
-  const db = await loadTs("lib/db/places.ts", { "@/lib/db/prisma": { prisma }, "@/lib/place-metadata": metadata, "@/lib/place-classification": classification, "@/lib/db/scene-places": scenePlaces, "@/lib/place-lifecycle": lifecycle });
+  const recentActivity = { recordRecentActivity: async () => {}, recentActivityLimit: 10 };
+  const db = await loadTs("lib/db/places.ts", { "@/lib/db/prisma": { prisma }, "@/lib/place-metadata": metadata, "@/lib/place-classification": classification, "@/lib/db/scene-places": scenePlaces, "@/lib/place-lifecycle": lifecycle, "@/lib/db/recent-activity": recentActivity });
   const errors = await loadTs("app/api/places/errors.ts", { "next/server": require("next/server"), "@/lib/db/places": db });
   const modules = {
     "next/server": require("next/server"), "@/lib/db/places": db,
@@ -365,7 +366,7 @@ test("Places API and SQLite preserve canonical entities, ownership, revisions an
     "@/lib/timeline-event": {},
     "@/lib/db/timeline-places": await loadTs("lib/db/timeline-places.ts", { "@/lib/db/prisma": { prisma } }),
     "@/lib/db/prisma": { prisma }, "node:crypto": require("node:crypto"), "@/lib/chapter-preview": {},
-    "@/lib/character-first-appearance": {}, "@/lib/db/places": db, "@/lib/db/scene-places": scenePlaces,
+    "@/lib/character-first-appearance": {}, "@/lib/db/places": db, "@/lib/db/scene-places": scenePlaces, "@/lib/db/recent-activity": recentActivity,
     "@/lib/reader-progress": {}, "@/lib/studio-settings": {}, "@/lib/character-metadata": {}, "@/lib/character-relationship": {}, "@/lib/character-place": characterPlace
   });
   assert.deepEqual((await studio.getSceneInspector("scene-first")).locationIds, [anotherPlace.id]);
@@ -379,7 +380,7 @@ test("Places API and SQLite preserve canonical entities, ownership, revisions an
   assert.equal((await studio.getScene("scene-first")).locationIds.length, 2);
   const structure = await loadTs("lib/db/structure.ts", {
     "@/lib/generated/prisma/client": jiti(resolve("lib/generated/prisma/client.ts")),
-    "@/lib/db/prisma": { prisma }, "@/lib/db/scene-places": scenePlaces,
+    "@/lib/db/prisma": { prisma }, "@/lib/db/scene-places": scenePlaces, "@/lib/db/recent-activity": recentActivity,
     "@/lib/structure-move": await loadTs("lib/structure-move.ts")
   });
   const duplicate = await structure.mutateStructureItem("scene", "scene-first", "duplicate");

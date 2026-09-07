@@ -1,8 +1,12 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+import { createRecoveryCheckpoint } from "@/lib/db/scene-recovery";
+import type { RemoteSceneUpdate } from "@/lib/notion-pull-safety";
 
-export type RemoteSceneUpdate = { title: string; content: string };
+export { type RemoteSceneUpdate } from "@/lib/notion-pull-safety";
+
+export class NotionPullApplyError extends Error {}
 
 function countWords(value: string) {
   return value.trim().match(/\S+/g)?.length ?? 0;
@@ -29,6 +33,17 @@ export async function applyNotionChapterUpdates(
         throw new Error("remote scene structure does not match the local chapter");
       }
 
+      for (const [index, scene] of chapter.scenes.entries()) {
+        const remote = update.scenes[index];
+        if (remote.contentState !== "complete" || remote.localSceneId !== scene.id) {
+          throw new NotionPullApplyError("remote scene document is incomplete or mapped to the wrong local scene");
+        }
+        if (remote.content === "" && scene.content.trim() !== "" && !remote.allowEmptyOverwrite) {
+          throw new NotionPullApplyError("remote empty content requires explicit conflict resolution");
+        }
+        await createRecoveryCheckpoint(tx, scene, remote.content, "notion-pull");
+      }
+
       await Promise.all(
         chapter.scenes.map((scene, index) =>
           tx.scene.update({
@@ -36,7 +51,8 @@ export async function applyNotionChapterUpdates(
             data: {
               title: update.scenes[index].title,
               content: update.scenes[index].content,
-              wordCount: countWords(update.scenes[index].content)
+              wordCount: countWords(update.scenes[index].content),
+              revision: { increment: 1 }
             }
           })
         )

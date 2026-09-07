@@ -81,7 +81,8 @@ export const ModelName = {
   LocalDataMigration: 'LocalDataMigration',
   StudioConfiguration: 'StudioConfiguration',
   NotionMapping: 'NotionMapping',
-  NotionSyncState: 'NotionSyncState'
+  NotionSyncState: 'NotionSyncState',
+  RecentActivity: 'RecentActivity'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -469,10 +470,29 @@ export const NotionSyncStateScalarFieldEnum = {
   lastSyncedRevision: 'lastSyncedRevision',
   lastNotionSync: 'lastNotionSync',
   lastKnownContent: 'lastKnownContent',
+  syncStatus: 'syncStatus',
+  syncOperationId: 'syncOperationId',
+  syncStartedAt: 'syncStartedAt',
+  syncLeaseExpiresAt: 'syncLeaseExpiresAt',
+  syncSnapshotRevision: 'syncSnapshotRevision',
+  lastSyncError: 'lastSyncError',
   updatedAt: 'updatedAt'
 } as const
 
 export type NotionSyncStateScalarFieldEnum = (typeof NotionSyncStateScalarFieldEnum)[keyof typeof NotionSyncStateScalarFieldEnum]
+
+
+export const RecentActivityScalarFieldEnum = {
+  id: 'id',
+  novelId: 'novelId',
+  eventType: 'eventType',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  label: 'label',
+  createdAt: 'createdAt'
+} as const
+
+export type RecentActivityScalarFieldEnum = (typeof RecentActivityScalarFieldEnum)[keyof typeof RecentActivityScalarFieldEnum]
 
 
 export const SortOrder = {

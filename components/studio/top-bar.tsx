@@ -21,28 +21,29 @@ import { type Novel, type SidebarState } from "@/lib/studio-domain";
 type TopBarCopy = {
   openNavigation: string;
   toggleSidebar: string;
+  currentNovel: string;
 };
 
 export function TopBar({
   pageLabel,
-  subtitle,
   sidebarState,
   mobileNavigationOpen,
   novels,
   activeNovelId,
   copy,
+  showNovelSelector = true,
   readerOptimized = false,
   onOpenMobileNav,
   onCycleSidebar,
   onActiveNovelChange
 }: {
   pageLabel: string;
-  subtitle: string;
   sidebarState: SidebarState;
   mobileNavigationOpen: boolean;
   novels: Novel[];
   activeNovelId: string;
   copy: TopBarCopy;
+  showNovelSelector?: boolean;
   readerOptimized?: boolean;
   onOpenMobileNav: () => void;
   onCycleSidebar: () => void;
@@ -77,22 +78,21 @@ export function TopBar({
 
         <Separator orientation="vertical" className="hidden h-7 sm:block" />
 
-        <div className="order-last min-w-0 basis-full border-t border-border/45 pt-3 sm:order-none sm:basis-auto sm:border-t-0 sm:pt-0">
-          <p className="truncate text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[13px]">
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-[12px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:text-[13px]">
             {pageLabel}
-          </p>
-          <p className="hidden truncate text-[15px] text-foreground/88 sm:block">{subtitle}</p>
+          </h2>
         </div>
 
-        {novels.length ? (
+        {showNovelSelector && novels.length ? (
           <Select value={activeNovelId} onValueChange={onActiveNovelChange}>
-            <SelectTrigger className="hidden h-10 min-w-[240px] max-w-[320px] lg:flex">
-              <BookOpen className="size-4 text-muted-foreground" />
+            <SelectTrigger aria-label={copy.currentNovel} className="h-10 min-w-0 basis-full sm:basis-auto sm:w-64 sm:max-w-[45%] [&>span]:min-w-0 [&>span]:flex-1 [&>span]:truncate [&>span]:text-left [&>svg]:shrink-0">
+              <BookOpen aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-w-[calc(100vw-2rem)]">
               {novels.map((novel) => (
-                <SelectItem key={novel.id} value={novel.id}>
+                <SelectItem key={novel.id} value={novel.id} className="[overflow-wrap:anywhere]">
                   {novel.title}
                 </SelectItem>
               ))}

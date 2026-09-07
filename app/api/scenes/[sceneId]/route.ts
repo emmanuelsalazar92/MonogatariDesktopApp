@@ -1,5 +1,5 @@
 ﻿import { NextResponse } from "next/server";
-import { getScene, SceneRevisionConflictError, updateScene } from "@/lib/db/studio";
+import { getScene, SceneDocumentNotLoadedError, SceneRevisionConflictError, updateScene } from "@/lib/db/studio";
 import type { ChapterStatus } from "@/lib/studio-domain";
 import { ScenePlaceError } from "@/lib/db/scene-places";
 import { isTrustedMutationRequest } from "@/lib/request-security";
@@ -41,6 +41,7 @@ export async function PATCH(
     objective?: unknown;
     locationId?: unknown;
     expectedRevision?: unknown;
+    documentLoaded?: unknown;
   };
 
   if (typeof body.title === "string" && body.title.trim().length === 0) {
@@ -61,6 +62,9 @@ export async function PATCH(
   if (typeof body.content === "string" && body.content.length > 1_000_000) {
     return NextResponse.json({ error: "content is too large" }, { status: 413 });
   }
+  if (body.documentLoaded !== undefined && typeof body.documentLoaded !== "boolean") {
+    return NextResponse.json({ error: "documentLoaded is invalid" }, { status: 400 });
+  }
 
   try {
     const scene = await updateScene(sceneId, {
@@ -70,7 +74,8 @@ export async function PATCH(
       status: isChapterStatus(body.status) ? body.status : undefined,
       objective: typeof body.objective === "string" ? body.objective : undefined,
       locationId: typeof body.locationId === "string" ? body.locationId : undefined,
-      expectedRevision: typeof body.expectedRevision === "number" ? body.expectedRevision : undefined
+      expectedRevision: typeof body.expectedRevision === "number" ? body.expectedRevision : undefined,
+      documentLoaded: body.documentLoaded === true
     });
 
     return NextResponse.json(scene);
@@ -78,6 +83,9 @@ export async function PATCH(
     if (error instanceof ScenePlaceError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof SceneRevisionConflictError) {
       return NextResponse.json({ error: "scene changed elsewhere; reload before retrying" }, { status: 409 });
+    }
+    if (error instanceof SceneDocumentNotLoadedError) {
+      return NextResponse.json({ error: "load the scene document before replacing its content" }, { status: 409 });
     }
     if (isPrismaNotFound(error)) {
       return NextResponse.json({ error: "scene not found" }, { status: 404 });

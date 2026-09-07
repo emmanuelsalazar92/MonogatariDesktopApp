@@ -2,8 +2,15 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Private Novel Studio",
-  description: "A local network writing studio prototype for private novels."
+  title: {
+    default: "Monogatari",
+    template: "%s | Monogatari"
+  },
+  description: "A focused, local-first workspace for planning, writing, and reading novels.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg"
+  }
 };
 
 export default function RootLayout({

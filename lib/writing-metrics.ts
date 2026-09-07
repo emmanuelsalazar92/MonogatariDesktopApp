@@ -16,7 +16,7 @@ export function estimateReadingMinutes(wordCount: number) {
 
 export function getDailyWritingMetrics(
   activities: WritingActivity[],
-  dailyGoal: number,
+  dailyGoal?: number,
   now = new Date()
 ) {
   const dayStart = startOfLocalDay(now);
@@ -26,12 +26,14 @@ export function getDailyWritingMetrics(
   });
   const netWordsToday = todayActivities.reduce((total, activity) => total + activity.wordDelta, 0);
   const wordsToday = Math.max(0, netWordsToday);
-  const normalizedGoal = Number.isFinite(dailyGoal) && dailyGoal > 0 ? dailyGoal : 1500;
+  const normalizedGoal = typeof dailyGoal === "number" && Number.isFinite(dailyGoal) && dailyGoal > 0
+    ? Math.floor(dailyGoal)
+    : null;
 
   return {
     wordsToday,
     dailyGoal: normalizedGoal,
-    progressPercent: Math.round((wordsToday / normalizedGoal) * 100),
+    progressPercent: normalizedGoal === null ? null : Math.round((wordsToday / normalizedGoal) * 100),
     scenesTouched: new Set(todayActivities.map((activity) => activity.sceneId)).size,
     estimatedWritingMinutes:
       wordsToday === 0 ? 0 : Math.max(1, Math.ceil(wordsToday / DRAFTING_WORDS_PER_MINUTE))

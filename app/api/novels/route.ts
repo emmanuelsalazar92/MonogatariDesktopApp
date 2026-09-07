@@ -1,6 +1,8 @@
 ﻿import { NextResponse } from "next/server";
 import { createNovel } from "@/lib/db/studio";
 import { prisma } from "@/lib/db/prisma";
+import { validateNovelMetadata } from "@/lib/novel-metadata";
+import { isTrustedMutationRequest } from "@/lib/request-security";
 import type { NovelStatus } from "@/lib/studio-domain";
 
 const novelStatuses = new Set([
@@ -32,26 +34,25 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as {
-    title?: unknown;
-    synopsis?: unknown;
-    genre?: unknown;
-    status?: unknown;
-    tags?: unknown;
-  };
-
-  if (typeof body.title !== "string" || body.title.trim().length === 0) {
-    return NextResponse.json({ error: "title is required" }, { status: 400 });
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json({ error: "Cross-origin mutation rejected" }, { status: 403 });
   }
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Invalid novel metadata" }, { status: 400 });
+  }
+  const input = body as Record<string, unknown>;
+  const validation = validateNovelMetadata({
+    title: input.title,
+    synopsis: input.synopsis ?? "",
+    genre: input.genre ?? "",
+    tags: input.tags ?? []
+  });
+  if (!validation.ok) return NextResponse.json(validation, { status: 400 });
 
   const novel = await createNovel({
-    title: body.title.trim(),
-    synopsis: typeof body.synopsis === "string" ? body.synopsis : undefined,
-    genre: typeof body.genre === "string" ? body.genre : undefined,
-    status: isNovelStatus(body.status) ? body.status : undefined,
-    tags: Array.isArray(body.tags)
-      ? body.tags.filter((tag): tag is string => typeof tag === "string")
-      : undefined
+    ...validation.data,
+    status: isNovelStatus(input.status) ? input.status : undefined
   });
 
   return NextResponse.json(novel, { status: 201 });

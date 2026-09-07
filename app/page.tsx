@@ -128,13 +128,17 @@ import {
 } from "@/lib/character-relationship";
 import { DashboardScreen } from "@/components/studio/dashboard-screen";
 import { LibraryScreen } from "@/components/studio/library-screen";
+import { novelWritingTargets } from "@/lib/novel-writing-target";
 import { MobileNavDialog } from "@/components/studio/mobile-nav-dialog";
+import { NavigationFeedback, usePendingNavigation } from "@/components/studio/pending-navigation";
 import {
   NotionConflictDialog,
   type NotionConflictChoice,
   type NotionConflictPreview
 } from "@/components/studio/notion-conflict-dialog";
 import { NovelOverviewScreen } from "@/components/studio/novel-overview-screen";
+import { NovelDetailsDialog } from "@/components/studio/novel-details-dialog";
+import { NovelLifecycleDialog, type NovelLifecycleAction } from "@/components/studio/novel-lifecycle-dialog";
 import { SettingsScreen } from "@/components/studio/settings-screen";
 import { StructureScreen } from "@/components/studio/structure-screen";
 import {
@@ -170,6 +174,8 @@ import {
   notionAutosyncIntervalMilliseconds,
   parseExportDefaults
 } from "@/lib/studio-settings";
+import { notionStatusLabel } from "@/lib/notion-status";
+import type { NovelMetadataFieldErrors, NovelMetadataInput } from "@/lib/novel-metadata";
 import {
   parseStudioRoute,
   routeForCharacter,
@@ -178,6 +184,9 @@ import {
 } from "@/lib/studio-routes";
 import {
   defaultLibraryNavigationState,
+  boundedLibrarySearch,
+  filterAndSortNovels,
+  libraryGenres,
   parseLibraryNavigationState,
   serializeLibraryNavigationState,
   type LibraryNavigationState
@@ -190,6 +199,11 @@ import {
 import { cn } from "@/lib/utils";
 import { statusAfterSaveConfirmation, type AutosaveStatus } from "@/lib/autosave-state";
 import { getAdjacentSceneIds, getNovelSceneNavigation } from "@/lib/editor-scene-navigation";
+import {
+  canSaveSceneDocument,
+  loadedSceneDocument,
+  unloadedSceneDocument
+} from "@/lib/scene-document-safety";
 import type { StructureSelection } from "@/lib/db/structure";
 import {
   exportFormats,
@@ -213,6 +227,7 @@ type SceneSaveInput = {
   title: string;
   content: string;
   status: ChapterStatus;
+  documentLoaded: true;
 };
 
 type SaveStatus = AutosaveStatus;
@@ -275,6 +290,8 @@ function PrivateNovelStudioContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
+  const { isPending: navigationPending, label: navigationLabel, begin: beginNavigation, finish: finishNavigation } = usePendingNavigation();
   const activeRoute = React.useMemo(() => parseStudioRoute(pathname), [pathname]);
   const activePage = activeRoute?.page ?? "dashboard";
   const [sidebarState, setSidebarState] = React.useState<SidebarState>("expanded");
@@ -286,6 +303,13 @@ function PrivateNovelStudioContent() {
   const [dialog, setDialog] = React.useState<
     null | "novel" | "character" | "place" | "relationship" | "event" | "note" | "export" | "toc"
   >(null);
+  const [novelLifecycleTarget, setNovelLifecycleTarget] = React.useState<{
+    novel: Novel;
+    action: NovelLifecycleAction;
+  } | null>(null);
+  const [novelLifecycleSaving, setNovelLifecycleSaving] = React.useState(false);
+  const [novelLifecycleError, setNovelLifecycleError] = React.useState("");
+  const [novelDetailsOpen, setNovelDetailsOpen] = React.useState(false);
   const [editingCharacter, setEditingCharacter] = React.useState<Character | null>(null);
   const [editingPlace, setEditingPlace] = React.useState<Location | null>(null);
   const [editingNote, setEditingNote] = React.useState<Note | null>(null);
@@ -293,11 +317,9 @@ function PrivateNovelStudioContent() {
   const [noteCatalogVersion, setNoteCatalogVersion] = React.useState(0);
   const [noteTagOptions, setNoteTagOptions] = React.useState<{ novelId: string; tags: string[] }>({ novelId: "", tags: [] });
   const [saveStatus, setSaveStatus] = React.useState<SaveStatus>("Saved locally");
-  const [notionPublishState, setNotionPublishState] = React.useState<NotionPublishState>("idle");
-  const [notionPublishMessage, setNotionPublishMessage] = React.useState("");
-  const [notionPublishUrl, setNotionPublishUrl] = React.useState("");
-  const [notionAutosyncStatus, setNotionAutosyncStatus] =
-    React.useState<NotionAutosyncStatus>("idle");
+  const [notionPublishStates, setNotionPublishStates] = React.useState<Record<string, NotionPublishState>>({});
+  const [notionAutosyncStatuses, setNotionAutosyncStatuses] =
+    React.useState<Record<string, NotionAutosyncStatus>>({});
   const [notionAutosyncRetryAt, setNotionAutosyncRetryAt] = React.useState(0);
   const [notionConflict, setNotionConflict] = React.useState<NotionConflictPreview | null>(null);
   const [resolvingNotionConflict, setResolvingNotionConflict] = React.useState(false);
@@ -316,6 +338,13 @@ function PrivateNovelStudioContent() {
   const [settingsSaveState, setSettingsSaveState] = React.useState<SettingsSaveState>("idle");
   const [settingsSaveMessage, setSettingsSaveMessage] = React.useState("");
   const [dataStatus, setDataStatus] = React.useState<DataStatus>("loading");
+  // Relationship summaries are loaded separately from the studio shell. Advance
+  // this only after a confirmed relationship mutation has been read back, so the
+  // map and list replace the same canonical catalog together.
+  const [relationshipRefreshVersion, setRelationshipRefreshVersion] = React.useState(0);
+  // Every editor navigation owns a request token. A late document response must
+  // never restore an earlier route or replace the scene the author selected next.
+  const editorSceneRequestRef = React.useRef(0);
   const [creatingBackup, setCreatingBackup] = React.useState(false);
   const [enabledExportOptions, setEnabledExportOptions] = React.useState(
     new Set(["Include cover", "Include table of contents", "Include metadata"])
@@ -359,6 +388,14 @@ function PrivateNovelStudioContent() {
     [routeContextData]
   );
   const currentNovel = getCurrentNovel(routeContextData);
+  const notionPublishState = notionPublishStates[currentNovel.id] ?? "idle";
+  const notionAutosyncStatus = notionAutosyncStatuses[currentNovel.id] ?? "idle";
+  const setNotionPublishState = React.useCallback((status: NotionPublishState) => {
+    setNotionPublishStates((states) => ({ ...states, [currentNovel.id]: status }));
+  }, [currentNovel.id]);
+  const setNotionAutosyncStatus = React.useCallback((status: NotionAutosyncStatus) => {
+    setNotionAutosyncStatuses((states) => ({ ...states, [currentNovel.id]: status }));
+  }, [currentNovel.id]);
   const noteOptions = React.useMemo(() => [
     ...relationshipSinceOptions(currentNovel.id, scopedStudioData.volumes, scopedStudioData.chapters, scopedStudioData.scenes).map(option => ({ type: ({ volume: "Volume", chapter: "Chapter", scene: "Scene" } as const)[option.kind], id: option.id, title: option.label, archived: option.archived, novelId: currentNovel.id })),
     ...scopedStudioData.characters.map(character => ({ type: "Character" as const, id: character.id, title: character.name, novelId: character.novelId, archived: Boolean(character.archivedAt) })),
@@ -395,9 +432,25 @@ function PrivateNovelStudioContent() {
   const currentNotionSyncState = studioData.notionSyncStates.find(
     (state) => state.novelId === currentNovel.id
   );
+  const observedNotionSyncStatus: NotionAutosyncStatus =
+    currentNotionSyncState?.syncStatus && currentNotionSyncState.syncStatus !== "idle"
+      ? currentNotionSyncState.syncStatus
+      : notionAutosyncStatus;
+  const libraryNotionStatusByNovel = React.useMemo(() => Object.fromEntries(
+    studioData.notionSyncStates.flatMap((state) => {
+      const label = notionStatusLabel(
+        state,
+        state.novelId,
+        notionAutosyncStatuses[state.novelId],
+        notionPublishStates[state.novelId]
+      );
+      return label ? [[state.novelId, { label, lastSuccessfulSync: state.lastNotionSync }]] : [];
+    })
+  ), [notionAutosyncStatuses, notionPublishStates, studioData.notionSyncStates]);
+  const libraryGenreOptions = React.useMemo(() => libraryGenres(studioData.novels), [studioData.novels]);
   const libraryNavigationState = React.useMemo(
-    () => parseLibraryNavigationState(searchParams),
-    [searchParams]
+    () => parseLibraryNavigationState(searchParams, libraryGenreOptions),
+    [searchParams, libraryGenreOptions]
   );
   const characterCatalogState = React.useMemo(
     () => parseCharacterCatalogState(searchParams),
@@ -405,6 +458,8 @@ function PrivateNovelStudioContent() {
   );
   const placeCatalogState = React.useMemo(() => parsePlaceCatalogState(searchParams), [searchParams]);
   const pendingSaveHandlerRef = React.useRef<PendingSaveHandler | null>(null);
+  const notionSyncInFlightRef = React.useRef(false);
+  const notionPullInFlightRef = React.useRef(false);
   const readerFocusToggleHandlerRef = React.useRef<(() => void) | null>(null);
   const editorDirtyRef = React.useRef(false);
   const saveInFlightRef = React.useRef<Promise<boolean> | null>(null);
@@ -418,6 +473,7 @@ function PrivateNovelStudioContent() {
   const pendingReaderSettingsRef = React.useRef<Record<string, string>>({});
   const readerSettingsTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const staleRouteRecoveryRef = React.useRef<string | null>(null);
+  const pendingRelationshipCreateRefreshRef = React.useRef<string | null>(null);
   const translate = React.useCallback(
     (value: string) => translateStudioText(value, language),
     [language]
@@ -465,13 +521,42 @@ function PrivateNovelStudioContent() {
     window.setTimeout(() => setToast(""), 2200);
   }, []);
 
+  React.useEffect(() => {
+    finishNavigation();
+  }, [finishNavigation, pathname, searchKey]);
+
+  const pushStartedNavigation = React.useCallback((href: string, replace = false) => {
+    React.startTransition(() => {
+      if (replace) router.replace(href); else router.push(href);
+    });
+  }, [router]);
+
+  const navigateTo = React.useCallback((href: string, label: string, replace = false) => {
+    const currentHref = `${pathname}${searchKey ? `?${searchKey}` : ""}`;
+    if (href === currentHref || !beginNavigation(label)) return false;
+    pushStartedNavigation(href, replace);
+    return true;
+  }, [beginNavigation, pathname, pushStartedNavigation, searchKey]);
+
   const refreshStudioData = React.useCallback(async (useFallbackOnError = true) => {
     try {
       if (useFallbackOnError) {
         setDataStatus("loading");
       }
 
-      const response = await fetch("/api/studio", { cache: "no-store" });
+      const activeRouteScene =
+        activeRoute?.page === "editor" && activeRoute.novelId && activeRoute.sceneId
+          ? `?novelId=${encodeURIComponent(activeRoute.novelId)}&sceneId=${encodeURIComponent(activeRoute.sceneId)}`
+          : "";
+      const overviewRoute =
+        activePage === "overview" && activeRoute?.novelId
+          ? `?surface=overview&novelId=${encodeURIComponent(activeRoute.novelId)}`
+          : "";
+      const studioEndpoint =
+        activePage === "library"
+          ? "/api/studio?surface=library"
+          : `/api/studio${overviewRoute || activeRouteScene}`;
+      const response = await fetch(studioEndpoint, { cache: "no-store" });
 
       if (!response.ok) {
         throw new Error(`Studio API returned ${response.status}`);
@@ -485,7 +570,14 @@ function PrivateNovelStudioContent() {
       setDataStatus("fallback");
       return false;
     }
-  }, []);
+  }, [activePage, activeRoute?.novelId, activeRoute?.page, activeRoute?.sceneId]);
+
+  const refreshRelationships = React.useCallback(async () => {
+    if (!await refreshStudioData(false)) {
+      throw new Error("Changes saved. Could not refresh relationships; please retry.");
+    }
+    setRelationshipRefreshVersion((version) => version + 1);
+  }, [refreshStudioData]);
 
   React.useEffect(() => {
     if (dataStatus !== "ready") {
@@ -525,7 +617,7 @@ function PrivateNovelStudioContent() {
       return;
     }
 
-    if (studioData.novels.some((novel) => novel.id === routeNovelId)) {
+    if (studioData.novels.some((novel) => novel.id === routeNovelId && novel.status !== "Archived")) {
       staleRouteRecoveryRef.current = null;
       return;
     }
@@ -826,8 +918,15 @@ function PrivateNovelStudioContent() {
   }, []);
 
   const setActiveNovel = React.useCallback(
-    async (novelId: string, nextPage?: PageId) => {
+    async (novelId: string, nextPage?: PageId, nextSceneId?: string) => {
+      if (studioData.novels.some((novel) => novel.id === novelId && novel.status === "Archived")) {
+        showToast("Restore this novel before making it current.");
+        return;
+      }
+      const navigationStarted = nextPage ? beginNavigation(nextPage === "editor" ? "Opening editor…" : "Opening novel…") : false;
+      if (nextPage && !navigationStarted) return;
       if (!(await flushPendingChanges())) {
+        if (navigationStarted) finishNavigation();
         showToast("Save failed. The current novel was not changed.");
         return;
       }
@@ -836,7 +935,7 @@ function PrivateNovelStudioContent() {
         settings: { ...current.settings, activeNovelId: novelId }
       }));
       if (nextPage) {
-        router.push(routeForPage(nextPage, novelId));
+        pushStartedNavigation(routeForPage(nextPage, novelId, nextSceneId));
       }
       setMobileDrawerOpen(false);
       setFocusMode("none");
@@ -848,7 +947,7 @@ function PrivateNovelStudioContent() {
         showToast("Could not save active novel")
       );
     },
-    [flushPendingChanges, router, showToast]
+    [beginNavigation, finishNavigation, flushPendingChanges, pushStartedNavigation, showToast, studioData.novels]
   );
 
   const setActiveStructureItem = React.useCallback(
@@ -909,22 +1008,29 @@ function PrivateNovelStudioContent() {
     async (sceneId: string) => {
       const scene = scopedStudioData.scenes.find((item) => item.id === sceneId);
       if (!scene) return;
-      if (!(await setActiveStructureItem({ type: "scene", id: scene.id }))) return;
+      if (!beginNavigation("Opening editor…")) return;
+      const requestId = ++editorSceneRequestRef.current;
+      if (!(await setActiveStructureItem({ type: "scene", id: scene.id }))) { finishNavigation(); return; }
+      if (editorSceneRequestRef.current !== requestId) { finishNavigation(); return; }
       try {
         const response = await fetch(`/api/scenes/${encodeURIComponent(scene.id)}`, { cache: "no-store" });
         if (!response.ok) throw new Error("Could not load scene content");
         const loadedScene = (await response.json()) as Scene;
+        if (editorSceneRequestRef.current !== requestId) return;
         setStudioData((current) => ({
           ...current,
           scenes: current.scenes.map((item) => item.id === loadedScene.id ? loadedScene : item)
         }));
       } catch (error) {
+        if (editorSceneRequestRef.current !== requestId) { finishNavigation(); return; }
+        finishNavigation();
         showToast(error instanceof Error ? error.message : "Could not load scene content");
         return;
       }
-      router.push(routeForPage("editor", currentNovel.id, scene.id));
+      if (editorSceneRequestRef.current !== requestId) { finishNavigation(); return; }
+      pushStartedNavigation(routeForPage("editor", currentNovel.id, scene.id));
     },
-    [currentNovel.id, router, scopedStudioData.scenes, setActiveStructureItem, showToast]
+    [beginNavigation, currentNovel.id, finishNavigation, pushStartedNavigation, scopedStudioData.scenes, setActiveStructureItem, showToast]
   );
 
   const saveScene = React.useCallback(
@@ -988,11 +1094,10 @@ function PrivateNovelStudioContent() {
   );
 
   const publishCurrentNovelToNotion = React.useCallback(async (force = true) => {
-    if (!currentNovel.id) return;
+    if (!currentNovel.id || notionSyncInFlightRef.current) return;
 
+    notionSyncInFlightRef.current = true;
     setNotionPublishState("publishing");
-    setNotionPublishMessage("");
-    setNotionPublishUrl("");
 
     try {
       const response = await fetch("/api/integrations/notion/sync", {
@@ -1008,6 +1113,8 @@ function PrivateNovelStudioContent() {
         createdPages?: number;
         updatedPages?: number;
         skipped?: boolean;
+        reused?: boolean;
+        operationStatus?: "idle" | "syncing" | "synced" | "error" | "remote-changes";
       };
 
       if (!response.ok || !result.ok) {
@@ -1017,27 +1124,42 @@ function PrivateNovelStudioContent() {
         throw new Error(result.message ?? "Could not sync this novel to Notion.");
       }
 
-      setNotionPublishState("success");
-      setNotionAutosyncStatus("synced");
+      const operationStatus = result.operationStatus ?? "synced";
+      setNotionPublishState(operationStatus === "error" ? "error" : operationStatus === "syncing" ? "idle" : "success");
+      setNotionAutosyncStatus(operationStatus === "remote-changes" ? "remote-changes" : "idle");
       autosyncRetryAtRef.current = 0;
       autosyncFailureCountRef.current = 0;
       setNotionAutosyncRetryAt(0);
-      setNotionPublishMessage(result.message ?? "Notion sync completed.");
-      setNotionPublishUrl(result.novelPage?.url ?? "");
       await refreshStudioData(false);
-      showToast(result.skipped ? "Notion is already up to date" : "Notion sync completed");
+      showToast(
+        operationStatus === "syncing"
+          ? "Syncing with Notion"
+          : result.skipped ? "Notion is already up to date" : "Notion sync completed"
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not sync this novel to Notion.";
       setNotionPublishState("error");
-      setNotionPublishMessage(message);
       showToast(message);
+    } finally {
+      notionSyncInFlightRef.current = false;
     }
-  }, [currentNovel.id, refreshStudioData, showToast]);
+  }, [currentNovel.id, refreshStudioData, showToast, setNotionPublishState, setNotionAutosyncStatus]);
+
+  React.useEffect(() => {
+    if (dataStatus !== "ready" || currentNotionSyncState?.syncStatus !== "syncing") return;
+
+    const timer = window.setInterval(() => {
+      void refreshStudioData(false);
+    }, 2_500);
+    return () => window.clearInterval(timer);
+  }, [currentNotionSyncState?.syncStatus, dataStatus, refreshStudioData]);
 
   const runAutomaticNotionSync = React.useCallback(async () => {
     if (
       !currentNovel.id ||
       !currentNotionSyncState?.isDirty ||
+      currentNotionSyncState.syncStatus === "syncing" ||
+      currentNotionSyncState.syncStatus === "remote-changes" ||
       !studioSettings.notionRootPageId ||
       autosyncInFlightRef.current ||
       Date.now() < autosyncRetryAtRef.current ||
@@ -1054,7 +1176,12 @@ function PrivateNovelStudioContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ novelId: currentNovel.id, force: false })
       });
-      const result = (await response.json()) as { ok?: boolean; code?: string; message?: string };
+      const result = (await response.json()) as {
+        ok?: boolean;
+        code?: string;
+        message?: string;
+        operationStatus?: "idle" | "syncing" | "synced" | "error" | "remote-changes";
+      };
 
       if (!response.ok || !result.ok) {
         if (result.code === "REMOTE_CHANGES_DETECTED") {
@@ -1069,12 +1196,8 @@ function PrivateNovelStudioContent() {
       autosyncRetryAtRef.current = 0;
       autosyncFailureCountRef.current = 0;
       setNotionAutosyncRetryAt(0);
-      setNotionAutosyncStatus("synced");
+      setNotionAutosyncStatus(result.operationStatus === "remote-changes" ? "remote-changes" : "idle");
       await refreshStudioData(false);
-      if (autosyncStatusTimerRef.current) window.clearTimeout(autosyncStatusTimerRef.current);
-      autosyncStatusTimerRef.current = window.setTimeout(() => {
-        setNotionAutosyncStatus("idle");
-      }, 3_000);
     } catch {
       const intervalMs = notionAutosyncIntervalMilliseconds(studioSettings.notionAutosyncIntervalMinutes) ?? 300_000;
       autosyncFailureCountRef.current = Math.min(autosyncFailureCountRef.current + 1, 5);
@@ -1091,14 +1214,16 @@ function PrivateNovelStudioContent() {
   }, [
     currentNovel.id,
     currentNotionSyncState?.isDirty,
+    currentNotionSyncState?.syncStatus,
     notionAutosyncStatus,
     refreshStudioData,
+    setNotionAutosyncStatus,
     studioSettings.notionAutosyncIntervalMinutes,
     studioSettings.notionRootPageId
   ]);
 
   React.useEffect(() => {
-    if (!studioSettings.notionAutosyncEnabled || !currentNovel.id || !studioSettings.notionRootPageId) {
+    if ((activePage === "library" || activePage === "overview") || !studioSettings.notionAutosyncEnabled || !currentNovel.id || !studioSettings.notionRootPageId) {
       return;
     }
 
@@ -1119,6 +1244,7 @@ function PrivateNovelStudioContent() {
       if (timer) window.clearTimeout(timer);
     };
   }, [
+    activePage,
     currentNovel.id,
     runAutomaticNotionSync,
     studioSettings.notionAutosyncEnabled,
@@ -1134,11 +1260,10 @@ function PrivateNovelStudioContent() {
   );
 
   const pullCurrentNovelFromNotion = React.useCallback(async () => {
-    if (!currentNovel.id) return;
+    if (!currentNovel.id || notionPullInFlightRef.current) return;
 
+    notionPullInFlightRef.current = true;
     setNotionPublishState("publishing");
-    setNotionPublishMessage("");
-    setNotionPublishUrl("");
 
     try {
       const response = await fetch("/api/integrations/notion/pull", {
@@ -1158,7 +1283,9 @@ function PrivateNovelStudioContent() {
           (item) => typeof item.chapterId === "string" && typeof item.localContent === "string" && typeof item.remoteContent === "string"
         );
         if (conflict) {
+          setNotionAutosyncStatus("remote-changes");
           setNotionConflict({
+            novelId: currentNovel.id,
             chapterId: conflict.chapterId!,
             chapterTitle: conflict.chapterTitle ?? "Notion chapter",
             localContent: conflict.localContent!,
@@ -1174,7 +1301,6 @@ function PrivateNovelStudioContent() {
       autosyncRetryAtRef.current = 0;
       autosyncFailureCountRef.current = 0;
       setNotionAutosyncRetryAt(0);
-      setNotionPublishMessage(result.message ?? "Notion updates were applied locally.");
       await refreshStudioData(false);
       showToast(
         result.appliedChapters ? `Updated ${result.appliedChapters} chapter(s) from Notion` : "Notion is already up to date"
@@ -1182,10 +1308,11 @@ function PrivateNovelStudioContent() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not update this novel from Notion.";
       setNotionPublishState("error");
-      setNotionPublishMessage(message);
       showToast(message);
+    } finally {
+      notionPullInFlightRef.current = false;
     }
-  }, [currentNovel.id, refreshStudioData, showToast]);
+  }, [currentNovel.id, refreshStudioData, showToast, setNotionPublishState, setNotionAutosyncStatus]);
 
   const resolveCurrentNotionConflict = React.useCallback(
     async (resolution: NotionConflictChoice) => {
@@ -1210,19 +1337,17 @@ function PrivateNovelStudioContent() {
         setNotionConflict(null);
         setNotionAutosyncStatus("idle");
         setNotionPublishState("success");
-        setNotionPublishMessage(result.message ?? "Notion conflict resolved.");
         await refreshStudioData(false);
         showToast(result.message ?? "Notion conflict resolved.");
       } catch (error) {
         const message = error instanceof Error ? error.message : "Could not resolve this Notion conflict.";
         setNotionPublishState("error");
-        setNotionPublishMessage(message);
         showToast(message);
       } finally {
         setResolvingNotionConflict(false);
       }
     },
-    [currentNovel.id, notionConflict, refreshStudioData, resolvingNotionConflict, showToast]
+    [currentNovel.id, notionConflict, refreshStudioData, resolvingNotionConflict, showToast, setNotionPublishState, setNotionAutosyncStatus]
   );
 
   const createNovelFromDialog = React.useCallback(
@@ -1250,27 +1375,84 @@ function PrivateNovelStudioContent() {
     [refreshStudioData, setActiveNovel, showToast]
   );
 
+  const saveNovelDetails = React.useCallback(async (input: NovelMetadataInput) => {
+    if (!currentNovel.id) return;
+    const response = await fetch(`/api/novels/${encodeURIComponent(currentNovel.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input)
+    });
+    const result = await response.json().catch(() => null) as (Novel & { error?: string; fieldErrors?: NovelMetadataFieldErrors }) | null;
+    if (!response.ok || !result) {
+      const error = new Error(result?.error ?? `Novel details save failed with ${response.status}`) as Error & { fieldErrors?: NovelMetadataFieldErrors };
+      error.fieldErrors = result?.fieldErrors;
+      throw error;
+    }
+    await refreshStudioData(false);
+    showToast("Novel details updated in SQLite");
+  }, [currentNovel.id, refreshStudioData, showToast]);
+
+  const changeNovelLifecycle = React.useCallback(async () => {
+    if (!novelLifecycleTarget || novelLifecycleSaving) return;
+    const archivingCurrent =
+      novelLifecycleTarget.action === "archive" &&
+      studioData.settings.activeNovelId === novelLifecycleTarget.novel.id;
+    setNovelLifecycleSaving(true);
+    setNovelLifecycleError("");
+    try {
+      const response = await fetch(
+        `/api/novels/${encodeURIComponent(novelLifecycleTarget.novel.id)}/lifecycle`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: novelLifecycleTarget.action,
+            expectedStatus: novelLifecycleTarget.novel.status,
+            confirmed: true
+          })
+        }
+      );
+      const result = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error ?? "Could not update novel lifecycle");
+      await refreshStudioData(false);
+      setNovelLifecycleTarget(null);
+      if (archivingCurrent) {
+        router.push(routeForPage("library"));
+      }
+      showToast(novelLifecycleTarget.action === "archive" ? "Novel archived" : "Novel restored");
+    } catch (error) {
+      await refreshStudioData(false);
+      setNovelLifecycleError(error instanceof Error ? error.message : "Could not update novel lifecycle");
+    } finally {
+      setNovelLifecycleSaving(false);
+    }
+  }, [novelLifecycleSaving, novelLifecycleTarget, refreshStudioData, router, showToast, studioData.settings.activeNovelId]);
+
   const createRelationshipFromDialog = React.useCallback(
     async (input: CreateRelationshipInput) => {
-      const response = await fetch("/api/relationships", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          novelId: currentNovel.id,
-          ...input
-        })
-      });
+      if (pendingRelationshipCreateRefreshRef.current !== currentNovel.id) {
+        const response = await fetch("/api/relationships", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            novelId: currentNovel.id,
+            ...input
+          })
+        });
 
-      if (!response.ok) {
-        const details = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(details?.error ?? `Relationship creation failed with ${response.status}`);
+        if (!response.ok) {
+          const details = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(details?.error ?? `Relationship creation failed with ${response.status}`);
+        }
+        pendingRelationshipCreateRefreshRef.current = currentNovel.id;
       }
 
-      await refreshStudioData(false);
+      await refreshRelationships();
+      pendingRelationshipCreateRefreshRef.current = null;
       router.push(relationshipCatalogRoute(currentNovel.id, relationshipCatalog));
       showToast("Relationship saved to SQLite");
     },
-    [currentNovel.id, refreshStudioData, relationshipCatalog, router, showToast]
+    [currentNovel.id, refreshRelationships, relationshipCatalog, router, showToast]
   );
 
   const archiveCharacter = React.useCallback(async (character: Character) => {
@@ -1405,24 +1587,7 @@ function PrivateNovelStudioContent() {
   const novels = studioData.novels;
   const { characters, locations } = scopedStudioData;
 
-  const filteredNovels = novels.filter((novel) => {
-    const queryMatch = novel.title.toLowerCase().includes(libraryQuery.toLowerCase());
-    const statusMatch =
-      libraryNavigationState.status === "All statuses" ||
-      novel.status === libraryNavigationState.status;
-    const genreMatch =
-      libraryNavigationState.genre === "All genres" ||
-      novel.genre.toLowerCase().includes(libraryNavigationState.genre.toLowerCase());
-    return queryMatch && statusMatch && genreMatch;
-  }).sort((left, right) => {
-    if (libraryNavigationState.sort === "title") {
-      return left.title.localeCompare(right.title);
-    }
-    if (libraryNavigationState.sort === "created") {
-      return right.createdAt.localeCompare(left.createdAt);
-    }
-    return right.updatedAt.localeCompare(left.updatedAt);
-  });
+  const filteredNovels = React.useMemo(() => filterAndSortNovels(novels, libraryQuery, libraryNavigationState), [novels, libraryQuery, libraryNavigationState]);
 
   const filteredCharacters = filterAndSortCharacters(characters, characterCatalogState);
 
@@ -1448,21 +1613,25 @@ function PrivateNovelStudioContent() {
     [studioData.chapters, studioData.novels, studioData.volumes]
   );
 
+  const writingTargets = React.useMemo(() => novelWritingTargets(studioData), [studioData]);
+
   const updateReaderNavigation = React.useCallback(
     (nextNavigation: ReaderNavigationState) => {
       if (!currentNovel.id || !nextNavigation.targetId) return;
       const query = serializeReaderNavigationState(nextNavigation).toString();
-      router.push(`${routeForPage("reader", currentNovel.id)}?${query}`);
+      navigateTo(`${routeForPage("reader", currentNovel.id)}?${query}`, "Opening reader…");
     },
-    [currentNovel.id, router]
+    [currentNovel.id, navigateTo]
   );
 
   const selectPage = async (page: PageId) => {
+    if (!beginNavigation(page === "editor" ? "Opening editor…" : page === "reader" ? "Opening reader…" : "Opening view…")) return;
     if (!(await flushPendingChanges())) {
+      finishNavigation();
       showToast("Save failed. Navigation was cancelled to protect your draft.");
       return;
     }
-    router.push(routeForPage(page, currentNovel.id));
+    pushStartedNavigation(routeForPage(page, currentNovel.id));
     setMobileDrawerOpen(false);
     setFocusMode(
       page === "editor" && studioSettings.defaultFocusMode === "Writing"
@@ -1495,6 +1664,14 @@ function PrivateNovelStudioContent() {
       setNoteCatalogVersion(value => value + 1);
       showToast(editingNote ? "Note updated in SQLite" : "Note created in SQLite");
     }} /> : null;
+  const novelLifecycleDialog = <NovelLifecycleDialog
+    target={novelLifecycleTarget}
+    saving={novelLifecycleSaving}
+    error={novelLifecycleError}
+    translate={translate}
+    onOpenChange={(open) => { if (!open && !novelLifecycleSaving) setNovelLifecycleTarget(null); }}
+    onConfirm={() => void changeNovelLifecycle()}
+  />;
 
   if (focusMode === "writing") {
     return (
@@ -1514,6 +1691,7 @@ function PrivateNovelStudioContent() {
           onExit={() => void changeFocusMode("none")}
         />
         {noteDialog}
+        {novelLifecycleDialog}
         {toast ? <div role="status" className="fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] rounded-lg border bg-popover px-4 py-3 text-sm text-popover-foreground shadow-paper">{toast}</div> : null}
         </NoteCaptureContext.Provider>
       </StudioDataContext.Provider>
@@ -1525,6 +1703,7 @@ function PrivateNovelStudioContent() {
       <NoteUpdatesContext.Provider value={noteCatalogVersion}>
       <main
         className="min-h-screen bg-background text-foreground"
+        aria-busy={navigationPending}
         data-reading-focus={focusMode === "reading" ? "active" : undefined}
       >
         <div className="flex min-h-screen">
@@ -1541,6 +1720,7 @@ function PrivateNovelStudioContent() {
               }}
               hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
               readerOptimized={activePage === "reader"}
+              navigationPending={navigationPending}
               onSelectPage={selectPage}
               onSidebarStateChange={updateSidebarState}
             />
@@ -1550,15 +1730,16 @@ function PrivateNovelStudioContent() {
             <div className={cn(focusMode === "reading" ? "hidden" : "contents")} aria-hidden={focusMode === "reading" ? true : undefined}>
               <TopBar
                 pageLabel={pageLabelsByLanguage[language][activePage]}
-                subtitle={`${currentNovel.title} - ${uiCopy[language].localStudio}`}
                 sidebarState={sidebarState}
                 mobileNavigationOpen={mobileDrawerOpen}
                 novels={studioData.novels}
                 activeNovelId={currentNovel.id}
                 copy={{
                   openNavigation: uiCopy[language].openNavigation,
-                  toggleSidebar: uiCopy[language].toggleSidebar
+                  toggleSidebar: uiCopy[language].toggleSidebar,
+                  currentNovel: translate("Current Novel")
                 }}
+                showNovelSelector={!activeRoute?.novelId}
                 readerOptimized={activePage === "reader"}
                 onOpenMobileNav={() => setMobileDrawerOpen(true)}
                 onCycleSidebar={cycleSidebar}
@@ -1578,46 +1759,70 @@ function PrivateNovelStudioContent() {
                   data={scopedStudioData}
                   translate={translate}
                   dailyWordGoal={studioSettings.dailyWordGoal}
+                  notionSyncState={currentNotionSyncState}
+                  notionAutosyncStatus={observedNotionSyncStatus}
+                  notionPublishState={notionPublishState}
+                  navigationPending={navigationPending}
                   onSelectPage={selectPage}
-                  onOpenNovel={setActiveNovel}
+                  onOpenNovel={(novelId) => void setActiveNovel(novelId, "overview")}
+                  onCreateNovel={() => setDialog("novel")}
                 />
               ) : null}
               {activePage === "library" ? (
                 <LibraryScreen
                   novels={filteredNovels}
+                  totalNovelCount={novels.length}
+                  ready={dataStatus === "ready"}
+                  loadError={dataStatus === "fallback"}
+                  genreOptions={libraryGenreOptions}
+                  lifecycle={libraryNavigationState.lifecycle}
+                  onLifecycleChange={(lifecycle) => updateLibraryNavigation({ lifecycle, status: "All statuses" })}
                   novelMetrics={novelMetrics}
+                  writingTargets={writingTargets}
+                  activeNovelId={studioData.settings.activeNovelId}
+                  notionStatusByNovel={libraryNotionStatusByNovel}
                   query={libraryQuery}
                   status={libraryNavigationState.status}
                   genre={libraryNavigationState.genre}
                   sort={libraryNavigationState.sort}
-                  view={libraryNavigationState.view}
+                  view={studioSettings.libraryView}
+                  viewSaveDisabled={dataStatus !== "ready" || settingsSaveState === "saving"}
+                  viewSaveMessage={settingsSaveState === "error" || settingsSaveState === "saving" ? settingsSaveMessage : ""}
+                  navigationPending={navigationPending}
+                  navigationLabel={navigationLabel ?? ""}
                   translate={translate}
-                  onQueryChange={setLibraryQuery}
+                  onQueryChange={(query) => setLibraryQuery(boundedLibrarySearch(query))}
                   onStatusChange={(status) => updateLibraryNavigation({ status })}
                   onGenreChange={(genre) => updateLibraryNavigation({ genre })}
                   onSortChange={(sort) => updateLibraryNavigation({ sort })}
-                  onViewChange={(view) => updateLibraryNavigation({ view })}
+                  onViewChange={(view) => { if (view !== studioSettings.libraryView) updateStudioSetting("libraryView", view); }}
                   onClearFilters={() => {
                     setLibraryQuery("");
                     updateLibraryNavigation(defaultLibraryNavigationState);
                   }}
-                  onOpenNovel={setActiveNovel}
                   onOpenDialog={() => setDialog("novel")}
+                  onRetry={() => void refreshStudioData()}
+                  onSelectNovel={(novelId) => setActiveNovel(novelId, "overview")}
+                  onExportNovel={(novelId) => setActiveNovel(novelId, "export")}
+                  onArchiveNovel={(novel) => { setNovelLifecycleError(""); setNovelLifecycleTarget({ novel, action: "archive" }); }}
+                  onRestoreNovel={(novel) => { setNovelLifecycleError(""); setNovelLifecycleTarget({ novel, action: "restore" }); }}
                 />
               ) : null}
               {activePage === "overview" ? (
                 <NovelOverviewScreen
                   data={scopedStudioData}
                   translate={translate}
-                  onSelectPage={selectPage}
-                  onPublishToNotion={() => void publishCurrentNovelToNotion()}
-                  onPullFromNotion={() => void pullCurrentNovelFromNotion()}
-                  notionPublishState={notionPublishState}
-                  notionPublishMessage={notionPublishMessage}
-                  notionPublishUrl={notionPublishUrl}
                   notionRootConfigured={Boolean(studioSettings.notionRootPageId)}
                   notionSyncState={currentNotionSyncState}
-                  notionAutosyncStatus={notionAutosyncStatus}
+                  hasNotionConflict={notionConflict?.novelId === currentNovel.id}
+                  hasRemoteChanges={observedNotionSyncStatus === "remote-changes"}
+                  syncing={notionPublishState === "publishing" || observedNotionSyncStatus === "syncing"}
+                  navigationPending={navigationPending}
+                  onSyncNow={() => void publishCurrentNovelToNotion()}
+                  onReviewNotionChanges={() => void pullCurrentNovelFromNotion()}
+                  onSelectPage={selectPage}
+                  onOpenScene={(sceneId) => void openSceneInEditor(sceneId)}
+                  onEditDetails={() => setNovelDetailsOpen(true)}
                 />
               ) : null}
               {activePage === "structure" ? (
@@ -1732,7 +1937,8 @@ function PrivateNovelStudioContent() {
                   catalog={relationshipCatalog}
                   onCatalogChange={updateRelationshipCatalog}
                   onAddRelationship={(type = "") => { setInitialRelationshipType(type); setDialog("relationship"); }}
-                  onChanged={async () => { if (!await refreshStudioData(false)) throw new Error("Changes saved. Could not refresh; please retry."); }}
+                  onChanged={refreshRelationships}
+                  refreshVersion={relationshipRefreshVersion}
                 />
               ) : null}
               {activePage === "timeline" ? (
@@ -1777,7 +1983,7 @@ function PrivateNovelStudioContent() {
                   settingsSaveState={settingsSaveState}
                   settingsSaveMessage={settingsSaveMessage}
                   onNotionConnectionVerified={applyVerifiedNotionConnection}
-                  notionAutosyncStatus={notionAutosyncStatus}
+                  notionAutosyncStatus={observedNotionSyncStatus}
                   notionAutosyncRetryAt={notionAutosyncRetryAt}
                 />
               ) : null}
@@ -1793,9 +1999,12 @@ function PrivateNovelStudioContent() {
         description={uiCopy[language].openNavigation}
         hasNovelContext={activePage !== "library" && Boolean(currentNovel.id)}
         readerOptimized={activePage === "reader"}
+        navigationPending={navigationPending}
         onOpenChange={setMobileDrawerOpen}
         onSelectPage={selectPage}
       />
+
+      <NavigationFeedback label={navigationLabel} />
 
       <PrototypeDialog
         dialog={dialog === "character" || dialog === "place" || dialog === "event" || dialog === "note" ? null : dialog}
@@ -1811,6 +2020,13 @@ function PrivateNovelStudioContent() {
       />
 
       {noteDialog}
+      {novelLifecycleDialog}
+      <NovelDetailsDialog
+        open={novelDetailsOpen}
+        novel={currentNovel}
+        onOpenChange={setNovelDetailsOpen}
+        onSaved={saveNovelDetails}
+      />
 
       {dialog === "event" ? <TimelineEventDialog novelId={currentNovel.id}
         options={relationshipSinceOptions(currentNovel.id, scopedStudioData.volumes, scopedStudioData.chapters, scopedStudioData.scenes)}
@@ -1927,16 +2143,27 @@ function EditorScreen({
   const [draftVersion, setDraftVersion] = React.useState(0);
   const revisionRef = React.useRef(0);
   const loadedSceneIdRef = React.useRef<string | null>(null);
+  const [draftDocumentSceneId, setDraftDocumentSceneId] = React.useState<string | null>(
+    activeScene.contentLoaded ? activeScene.id : null
+  );
+  const draftDocumentRef = React.useRef(
+    activeScene.contentLoaded
+      ? loadedSceneDocument(activeScene.id, activeScene.revision)
+      : unloadedSceneDocument(null, activeScene.revision)
+  );
   const activeSceneRef = React.useRef(activeScene);
   const draftRef = React.useRef({ title, status, content });
   const dirtyRef = React.useRef(false);
   const saveCurrentSceneRef = React.useRef<(() => Promise<boolean>) | null>(null);
   const exitSaveRequestedRef = React.useRef(false);
   activeSceneRef.current = activeScene;
+  const isDocumentReady = activeScene.contentLoaded && draftDocumentSceneId === activeScene.id;
   const dirty =
-    title !== activeScene.title ||
-    status !== activeScene.status ||
-    content !== activeScene.content;
+    isDocumentReady && (
+      title !== activeScene.title ||
+      status !== activeScene.status ||
+      content !== activeScene.content
+    );
   dirtyRef.current = dirty;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
   const estimatedReadingMinutes = Math.max(1, Math.ceil(draftWordCount / 200));
@@ -1951,6 +2178,10 @@ function EditorScreen({
   const saveCurrentScene = React.useCallback(async () => {
     const scene = activeSceneRef.current;
     const draft = draftRef.current;
+    const document = draftDocumentRef.current;
+    // A transport summary is never a saveable manuscript, even if its empty
+    // placeholder happens to differ from the persisted document.
+    if (!canSaveSceneDocument(document, scene.id, scene.contentLoaded)) return true;
     const hasChanges =
       draft.title !== scene.title ||
       draft.status !== scene.status ||
@@ -1960,11 +2191,13 @@ function EditorScreen({
     const savedScene = await onSaveScene(scene.id, {
       title: draft.title,
       status: draft.status,
-      content: draft.content
-    }, scene.revision);
+      content: draft.content,
+      documentLoaded: true
+    }, document.baseRevision);
     if (!savedScene) return false;
 
     activeSceneRef.current = { ...scene, ...draft, revision: savedScene.revision };
+    draftDocumentRef.current = loadedSceneDocument(scene.id, savedScene.revision);
 
     const nextStatus = statusAfterSaveConfirmation(revisionRef.current, revisionAtStart);
     if (nextStatus === "Saved locally") {
@@ -2022,8 +2255,24 @@ function EditorScreen({
   };
 
   React.useEffect(() => {
+    if (!activeScene.contentLoaded) {
+      loadedSceneIdRef.current = null;
+      draftDocumentRef.current = unloadedSceneDocument(activeScene.id, activeScene.revision);
+      setDraftDocumentSceneId(null);
+      setTitle(activeScene.title);
+      setStatus(activeScene.status);
+      setContent("");
+      draftRef.current = { title: activeScene.title, status: activeScene.status, content: "" };
+      revisionRef.current = 0;
+      setDraftVersion(0);
+      onDirtyChange(false);
+      setSaveStatus("Saved locally");
+      return;
+    }
     if (loadedSceneIdRef.current === activeScene.id) return;
     loadedSceneIdRef.current = activeScene.id;
+    draftDocumentRef.current = loadedSceneDocument(activeScene.id, activeScene.revision);
+    setDraftDocumentSceneId(activeScene.id);
     setTitle(activeScene.title);
     setStatus(activeScene.status);
     setContent(activeScene.content);
@@ -2121,6 +2370,7 @@ function EditorScreen({
                   <Input
                     id="chapter-title"
                     value={title}
+                    disabled={!isDocumentReady}
                     className="mt-2"
                     onChange={(event) => {
                       const nextTitle = event.target.value;
@@ -2134,6 +2384,7 @@ function EditorScreen({
                   <Label>Status</Label>
                   <Select
                     value={status}
+                    disabled={!isDocumentReady}
                     onValueChange={(value) => {
                       const nextStatus = value as ChapterStatus;
                       draftRef.current = { ...draftRef.current, status: nextStatus };
@@ -2201,12 +2452,14 @@ function EditorScreen({
                 </Select>
               </div>
               <div className="mx-auto max-w-4xl rounded-lg border bg-editor p-4 shadow-inner sm:p-8">
+                {!isDocumentReady ? <p role="status" className="mb-3 text-sm text-muted-foreground">Loading scene manuscript…</p> : null}
                 <Textarea
                   aria-label="Scene manuscript"
                   ref={manuscriptRef}
                   data-scene-id={activeScene.id}
                   onSelect={event => { const input = event.currentTarget; setManuscriptSelection({ sceneId: activeScene.id, start: input.selectionStart, end: input.selectionEnd }); }}
                   value={content}
+                  disabled={!isDocumentReady}
                   onChange={(event) => {
                     const nextContent = event.target.value;
                     draftRef.current = { ...draftRef.current, content: nextContent };
@@ -2217,7 +2470,7 @@ function EditorScreen({
                   style={{ fontSize: `${editorFontSize}px` }}
                 />
               </div>
-              {loadedSceneIdRef.current === activeScene.id ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
+              {isDocumentReady ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
               <SceneAnnotations novelId={data.settings.activeNovelId} sceneId={activeScene.id} content={content} manuscriptRef={manuscriptRef} />
               <CharacterHighlightPreview novelId={data.settings.activeNovelId} content={content} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
             </div>
@@ -2424,24 +2677,37 @@ function WritingFocusMode({
   const [draftVersion, setDraftVersion] = React.useState(0);
   const revisionRef = React.useRef(0);
   const loadedSceneIdRef = React.useRef<string | null>(null);
+  const [draftDocumentSceneId, setDraftDocumentSceneId] = React.useState<string | null>(
+    activeScene.contentLoaded ? activeScene.id : null
+  );
+  const draftDocumentRef = React.useRef(
+    activeScene.contentLoaded
+      ? loadedSceneDocument(activeScene.id, activeScene.revision)
+      : unloadedSceneDocument(null, activeScene.revision)
+  );
   const activeSceneRef = React.useRef(activeScene);
   const contentRef = React.useRef(content);
   activeSceneRef.current = activeScene;
-  const dirty = content !== activeScene.content;
+  const isDocumentReady = activeScene.contentLoaded && draftDocumentSceneId === activeScene.id;
+  const dirty = isDocumentReady && content !== activeScene.content;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
 
   const saveCurrentScene = React.useCallback(async () => {
     const scene = activeSceneRef.current;
     const latestContent = contentRef.current;
+    const document = draftDocumentRef.current;
+    if (!canSaveSceneDocument(document, scene.id, scene.contentLoaded)) return true;
     if (latestContent === scene.content) return true;
     const revisionAtStart = revisionRef.current;
     const savedScene = await onSaveScene(scene.id, {
       title: scene.title,
       status: scene.status,
-      content: latestContent
-    }, scene.revision);
+      content: latestContent,
+      documentLoaded: true
+    }, document.baseRevision);
     if (!savedScene) return false;
     activeSceneRef.current = { ...scene, content: latestContent, revision: savedScene.revision };
+    draftDocumentRef.current = loadedSceneDocument(scene.id, savedScene.revision);
     const nextStatus = statusAfterSaveConfirmation(revisionRef.current, revisionAtStart);
     if (nextStatus === "Saved locally") {
       onDirtyChange(false);
@@ -2453,8 +2719,22 @@ function WritingFocusMode({
   }, [onDirtyChange, onSaveScene, setSaveStatus]);
 
   React.useEffect(() => {
+    if (!activeScene.contentLoaded) {
+      loadedSceneIdRef.current = null;
+      draftDocumentRef.current = unloadedSceneDocument(activeScene.id, activeScene.revision);
+      setDraftDocumentSceneId(null);
+      setContent("");
+      contentRef.current = "";
+      revisionRef.current = 0;
+      setDraftVersion(0);
+      onDirtyChange(false);
+      setSaveStatus("Saved locally");
+      return;
+    }
     if (loadedSceneIdRef.current === activeScene.id) return;
     loadedSceneIdRef.current = activeScene.id;
+    draftDocumentRef.current = loadedSceneDocument(activeScene.id, activeScene.revision);
+    setDraftDocumentSceneId(activeScene.id);
     setContent(activeScene.content);
     contentRef.current = activeScene.content;
     revisionRef.current = 0;
@@ -2508,12 +2788,14 @@ function WritingFocusMode({
       </header>
       <section className="mx-auto max-w-5xl px-4 py-8">
         <div className="mx-auto max-w-3xl rounded-lg border bg-editor p-5 shadow-paper sm:p-10">
+          {!isDocumentReady ? <p role="status" className="mb-3 text-sm text-muted-foreground">Loading scene manuscript…</p> : null}
           <Textarea
             aria-label="Scene manuscript"
             ref={manuscriptRef}
             data-scene-id={activeScene.id}
             onSelect={event => { const input = event.currentTarget; setManuscriptSelection({ sceneId: activeScene.id, start: input.selectionStart, end: input.selectionEnd }); }}
             value={content}
+            disabled={!isDocumentReady}
             onChange={(event) => {
               const nextContent = event.target.value;
               contentRef.current = nextContent;
@@ -2527,7 +2809,7 @@ function WritingFocusMode({
             style={{ fontSize: `${editorFontSize}px` }}
           />
         </div>
-        {loadedSceneIdRef.current === activeScene.id ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
+        {isDocumentReady ? <SelectionCaptureMenu key={`${activeScene.id}:${manuscriptSelection.start}:${manuscriptSelection.end}`} target={noteTarget} manuscriptRef={manuscriptRef} selection={manuscriptSelection} onRefresh={onRefreshMetadata} onNotify={onNotify} /> : null}
       </section>
     </main>
   );
@@ -3447,10 +3729,10 @@ function PlaceDetailPanel({ place, catalogState, onEdit, onScenesChanged }: { pl
   );
 }
 
-function RelationshipsScreen({ catalog, onCatalogChange, onAddRelationship, onChanged }: {
+function RelationshipsScreen({ catalog, onCatalogChange, onAddRelationship, onChanged, refreshVersion }: {
   catalog: RelationshipCatalogState;
   onCatalogChange: (changes: Partial<RelationshipCatalogState>) => void;
-  onAddRelationship: (type?: string) => void; onChanged: () => Promise<void>;
+  onAddRelationship: (type?: string) => void; onChanged: () => Promise<void>; refreshVersion: number;
 }) {
   const data = useStudioData();
   const novelId = getCurrentNovel(data).id;
@@ -3497,7 +3779,7 @@ function RelationshipsScreen({ catalog, onCatalogChange, onAddRelationship, onCh
         <Button variant="outline" onClick={() => onCatalogChange(defaultRelationshipCatalog)}>Clear filters</Button>
       </div>
     </section>
-    <RelationshipCatalogLoader novelId={novelId} showSpoilers={catalog.spoilers} lifecycle={catalog.lifecycle} refreshKey={data.relationships}>
+    <RelationshipCatalogLoader novelId={novelId} showSpoilers={catalog.spoilers} lifecycle={catalog.lifecycle} refreshKey={refreshVersion}>
       {(relationships) => <RelationshipExplorer key={`${novelId}:${serializeRelationshipCatalog(catalog)}`} novelId={novelId} characters={data.characters} relationships={filterRelationships(relationships, catalog)}
       showSpoilers={catalog.spoilers} focusId={catalog.character} sinceOptions={sinceOptions}
       onFocusCharacter={(character) => onCatalogChange({ character })} onChanged={onChanged} onClearFilters={() => onCatalogChange(defaultRelationshipCatalog)} />}

@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { NotionApiError, NotionPublishError, NotionSyncError, syncNovelToNotion } from "@/lib/notion-sync";
+import { isTrustedMutationRequest } from "@/lib/request-security";
+import { isValidNovelRouteId } from "@/lib/studio-routes";
 
 type SyncBody = { novelId?: unknown; force?: unknown };
 
 export async function POST(request: Request) {
+  if (!isTrustedMutationRequest(request)) {
+    return NextResponse.json(
+      { ok: false, code: "UNTRUSTED_ORIGIN", message: "Cross-origin mutation rejected." },
+      { status: 403 }
+    );
+  }
+
   let body: SyncBody;
 
   try {
@@ -16,7 +25,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (typeof body.novelId !== "string" || !body.novelId.trim()) {
+  if (typeof body.novelId !== "string" || !isValidNovelRouteId(body.novelId)) {
     return NextResponse.json(
       { ok: false, code: "NOVEL_REQUIRED", message: "Select a novel before syncing to Notion." },
       { status: 400 }
@@ -28,8 +37,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       ...result,
-      lastNotionSync: result.lastNotionSync?.toISOString() ?? null
-    });
+      lastNotionSync: result.lastNotionSync?.toISOString() ?? null,
+      operationId: undefined
+    }, { status: result.operationStatus === "syncing" ? 202 : 200 });
   } catch (error) {
     if (error instanceof NotionPublishError || error instanceof NotionApiError || error instanceof NotionSyncError) {
       return NextResponse.json(

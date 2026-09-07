@@ -154,7 +154,7 @@ test("Library navigation accepts only allowlisted query parameters", async () =>
     navigation.parseLibraryNavigationState(
       new URLSearchParams("status=writing&genre=fantasy&sort=title&view=list")
     ),
-    { status: "Writing", genre: "Fantasy", sort: "title", view: "list" }
+    { status: "Writing", genre: "Fantasy", sort: "title", lifecycle: "active" }
   );
   assert.deepEqual(
     navigation.parseLibraryNavigationState(
@@ -465,7 +465,7 @@ test("scene restore creates a safeguard checkpoint without autosave snapshots", 
   const studioSource = await readFile(resolve(process.cwd(), "lib/db/studio.ts"), "utf8");
   const restoreRoute = await readFile(resolve(process.cwd(), "app/api/scenes/[sceneId]/versions/[versionId]/restore/route.ts"), "utf8");
 
-  assert.match(studioSource, /origin: "before restore"/);
+  assert.match(studioSource, /createRecoveryCheckpoint\(tx, current, version\.content, "version-restore", "version-restore"\)/);
   assert.match(studioSource, /where: \{ id: versionId, sceneId \}/);
   assert.match(studioSource, /prisma\.sceneVersion\.findMany/);
   assert.match(restoreRoute, /restoreSceneVersion/);
@@ -550,7 +550,7 @@ test("reader experience persists appearance, exposes canonical navigation, and a
   assert.match(pageSource, /updateReaderPreferences\(defaultReaderPreferences\)/);
   assert.match(pageSource, /readerSettingsTimerRef\.current = setTimeout/);
   assert.match(pageSource, /serializeReaderNavigationState\(nextNavigation\)/);
-  assert.match(pageSource, /router\.push\(`\$\{routeForPage\("reader", currentNovel\.id\)\}\?\$\{query\}`\)/);
+  assert.match(pageSource, /navigateTo\(`\$\{routeForPage\("reader", currentNovel\.id\)\}\?\$\{query\}`, "Opening reader…"\)/);
   assert.match(pageSource, /readingProgressPercent/);
   assert.match(pageSource, /label=\{`\$\{readerScope\} reading progress`\}/);
   assert.doesNotMatch(pageSource, /min-h-\[calc\(100vh-4\.25rem\)\]/);
@@ -618,6 +618,15 @@ test("top bar omits the technical local data status without removing navigation 
   assert.doesNotMatch(i18nSource, /localStatus/);
   assert.match(topBarSource, /ToolbarIconButton/);
   assert.match(topBarSource, /SelectTrigger/);
+  assert.doesNotMatch(topBarSource, /subtitle|localStudio|localhost|hostname/);
+  assert.doesNotMatch(pageSource, /localStudio/);
+  assert.doesNotMatch(i18nSource, /local network studio|localStudio/);
+  assert.match(topBarSource, /<h2[^>]*>[\s\S]*?\{pageLabel\}/);
+  assert.match(topBarSource, /aria-label=\{copy.currentNovel\}/);
+  assert.match(topBarSource, /value=\{activeNovelId\} onValueChange=\{onActiveNovelChange\}/);
+  assert.match(topBarSource, /min-w-0 basis-full/);
+  assert.match(topBarSource, /\[&>span\]:truncate/);
+  assert.doesNotMatch(topBarSource, /hidden h-10|min-w-\[240px\]/);
 });
 
 test("character catalog keeps selection explicit, novel-scoped, stale-safe, and responsive", async () => {
