@@ -16,8 +16,8 @@ import {
 type NotionPage = { id: string; url: string };
 type NotionBlock = Record<string, unknown>;
 
-export type NotionChapterSyncSnapshot = {
-  chapterId: string;
+export type NotionSceneSyncSnapshot = {
+  sceneId: string;
   local: string;
   remote: string;
 };
@@ -70,10 +70,6 @@ function paragraph(value: string): NotionBlock {
   return { object: "block", type: "paragraph", paragraph: { rich_text: richText(value) } };
 }
 
-function divider(): NotionBlock {
-  return { object: "block", type: "divider", divider: {} };
-}
-
 function paragraphBlocks(value: string) {
   const sections = value.replace(/\r\n/g, "\n").split(/\n\s*\n/);
   return sections.flatMap((section) => chunks(section).map((part) => paragraph(part)));
@@ -116,26 +112,12 @@ function planningBlocks(source: NonNullable<Awaited<ReturnType<typeof getNotionP
   return [...metadata.flatMap(paragraphBlocks), ...paragraphBlocks(source.novel.synopsis), ...volumes];
 }
 
-function chapterBlocks(
-  source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>,
-  chapterId: string,
-  title: string
-) {
-  const chapter = source.chapters.find((item) => item.id === chapterId);
-  if (!chapter) return [];
-
-  const scenes = source.scenes.filter((scene) => scene.chapterId === chapter.id);
-  const blocks: NotionBlock[] = [heading(1, title), ...paragraphBlocks(chapter.summary)];
-
-  scenes.forEach((scene, index) => {
-    blocks.push(heading(2, `${String(index + 1).padStart(2, "0")} — ${scene.title}`));
-    if (scene.summary) blocks.push(...paragraphBlocks(scene.summary));
-    blocks.push(...paragraphBlocks(scene.content || "(Empty scene)"));
-    if (index < scenes.length - 1) blocks.push(divider());
-  });
-
-  if (scenes.length === 0) blocks.push(paragraph("No scenes have been added to this chapter yet."));
-  return blocks;
+function sceneBlocks(scene: { summary: string; content: string }) {
+  return [
+    ...(scene.summary ? [heading(2, "Summary"), ...paragraphBlocks(scene.summary)] : []),
+    heading(2, "Manuscript"),
+    ...paragraphBlocks(scene.content)
+  ];
 }
 
 function blockText(block: NotionBlock) {
@@ -155,34 +137,44 @@ function remoteSnapshot(blocks: NotionBlock[]) {
   );
 }
 
-function localSnapshot(
-  source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>,
-  chapterId: string
-) {
-  const chapter = source.chapters.find((item) => item.id === chapterId);
+function localSnapshot(scene: { id: string; chapterId: string; title: string; summary: string; content: string; revision: number }) {
   return JSON.stringify({
-    title: chapter?.title ?? "",
-    summary: chapter?.summary ?? "",
-    scenes: source.scenes
-      .filter((scene) => scene.chapterId === chapterId)
-      .map((scene) => ({ title: scene.title, content: scene.content, summary: scene.summary }))
+    id: scene.id,
+    chapterId: scene.chapterId,
+    title: scene.title,
+    summary: scene.summary,
+    content: scene.content,
+    revision: scene.revision
   });
 }
 
+export function getNotionSceneSyncSnapshots(
+  source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>
+) {
+  return source.scenes.map((scene) => ({
+    sceneId: scene.id,
+    local: localSnapshot(scene),
+    remote: remoteSnapshot(sceneBlocks(scene))
+  } satisfies NotionSceneSyncSnapshot));
+}
+
+/**
+ * Legacy pull compatibility only. New publishing and conflict cursors are
+ * scene-level; older connected novels are migrated to scene pages on their
+ * next successful push.
+ */
 export function getNotionChapterSyncSnapshots(
   source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>
 ) {
   return source.chapters.map((chapter) => {
-    const volumeIndex = source.volumes.findIndex((volume) => volume.id === chapter.volumeId);
-    const chapterIndex = source.chapters
-      .filter((item) => item.volumeId === chapter.volumeId)
-      .findIndex((item) => item.id === chapter.id);
-    const title = `${String(volumeIndex + 1).padStart(2, "0")}.${String(chapterIndex + 1).padStart(2, "0")} — ${chapter.title}`;
-    return {
-      chapterId: chapter.id,
-      local: localSnapshot(source, chapter.id),
-      remote: remoteSnapshot(chapterBlocks(source, chapter.id, title))
-    } satisfies NotionChapterSyncSnapshot;
+    const local = JSON.stringify({
+      title: chapter.title,
+      summary: chapter.summary,
+      scenes: source.scenes
+        .filter((scene) => scene.chapterId === chapter.id)
+        .map((scene) => ({ id: scene.id, title: scene.title, summary: scene.summary, content: scene.content }))
+    });
+    return { chapterId: chapter.id, local, remote: local };
   });
 }
 
@@ -201,6 +193,7 @@ async function updatePage(pageId: string, title: string, eraseContent: boolean) 
     method: "PATCH",
     body: {
       properties: { title: { title: richText(title) } },
+      archived: false,
       ...(eraseContent ? { erase_content: true } : {})
     }
   });
@@ -226,15 +219,17 @@ export async function publishNovelToNotion(
     throw new NotionPublishError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
   }
 
+  const mappingRows = await getNotionMappings(novelId);
   const mappings = new Map<string, { localId: string; notionPageId: string }>(
-    (await getNotionMappings(novelId)).map((mapping) => [
+    mappingRows.map((mapping) => [
       mapping.localId,
       { localId: mapping.localId, notionPageId: mapping.notionPageId }
     ])
   );
+  const mappingRecords = new Map(mappingRows.map((mapping) => [mapping.localId, mapping]));
   let createdPages = 0;
   let updatedPages = 0;
-  const chapterSnapshots = getNotionChapterSyncSnapshots(source);
+  const sceneSnapshots = getNotionSceneSyncSnapshots(source);
 
   const publishPage = async (input: {
     localId: string;
@@ -242,6 +237,7 @@ export async function publishNovelToNotion(
     parentPageId: string;
     title: string;
     blocks?: NotionBlock[];
+    replaceContent?: boolean;
   }) => {
     const mapped = mappings.get(input.localId);
     let page: NotionPage;
@@ -250,7 +246,7 @@ export async function publishNovelToNotion(
     if (mapped) {
       try {
         await assertNotionPageWithinRoot(mapped.notionPageId, parentRootPageId);
-        page = await updatePage(mapped.notionPageId, input.title, Boolean(input.blocks));
+        page = await updatePage(mapped.notionPageId, input.title, input.replaceContent ?? Boolean(input.blocks));
         updatedPages += 1;
       } catch (error) {
         if (!(error instanceof NotionApiError) || error.status !== 404) throw error;
@@ -307,21 +303,86 @@ export async function publishNovelToNotion(
       const chapters = source.chapters.filter((chapter) => chapter.volumeId === volume.id);
       for (const [chapterIndex, chapter] of chapters.entries()) {
         const numberedTitle = `${String(volumeIndex + 1).padStart(2, "0")}.${String(chapterIndex + 1).padStart(2, "0")} — ${chapter.title}`;
-        await publishPage({
+        const legacyChapter = mappings.get(`chapter:${chapter.id}`);
+        const chapterPage = await publishPage({
           localId: `chapter:${chapter.id}`,
           entityType: "chapter",
           parentPageId: chaptersPage.id,
           title: numberedTitle,
-          blocks: chapterBlocks(source, chapter.id, numberedTitle)
+          // Existing chapter pages used to contain every scene. Clear that
+          // legacy aggregate exactly once, then use the page as a container.
+          replaceContent: Boolean(legacyChapter) && source.scenes.some((scene) => scene.chapterId === chapter.id && !mappings.has(`scene:${scene.id}`))
         });
+        const scenes = source.scenes.filter((scene) => scene.chapterId === chapter.id);
+        for (const [sceneIndex, scene] of scenes.entries()) {
+          const localId = `scene:${scene.id}`;
+          const mapped = mappings.get(localId);
+          const snapshot = sceneSnapshots.find((item) => item.sceneId === scene.id)!;
+          const mappingRecord = mappingRecords.get(localId);
+          const changed = !mappingRecord ||
+            scene.revision > mappingRecord.lastSyncedRevision ||
+            mappingRecord.lastSyncedContent !== snapshot.local;
+          const sceneTitle = `${String(volumeIndex + 1).padStart(2, "0")}.${String(chapterIndex + 1).padStart(2, "0")}.${String(sceneIndex + 1).padStart(2, "0")} — ${scene.title}`;
+          if (!changed) continue;
+          const page = await publishPage({
+            localId,
+            entityType: "scene",
+            parentPageId: chapterPage.id,
+            title: sceneTitle,
+            blocks: sceneBlocks(scene),
+            replaceContent: Boolean(mapped)
+          });
+          await upsertNotionMapping({
+            localId,
+            entityType: "scene",
+            novelId,
+            notionPageId: page.id,
+            lastSyncedRevision: scene.revision,
+            lastSyncedContent: snapshot.local,
+            lastSyncedAt: new Date(),
+            remoteArchivedAt: null
+          });
+          mappingRecords.set(localId, {
+            ...mappingRecord,
+            localId,
+            entityType: "scene",
+            novelId,
+            notionPageId: page.id,
+            lastSyncedRevision: scene.revision,
+            lastSyncedContent: snapshot.local,
+            lastSyncedAt: new Date(),
+            remoteLastEditedAt: null,
+            remoteArchivedAt: null,
+            createdAt: mappingRecord?.createdAt ?? new Date(),
+            updatedAt: new Date()
+          });
+        }
       }
+    }
+
+    // Archiving/deleting locally never destroys a user's remote document. The
+    // mapped page is archived once, preserving its Notion history and making a
+    // retry safe. Restoring locally reuses the same mapping and page id.
+    const activeSceneIds = new Set(source.scenes.map((scene) => `scene:${scene.id}`));
+    for (const mapping of mappingRows) {
+      if (mapping.entityType !== "scene" || activeSceneIds.has(mapping.localId) || mapping.remoteArchivedAt) continue;
+      await assertNotionPageWithinRoot(mapping.notionPageId, parentRootPageId);
+      await requestNotion(`/v1/pages/${mapping.notionPageId}`, { method: "PATCH", body: { archived: true } });
+      await upsertNotionMapping({
+        localId: mapping.localId,
+        entityType: mapping.entityType,
+        novelId,
+        notionPageId: mapping.notionPageId,
+        remoteArchivedAt: new Date()
+      });
+      updatedPages += 1;
     }
 
     return {
       novelPage,
       createdPages,
       updatedPages,
-      chapterSnapshots,
+      sceneSnapshots,
       sections: { charactersPage, planningPage, chaptersPage }
     };
   } catch (error) {

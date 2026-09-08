@@ -7,7 +7,7 @@ import {
   markNotionSynced,
   refreshNotionSyncLease
 } from "@/lib/db/notion-sync";
-import { getNotionPublishSource, isNotionNovelConnected } from "@/lib/db/notion-publish";
+import { getNotionMappings, getNotionPublishSource, isNotionNovelConnected } from "@/lib/db/notion-publish";
 import { NotionApiError } from "@/lib/notion";
 import { NotionPublishError, publishNovelToNotion } from "@/lib/notion-publish";
 import { NotionPullError, pullNovelFromNotion } from "@/lib/notion-pull";
@@ -76,7 +76,11 @@ async function runNotionSync(
     };
   }
 
-  if (protectRemoteChanges) {
+  // Legacy chapter documents cannot safely identify newly added scenes. Their
+  // first scene-page publication is a local-canonical migration; subsequent
+  // syncs use the scene mappings as their conflict boundary.
+  const hasSceneMappings = (await getNotionMappings(novelId)).some((mapping) => mapping.entityType === "scene");
+  if (protectRemoteChanges && hasSceneMappings) {
     // Reconcile remote-only chapter changes first. pullNovelFromNotion compares
     // both sides with the persisted per-chapter baseline and refuses to apply a
     // chapter changed independently on both sides.
@@ -106,8 +110,8 @@ async function runNotionSync(
   const completed = await markNotionSynced(
     novelId,
     Object.fromEntries(
-      result.chapterSnapshots.map((snapshot) => [
-        snapshot.chapterId,
+      result.sceneSnapshots.map((snapshot) => [
+        snapshot.sceneId,
         { local: snapshot.local, remote: snapshot.remote }
       ])
     ),

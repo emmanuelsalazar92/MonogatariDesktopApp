@@ -3197,6 +3197,11 @@ export const NotionMappingScalarFieldEnum = {
   entityType: 'entityType',
   novelId: 'novelId',
   notionPageId: 'notionPageId',
+  lastSyncedRevision: 'lastSyncedRevision',
+  lastSyncedContent: 'lastSyncedContent',
+  lastSyncedAt: 'lastSyncedAt',
+  remoteLastEditedAt: 'remoteLastEditedAt',
+  remoteArchivedAt: 'remoteArchivedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
