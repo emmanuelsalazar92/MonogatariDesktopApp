@@ -62,6 +62,12 @@ import { cn } from "@/lib/utils";
 const statuses = narrativeStatuses;
 const maxSearchQueryLength = 160;
 
+function notionSceneLabel(state: "synced" | "local-changes" | "not-yet-synced" | undefined) {
+  if (state === "synced") return "Synced";
+  if (state === "local-changes") return "Local changes";
+  return "Not yet synced";
+}
+
 type SelectedItem =
   | ({ type: "volume" } & Volume)
   | ({ type: "chapter" } & Chapter)
@@ -140,6 +146,7 @@ export function StructureScreen({
   const volumes = React.useMemo(() => [...data.volumes].sort(sortByOrder), [data.volumes]);
   const chapters = React.useMemo(() => [...data.chapters].sort(sortByOrder), [data.chapters]);
   const scenes = React.useMemo(() => [...data.scenes].sort(sortByOrder), [data.scenes]);
+  const notionSceneStateById = React.useMemo(() => new Map(data.notionSceneStates.map((item) => [item.sceneId, item])), [data.notionSceneStates]);
   const visibleStructure = React.useMemo(
     () => getVisibleStructureItems(volumes, chapters, scenes, showArchived),
     [chapters, scenes, showArchived, volumes]
@@ -631,7 +638,7 @@ export function StructureScreen({
                                 key={scene.id}
                                 depth={2}
                                 title={scene.title}
-                                subtitle={scene.objective || `${formatNumber(scene.wordCount)} ${translate("words")}`}
+                                subtitle={`${scene.objective || `${formatNumber(scene.wordCount)} ${translate("words")}`} · Notion: ${notionSceneLabel(notionSceneStateById.get(scene.id)?.state)}`}
                                 status={scene.archived ? "Archived" : scene.status}
                                 selected={selection?.type === "scene" && selection.id === scene.id}
                                 translate={translate}

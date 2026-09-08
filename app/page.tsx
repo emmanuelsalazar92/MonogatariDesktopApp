@@ -2217,6 +2217,7 @@ function EditorScreen({
   const data = useStudioData();
   const activeChapter = getActiveChapter(data);
   const activeScene = getActiveScene(data);
+  const notionSceneState = data.notionSceneStates.find((item) => item.sceneId === activeScene.id);
   const manuscriptRef = React.useRef<HTMLTextAreaElement>(null);
   const [manuscriptSelection, setManuscriptSelection] = React.useState<ManuscriptSelection>({ sceneId: "", start: 0, end: 0 });
   const [characterHighlights, setCharacterHighlights] = React.useState(false);
@@ -2492,6 +2493,9 @@ function EditorScreen({
                   <CharacterHighlightPreview novelId={data.settings.activeNovelId} content={content} onEnabledChange={setCharacterHighlights} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
                   <SceneAnnotations novelId={data.settings.activeNovelId} sceneId={activeScene.id} content={content} manuscriptRef={manuscriptRef} compact />
                   <span aria-live="polite" className="text-xs text-muted-foreground">{saveStatus}</span>
+                  <span className="text-xs text-muted-foreground" aria-label={`Notion: ${notionSceneState?.state === "synced" ? "Synced" : notionSceneState?.state === "local-changes" ? "Local changes" : "Not yet synced"}`}>
+                    Notion: {notionSceneState?.state === "synced" ? "Synced" : notionSceneState?.state === "local-changes" ? "Local changes" : "Not yet synced"}
+                  </span>
                   <Button
                     size="sm"
                     variant="outline"
