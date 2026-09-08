@@ -344,6 +344,7 @@ function PrivateNovelStudioContent() {
   // Every editor navigation owns a request token. A late document response must
   // never restore an earlier route or replace the scene the author selected next.
   const editorSceneRequestRef = React.useRef(0);
+  const foregroundRefreshRef = React.useRef({ lastAt: 0, inFlight: false });
   const [creatingBackup, setCreatingBackup] = React.useState(false);
   const [restoringBackup, setRestoringBackup] = React.useState(false);
   const [enabledExportOptions, setEnabledExportOptions] = React.useState(
@@ -609,6 +610,28 @@ function PrivateNovelStudioContent() {
   React.useEffect(() => {
     void refreshStudioData();
   }, [refreshStudioData]);
+
+  // Browser timers may be suspended while hidden. Resume never saves: it only
+  // refreshes the route-scoped document, and EditorScreen decides whether the
+  // returned document is safe to hydrate (clean only).
+  React.useEffect(() => {
+    if (activePage !== "editor") return;
+    const revalidateForeground = () => {
+      if (document.visibilityState !== "visible") return;
+      const state = foregroundRefreshRef.current;
+      const now = Date.now();
+      if (state.inFlight || now - state.lastAt < 1_000) return;
+      state.inFlight = true;
+      state.lastAt = now;
+      void refreshStudioData(false).finally(() => { state.inFlight = false; });
+    };
+    document.addEventListener("visibilitychange", revalidateForeground);
+    window.addEventListener("focus", revalidateForeground);
+    return () => {
+      document.removeEventListener("visibilitychange", revalidateForeground);
+      window.removeEventListener("focus", revalidateForeground);
+    };
+  }, [activePage, refreshStudioData]);
 
   React.useEffect(() => {
     const routeNovelId = activeRoute?.novelId;
@@ -2347,7 +2370,18 @@ function EditorScreen({
       setSaveStatus("Saved locally");
       return;
     }
-    if (loadedSceneIdRef.current === activeScene.id) return;
+    // A foreground revalidation can replace the shell snapshot while this
+    // component stays mounted. Never hydrate that response over a local draft;
+    // a clean document, however, adopts its current content/revision so later
+    // manual save and navigation use the visible scene's real cursor.
+    if (loadedSceneIdRef.current === activeScene.id && dirtyRef.current) return;
+    if (
+      loadedSceneIdRef.current === activeScene.id &&
+      draftDocumentRef.current.baseRevision === activeScene.revision &&
+      draftRef.current.title === activeScene.title &&
+      draftRef.current.status === activeScene.status &&
+      draftRef.current.content === activeScene.content
+    ) return;
     loadedSceneIdRef.current = activeScene.id;
     draftDocumentRef.current = loadedSceneDocument(activeScene.id, activeScene.revision);
     setDraftDocumentSceneId(activeScene.id);
@@ -2458,6 +2492,16 @@ function EditorScreen({
                   <CharacterHighlightPreview novelId={data.settings.activeNovelId} content={content} onEnabledChange={setCharacterHighlights} characters={data.characters.filter(character => character.novelId === data.settings.activeNovelId && character.status === "Active" && !character.archivedAt).map(character => ({ id: character.id, name: character.name, aliases: character.aliases, role: character.role, personality: character.personality, wayOfSpeaking: character.wayOfSpeaking, goal: character.goal, fear: character.fear }))} />
                   <SceneAnnotations novelId={data.settings.activeNovelId} sceneId={activeScene.id} content={content} manuscriptRef={manuscriptRef} compact />
                   <span aria-live="polite" className="text-xs text-muted-foreground">{saveStatus}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    aria-label={saveStatus === "Save failed — Retry" ? "Retry save" : "Save scene"}
+                    disabled={!isDocumentReady}
+                    onClick={onRequestSave}
+                  >
+                    <Save className="size-4" />
+                    {saveStatus === "Saving…" ? "Saving…" : saveStatus === "Save failed — Retry" ? "Retry save" : <><span className="sm:hidden">Save now</span><span className="hidden sm:inline">Save</span></>}
+                  </Button>
                   {saveStatus === "Save failed — Retry" ? <Button size="sm" variant="outline" onClick={onRequestSave}>Retry</Button> : null}
                   <Button size="sm" variant="outline" onClick={onFocus}><MaximizeIcon />Focus</Button>
                 <Button variant="ghost" size="icon" aria-label="More editor options" onClick={() => setMoreActionsOpen(true)}>
@@ -2574,7 +2618,7 @@ function EditorScreen({
 
       <StoryNotes target={noteTarget} />
       <Dialog open={moreActionsOpen} onOpenChange={setMoreActionsOpen}>
-        <DialogContent><DialogHeader><DialogTitle>More editor actions</DialogTitle><DialogDescription>Less frequent actions stay out of the writing toolbar.</DialogDescription></DialogHeader><AddStoryNoteButton target={noteTarget} disabled={!activeScene.id} /><Button variant="outline" onClick={() => { setMoreActionsOpen(false); void openVersions(); }}><History className="size-4" />Version history</Button><Button variant="outline" onClick={onReader}><BookOpen className="size-4" />Reader preview</Button><Button variant="outline" onClick={() => void openChapterPreview()}><Eye className="size-4" />Chapter preview</Button><Button variant="outline"><Download className="size-4" />Export chapter</Button><Button variant="outline" onClick={() => { setMoreActionsOpen(false); setShortcutsOpen(true); }}><Keyboard className="size-4" />Keyboard shortcuts</Button><DialogFooter><Button variant="outline" onClick={() => setMoreActionsOpen(false)}>Close</Button></DialogFooter></DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>More editor actions</DialogTitle><DialogDescription>Less frequent actions stay out of the writing toolbar.</DialogDescription></DialogHeader><Button variant="outline" disabled={!isDocumentReady} onClick={onRequestSave}><Save className="size-4" />{saveStatus === "Save failed — Retry" ? "Retry save" : "Save now"}</Button><AddStoryNoteButton target={noteTarget} disabled={!activeScene.id} /><Button variant="outline" onClick={() => { setMoreActionsOpen(false); void openVersions(); }}><History className="size-4" />Version history</Button><Button variant="outline" onClick={onReader}><BookOpen className="size-4" />Reader preview</Button><Button variant="outline" onClick={() => void openChapterPreview()}><Eye className="size-4" />Chapter preview</Button><Button variant="outline"><Download className="size-4" />Export chapter</Button><Button variant="outline" onClick={() => { setMoreActionsOpen(false); setShortcutsOpen(true); }}><Keyboard className="size-4" />Keyboard shortcuts</Button><DialogFooter><Button variant="outline" onClick={() => setMoreActionsOpen(false)}>Close</Button></DialogFooter></DialogContent>
       </Dialog>
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
         <DialogContent><DialogHeader><DialogTitle>Keyboard shortcuts</DialogTitle><DialogDescription>Writing shortcuts remain local to Monogatari.</DialogDescription></DialogHeader><div className="grid gap-2 text-sm"><p><kbd>Ctrl / Cmd + S</kbd> Save scene</p><p><kbd>Ctrl / Cmd + Enter</kbd> Focus mode</p><p><kbd>Ctrl / Cmd + \\</kbd> Cycle sidebar</p><p><kbd>Escape</kbd> Exit focus or close dialogs</p></div><DialogFooter><Button onClick={() => setShortcutsOpen(false)}>Close shortcuts</Button></DialogFooter></DialogContent>
@@ -2740,9 +2784,11 @@ function WritingFocusMode({
   );
   const activeSceneRef = React.useRef(activeScene);
   const contentRef = React.useRef(content);
+  const dirtyRef = React.useRef(false);
   activeSceneRef.current = activeScene;
   const isDocumentReady = activeScene.contentLoaded && draftDocumentSceneId === activeScene.id;
   const dirty = isDocumentReady && content !== activeScene.content;
+  dirtyRef.current = dirty;
   const draftWordCount = content.trim().match(/\S+/g)?.length ?? 0;
 
   const saveCurrentScene = React.useCallback(async () => {
@@ -2784,7 +2830,12 @@ function WritingFocusMode({
       setSaveStatus("Saved locally");
       return;
     }
-    if (loadedSceneIdRef.current === activeScene.id) return;
+    if (loadedSceneIdRef.current === activeScene.id && dirtyRef.current) return;
+    if (
+      loadedSceneIdRef.current === activeScene.id &&
+      draftDocumentRef.current.baseRevision === activeScene.revision &&
+      contentRef.current === activeScene.content
+    ) return;
     loadedSceneIdRef.current = activeScene.id;
     draftDocumentRef.current = loadedSceneDocument(activeScene.id, activeScene.revision);
     setDraftDocumentSceneId(activeScene.id);
@@ -2829,7 +2880,7 @@ function WritingFocusMode({
             size="icon"
             onClick={onRequestSave}
             aria-label={saveStatus === "Save failed — Retry" ? "Retry save" : "Save"}
-            disabled={!dirty || saveStatus === "Saving…"}
+            disabled={!isDocumentReady}
           >
             <Save className="size-4" />
           </Button>

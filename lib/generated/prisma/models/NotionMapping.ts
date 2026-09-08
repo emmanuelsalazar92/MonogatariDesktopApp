@@ -20,8 +20,18 @@ export type NotionMappingModel = runtime.Types.Result.DefaultSelection<Prisma.$N
 
 export type AggregateNotionMapping = {
   _count: NotionMappingCountAggregateOutputType | null
+  _avg: NotionMappingAvgAggregateOutputType | null
+  _sum: NotionMappingSumAggregateOutputType | null
   _min: NotionMappingMinAggregateOutputType | null
   _max: NotionMappingMaxAggregateOutputType | null
+}
+
+export type NotionMappingAvgAggregateOutputType = {
+  lastSyncedRevision: number | null
+}
+
+export type NotionMappingSumAggregateOutputType = {
+  lastSyncedRevision: number | null
 }
 
 export type NotionMappingMinAggregateOutputType = {
@@ -29,6 +39,11 @@ export type NotionMappingMinAggregateOutputType = {
   entityType: string | null
   novelId: string | null
   notionPageId: string | null
+  lastSyncedRevision: number | null
+  lastSyncedContent: string | null
+  lastSyncedAt: Date | null
+  remoteLastEditedAt: Date | null
+  remoteArchivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -38,6 +53,11 @@ export type NotionMappingMaxAggregateOutputType = {
   entityType: string | null
   novelId: string | null
   notionPageId: string | null
+  lastSyncedRevision: number | null
+  lastSyncedContent: string | null
+  lastSyncedAt: Date | null
+  remoteLastEditedAt: Date | null
+  remoteArchivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -47,17 +67,35 @@ export type NotionMappingCountAggregateOutputType = {
   entityType: number
   novelId: number
   notionPageId: number
+  lastSyncedRevision: number
+  lastSyncedContent: number
+  lastSyncedAt: number
+  remoteLastEditedAt: number
+  remoteArchivedAt: number
   createdAt: number
   updatedAt: number
   _all: number
 }
 
 
+export type NotionMappingAvgAggregateInputType = {
+  lastSyncedRevision?: true
+}
+
+export type NotionMappingSumAggregateInputType = {
+  lastSyncedRevision?: true
+}
+
 export type NotionMappingMinAggregateInputType = {
   localId?: true
   entityType?: true
   novelId?: true
   notionPageId?: true
+  lastSyncedRevision?: true
+  lastSyncedContent?: true
+  lastSyncedAt?: true
+  remoteLastEditedAt?: true
+  remoteArchivedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -67,6 +105,11 @@ export type NotionMappingMaxAggregateInputType = {
   entityType?: true
   novelId?: true
   notionPageId?: true
+  lastSyncedRevision?: true
+  lastSyncedContent?: true
+  lastSyncedAt?: true
+  remoteLastEditedAt?: true
+  remoteArchivedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -76,6 +119,11 @@ export type NotionMappingCountAggregateInputType = {
   entityType?: true
   novelId?: true
   notionPageId?: true
+  lastSyncedRevision?: true
+  lastSyncedContent?: true
+  lastSyncedAt?: true
+  remoteLastEditedAt?: true
+  remoteArchivedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -88,13 +136,13 @@ export type NotionMappingAggregateArgs<ExtArgs extends runtime.Types.Extensions.
   where?: Prisma.NotionMappingWhereInput
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-   * 
+   *
    * Determine the order of NotionMappings to fetch.
    */
   orderBy?: Prisma.NotionMappingOrderByWithRelationInput | Prisma.NotionMappingOrderByWithRelationInput[]
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-   * 
+   *
    * Sets the start position
    */
   cursor?: Prisma.NotionMappingWhereUniqueInput
@@ -116,6 +164,18 @@ export type NotionMappingAggregateArgs<ExtArgs extends runtime.Types.Extensions.
    * Count returned NotionMappings
   **/
   _count?: true | NotionMappingCountAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to average
+  **/
+  _avg?: NotionMappingAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: NotionMappingSumAggregateInputType
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
@@ -149,6 +209,8 @@ export type NotionMappingGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   _count?: NotionMappingCountAggregateInputType | true
+  _avg?: NotionMappingAvgAggregateInputType
+  _sum?: NotionMappingSumAggregateInputType
   _min?: NotionMappingMinAggregateInputType
   _max?: NotionMappingMaxAggregateInputType
 }
@@ -158,9 +220,16 @@ export type NotionMappingGroupByOutputType = {
   entityType: string
   novelId: string
   notionPageId: string
+  lastSyncedRevision: number
+  lastSyncedContent: string
+  lastSyncedAt: Date | null
+  remoteLastEditedAt: Date | null
+  remoteArchivedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: NotionMappingCountAggregateOutputType | null
+  _avg: NotionMappingAvgAggregateOutputType | null
+  _sum: NotionMappingSumAggregateOutputType | null
   _min: NotionMappingMinAggregateOutputType | null
   _max: NotionMappingMaxAggregateOutputType | null
 }
@@ -188,6 +257,11 @@ export type NotionMappingWhereInput = {
   entityType?: Prisma.StringFilter<"NotionMapping"> | string
   novelId?: Prisma.StringFilter<"NotionMapping"> | string
   notionPageId?: Prisma.StringFilter<"NotionMapping"> | string
+  lastSyncedRevision?: Prisma.IntFilter<"NotionMapping"> | number
+  lastSyncedContent?: Prisma.StringFilter<"NotionMapping"> | string
+  lastSyncedAt?: Prisma.DateTimeNullableFilter<"NotionMapping"> | Date | string | null
+  remoteLastEditedAt?: Prisma.DateTimeNullableFilter<"NotionMapping"> | Date | string | null
+  remoteArchivedAt?: Prisma.DateTimeNullableFilter<"NotionMapping"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"NotionMapping"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"NotionMapping"> | Date | string
 }
@@ -197,6 +271,11 @@ export type NotionMappingOrderByWithRelationInput = {
   entityType?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   notionPageId?: Prisma.SortOrder
+  lastSyncedRevision?: Prisma.SortOrder
+  lastSyncedContent?: Prisma.SortOrder
+  lastSyncedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  remoteLastEditedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  remoteArchivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -209,6 +288,11 @@ export type NotionMappingWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.NotionMappingWhereInput | Prisma.NotionMappingWhereInput[]
   entityType?: Prisma.StringFilter<"NotionMapping"> | string
   novelId?: Prisma.StringFilter<"NotionMapping"> | string
+  lastSyncedRevision?: Prisma.IntFilter<"NotionMapping"> | number
+  lastSyncedContent?: Prisma.StringFilter<"NotionMapping"> | string
+  lastSyncedAt?: Prisma.DateTimeNullableFilter<"NotionMapping"> | Date | string | null
+  remoteLastEditedAt?: Prisma.DateTimeNullableFilter<"NotionMapping"> | Date | string | null
+  remoteArchivedAt?: Prisma.DateTimeNullableFilter<"NotionMapping"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"NotionMapping"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"NotionMapping"> | Date | string
 }, "localId" | "notionPageId">
@@ -218,11 +302,18 @@ export type NotionMappingOrderByWithAggregationInput = {
   entityType?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   notionPageId?: Prisma.SortOrder
+  lastSyncedRevision?: Prisma.SortOrder
+  lastSyncedContent?: Prisma.SortOrder
+  lastSyncedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  remoteLastEditedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  remoteArchivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.NotionMappingCountOrderByAggregateInput
+  _avg?: Prisma.NotionMappingAvgOrderByAggregateInput
   _max?: Prisma.NotionMappingMaxOrderByAggregateInput
   _min?: Prisma.NotionMappingMinOrderByAggregateInput
+  _sum?: Prisma.NotionMappingSumOrderByAggregateInput
 }
 
 export type NotionMappingScalarWhereWithAggregatesInput = {
@@ -233,6 +324,11 @@ export type NotionMappingScalarWhereWithAggregatesInput = {
   entityType?: Prisma.StringWithAggregatesFilter<"NotionMapping"> | string
   novelId?: Prisma.StringWithAggregatesFilter<"NotionMapping"> | string
   notionPageId?: Prisma.StringWithAggregatesFilter<"NotionMapping"> | string
+  lastSyncedRevision?: Prisma.IntWithAggregatesFilter<"NotionMapping"> | number
+  lastSyncedContent?: Prisma.StringWithAggregatesFilter<"NotionMapping"> | string
+  lastSyncedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"NotionMapping"> | Date | string | null
+  remoteLastEditedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"NotionMapping"> | Date | string | null
+  remoteArchivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"NotionMapping"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"NotionMapping"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"NotionMapping"> | Date | string
 }
@@ -242,6 +338,11 @@ export type NotionMappingCreateInput = {
   entityType: string
   novelId: string
   notionPageId: string
+  lastSyncedRevision?: number
+  lastSyncedContent?: string
+  lastSyncedAt?: Date | string | null
+  remoteLastEditedAt?: Date | string | null
+  remoteArchivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -251,6 +352,11 @@ export type NotionMappingUncheckedCreateInput = {
   entityType: string
   novelId: string
   notionPageId: string
+  lastSyncedRevision?: number
+  lastSyncedContent?: string
+  lastSyncedAt?: Date | string | null
+  remoteLastEditedAt?: Date | string | null
+  remoteArchivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -260,6 +366,11 @@ export type NotionMappingUpdateInput = {
   entityType?: Prisma.StringFieldUpdateOperationsInput | string
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   notionPageId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSyncedContent?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteLastEditedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteArchivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -269,6 +380,11 @@ export type NotionMappingUncheckedUpdateInput = {
   entityType?: Prisma.StringFieldUpdateOperationsInput | string
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   notionPageId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSyncedContent?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteLastEditedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteArchivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -278,6 +394,11 @@ export type NotionMappingCreateManyInput = {
   entityType: string
   novelId: string
   notionPageId: string
+  lastSyncedRevision?: number
+  lastSyncedContent?: string
+  lastSyncedAt?: Date | string | null
+  remoteLastEditedAt?: Date | string | null
+  remoteArchivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -287,6 +408,11 @@ export type NotionMappingUpdateManyMutationInput = {
   entityType?: Prisma.StringFieldUpdateOperationsInput | string
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   notionPageId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSyncedContent?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteLastEditedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteArchivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -296,6 +422,11 @@ export type NotionMappingUncheckedUpdateManyInput = {
   entityType?: Prisma.StringFieldUpdateOperationsInput | string
   novelId?: Prisma.StringFieldUpdateOperationsInput | string
   notionPageId?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedRevision?: Prisma.IntFieldUpdateOperationsInput | number
+  lastSyncedContent?: Prisma.StringFieldUpdateOperationsInput | string
+  lastSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteLastEditedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  remoteArchivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -305,8 +436,17 @@ export type NotionMappingCountOrderByAggregateInput = {
   entityType?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   notionPageId?: Prisma.SortOrder
+  lastSyncedRevision?: Prisma.SortOrder
+  lastSyncedContent?: Prisma.SortOrder
+  lastSyncedAt?: Prisma.SortOrder
+  remoteLastEditedAt?: Prisma.SortOrder
+  remoteArchivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type NotionMappingAvgOrderByAggregateInput = {
+  lastSyncedRevision?: Prisma.SortOrder
 }
 
 export type NotionMappingMaxOrderByAggregateInput = {
@@ -314,6 +454,11 @@ export type NotionMappingMaxOrderByAggregateInput = {
   entityType?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   notionPageId?: Prisma.SortOrder
+  lastSyncedRevision?: Prisma.SortOrder
+  lastSyncedContent?: Prisma.SortOrder
+  lastSyncedAt?: Prisma.SortOrder
+  remoteLastEditedAt?: Prisma.SortOrder
+  remoteArchivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -323,8 +468,17 @@ export type NotionMappingMinOrderByAggregateInput = {
   entityType?: Prisma.SortOrder
   novelId?: Prisma.SortOrder
   notionPageId?: Prisma.SortOrder
+  lastSyncedRevision?: Prisma.SortOrder
+  lastSyncedContent?: Prisma.SortOrder
+  lastSyncedAt?: Prisma.SortOrder
+  remoteLastEditedAt?: Prisma.SortOrder
+  remoteArchivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type NotionMappingSumOrderByAggregateInput = {
+  lastSyncedRevision?: Prisma.SortOrder
 }
 
 
@@ -334,6 +488,11 @@ export type NotionMappingSelect<ExtArgs extends runtime.Types.Extensions.Interna
   entityType?: boolean
   novelId?: boolean
   notionPageId?: boolean
+  lastSyncedRevision?: boolean
+  lastSyncedContent?: boolean
+  lastSyncedAt?: boolean
+  remoteLastEditedAt?: boolean
+  remoteArchivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["notionMapping"]>
@@ -343,6 +502,11 @@ export type NotionMappingSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   entityType?: boolean
   novelId?: boolean
   notionPageId?: boolean
+  lastSyncedRevision?: boolean
+  lastSyncedContent?: boolean
+  lastSyncedAt?: boolean
+  remoteLastEditedAt?: boolean
+  remoteArchivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["notionMapping"]>
@@ -352,6 +516,11 @@ export type NotionMappingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   entityType?: boolean
   novelId?: boolean
   notionPageId?: boolean
+  lastSyncedRevision?: boolean
+  lastSyncedContent?: boolean
+  lastSyncedAt?: boolean
+  remoteLastEditedAt?: boolean
+  remoteArchivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["notionMapping"]>
@@ -361,11 +530,16 @@ export type NotionMappingSelectScalar = {
   entityType?: boolean
   novelId?: boolean
   notionPageId?: boolean
+  lastSyncedRevision?: boolean
+  lastSyncedContent?: boolean
+  lastSyncedAt?: boolean
+  remoteLastEditedAt?: boolean
+  remoteArchivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type NotionMappingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"localId" | "entityType" | "novelId" | "notionPageId" | "createdAt" | "updatedAt", ExtArgs["result"]["notionMapping"]>
+export type NotionMappingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"localId" | "entityType" | "novelId" | "notionPageId" | "lastSyncedRevision" | "lastSyncedContent" | "lastSyncedAt" | "remoteLastEditedAt" | "remoteArchivedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["notionMapping"]>
 
 export type $NotionMappingPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "NotionMapping"
@@ -375,6 +549,11 @@ export type $NotionMappingPayload<ExtArgs extends runtime.Types.Extensions.Inter
     entityType: string
     novelId: string
     notionPageId: string
+    lastSyncedRevision: number
+    lastSyncedContent: string
+    lastSyncedAt: Date | null
+    remoteLastEditedAt: Date | null
+    remoteArchivedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["notionMapping"]>
@@ -804,6 +983,11 @@ export interface NotionMappingFieldRefs {
   readonly entityType: Prisma.FieldRef<"NotionMapping", 'String'>
   readonly novelId: Prisma.FieldRef<"NotionMapping", 'String'>
   readonly notionPageId: Prisma.FieldRef<"NotionMapping", 'String'>
+  readonly lastSyncedRevision: Prisma.FieldRef<"NotionMapping", 'Int'>
+  readonly lastSyncedContent: Prisma.FieldRef<"NotionMapping", 'String'>
+  readonly lastSyncedAt: Prisma.FieldRef<"NotionMapping", 'DateTime'>
+  readonly remoteLastEditedAt: Prisma.FieldRef<"NotionMapping", 'DateTime'>
+  readonly remoteArchivedAt: Prisma.FieldRef<"NotionMapping", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"NotionMapping", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"NotionMapping", 'DateTime'>
 }

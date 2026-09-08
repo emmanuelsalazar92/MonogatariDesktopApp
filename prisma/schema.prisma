@@ -437,6 +437,13 @@ model NotionMapping {
   entityType   String
   novelId      String
   notionPageId String   @unique
+  // Scene mappings are the durable sync cursor.  These fields deliberately
+  // live beside the remote id so an interrupted page creation is recoverable.
+  lastSyncedRevision Int      @default(-1)
+  lastSyncedContent  String   @default("")
+  lastSyncedAt       DateTime?
+  remoteLastEditedAt DateTime?
+  remoteArchivedAt   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

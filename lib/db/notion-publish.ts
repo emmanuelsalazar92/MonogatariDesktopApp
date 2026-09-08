@@ -73,13 +73,23 @@ export async function upsertNotionMapping(input: {
   entityType: string;
   novelId: string;
   notionPageId: string;
+  lastSyncedRevision?: number;
+  lastSyncedContent?: string;
+  lastSyncedAt?: Date;
+  remoteLastEditedAt?: Date;
+  remoteArchivedAt?: Date | null;
 }) {
   return prisma.notionMapping.upsert({
     where: { localId: input.localId },
     update: {
       entityType: input.entityType,
       novelId: input.novelId,
-      notionPageId: input.notionPageId
+      notionPageId: input.notionPageId,
+      ...(input.lastSyncedRevision !== undefined ? { lastSyncedRevision: input.lastSyncedRevision } : {}),
+      ...(input.lastSyncedContent !== undefined ? { lastSyncedContent: input.lastSyncedContent } : {}),
+      ...(input.lastSyncedAt !== undefined ? { lastSyncedAt: input.lastSyncedAt } : {}),
+      ...(input.remoteLastEditedAt !== undefined ? { remoteLastEditedAt: input.remoteLastEditedAt } : {}),
+      ...(input.remoteArchivedAt !== undefined ? { remoteArchivedAt: input.remoteArchivedAt } : {})
     },
     create: input
   });

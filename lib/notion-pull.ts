@@ -228,6 +228,15 @@ export async function pullNovelFromNotion(
     throw new NotionPullError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
   }
 
+  // Chapter pages are now containers. They deliberately have no manuscript
+  // structure to parse once scene mappings exist; attempting the legacy
+  // positional parser here would turn a legitimate new local scene into a
+  // structural conflict. Scene-page pull parsing is introduced separately
+  // from the legacy chapter parser so old connected novels remain readable.
+  if ((await getNotionMappings(novelId)).some((mapping) => mapping.entityType === "scene")) {
+    return { appliedChapters: 0, message: "Scene pages are already synchronized independently." };
+  }
+
   const chapterSnapshots = new Map(
     getNotionChapterSyncSnapshots(source).map((snapshot) => [snapshot.chapterId, snapshot])
   );
