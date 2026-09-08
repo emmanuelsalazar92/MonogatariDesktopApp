@@ -52,6 +52,11 @@ export type StudioData = {
     configured?: boolean;
     lastNotionSync: string | null;
   }>;
+  notionSceneStates: Array<{
+    sceneId: string;
+    state: "synced" | "local-changes" | "not-yet-synced";
+    notionPageId: string | null;
+  }>;
 };
 
 export type DataStatus = "loading" | "ready" | "fallback";
@@ -93,7 +98,8 @@ export const emptyStudioData: StudioData = {
   recentActivities: [],
   studioSettings: {} as PersistedStudioSettings,
   settings: {},
-  notionSyncStates: []
+  notionSyncStates: [],
+  notionSceneStates: []
 };
 
 export const emptyNovel: Novel = {
@@ -257,6 +263,16 @@ function normalizeNotionSyncStates(value: unknown): StudioData["notionSyncStates
   });
 }
 
+function normalizeNotionSceneStates(value: unknown): StudioData["notionSceneStates"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const source = record(item); const sceneId = text(source?.sceneId, "", 200); const state = text(source?.state);
+    return sceneId && ["synced", "local-changes", "not-yet-synced"].includes(state)
+      ? [{ sceneId, state: state as StudioData["notionSceneStates"][number]["state"], notionPageId: typeof source?.notionPageId === "string" ? source.notionPageId : null }]
+      : [];
+  });
+}
+
 export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
   return {
     novels: Array.isArray(payload.novels)
@@ -301,7 +317,8 @@ export function normalizeStudioData(payload: Partial<StudioData>): StudioData {
         ? { ...defaultPersistedStudioSettings, ...payload.studioSettings }
         : defaultPersistedStudioSettings,
     settings: normalizeSettings(payload.settings),
-    notionSyncStates: normalizeNotionSyncStates(payload.notionSyncStates)
+    notionSyncStates: normalizeNotionSyncStates(payload.notionSyncStates),
+    notionSceneStates: normalizeNotionSceneStates(payload.notionSceneStates)
   };
 }
 

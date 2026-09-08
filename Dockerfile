@@ -24,6 +24,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/scripts/migrate-production-database.mjs ./scripts/migrate-production-database.mjs
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl util-linux \

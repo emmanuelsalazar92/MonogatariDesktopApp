@@ -432,6 +432,7 @@ export async function getStudioSnapshot(options: {
     configuration,
     notionSyncStates,
     notionMappings,
+    notionSceneMappings,
     overviewNotesCount,
     recentActivities
   ] = await Promise.all([
@@ -492,6 +493,7 @@ export async function getStudioSnapshot(options: {
     prisma.studioConfiguration.findUnique({ where: { id: STUDIO_CONFIGURATION_ID } }),
     prisma.notionSyncState.findMany({ where: scopedNovelId ? { novelId: scopedNovelId } : undefined, orderBy: { novelId: "asc" } }),
     prisma.notionMapping.findMany({ where: { entityType: "novel", ...(scopedNovelId ? { novelId: scopedNovelId } : {}) }, select: { novelId: true } }),
+    prisma.notionMapping.findMany({ where: { entityType: "scene", ...(scopedNovelId ? { novelId: scopedNovelId } : {}) }, select: { localId: true, notionPageId: true, lastSyncedRevision: true } }),
     scopedNovelId ? prisma.note.count({ where: { novelId: scopedNovelId } }) : Promise.resolve(0),
     scopedNovelId
       // Activity is contextual enrichment for the overview. A stale or unavailable
@@ -602,7 +604,15 @@ export async function getStudioSnapshot(options: {
       lastSyncError: state.lastSyncError,
       mapped: notionMappings.some((mapping) => mapping.novelId === state.novelId),
       lastNotionSync: state.lastNotionSync?.toISOString() ?? null
-    }))
+    })),
+    notionSceneStates: scenes.map((scene) => {
+      const mapping = notionSceneMappings.find((item) => item.localId === `scene:${scene.id}`);
+      return {
+        sceneId: scene.id,
+        state: !mapping ? "not-yet-synced" : scene.revision > mapping.lastSyncedRevision ? "local-changes" : "synced",
+        notionPageId: mapping?.notionPageId ?? null
+      };
+    })
   };
 }
 
