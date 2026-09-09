@@ -12,6 +12,7 @@ import {
   NotionApiError,
   requestNotion
 } from "@/lib/notion";
+import { buildNotionPageUpdatePayload } from "@/lib/notion-page-update-payload";
 
 type NotionPage = { id: string; url: string };
 type NotionBlock = Record<string, unknown>;
@@ -202,11 +203,10 @@ async function createPage(parentPageId: string, title: string) {
 async function updatePage(pageId: string, title: string, eraseContent: boolean) {
   return publishStage("UPDATE_PAGE", () => requestNotion<NotionPage>(`/v1/pages/${pageId}`, {
     method: "PATCH",
-    body: {
-      properties: { title: { title: richText(title) } },
-      archived: false,
-      ...(eraseContent ? { erase_content: true } : {})
-    }
+    body: buildNotionPageUpdatePayload(
+      { title: { title: richText(title) } },
+      eraseContent ? { eraseContent: true } : {}
+    )
   }));
 }
 
@@ -378,7 +378,10 @@ export async function publishNovelToNotion(
     for (const mapping of mappingRows) {
       if (mapping.entityType !== "scene" || activeSceneIds.has(mapping.localId) || mapping.remoteArchivedAt) continue;
       await publishStage("FETCH_REMOTE", () => assertNotionPageWithinRoot(mapping.notionPageId, parentRootPageId));
-      await publishStage("UPDATE_PAGE", () => requestNotion(`/v1/pages/${mapping.notionPageId}`, { method: "PATCH", body: { archived: true } }));
+      await publishStage("UPDATE_PAGE", () => requestNotion(`/v1/pages/${mapping.notionPageId}`, {
+        method: "PATCH",
+        body: buildNotionPageUpdatePayload({}, { archived: true })
+      }));
       await upsertNotionMapping({
         localId: mapping.localId,
         entityType: mapping.entityType,

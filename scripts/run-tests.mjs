@@ -16,6 +16,7 @@ const testFiles = [
   "notion-diagnostics.test.mjs",
   "notion-operation-log.test.mjs",
   "notion-monitor-health.test.mjs",
+  "notion-page-update-payload.test.mjs",
   "monitor-report.test.mjs",
   "notion-pull-safety.test.mjs",
   "notion-sync-resilience.test.mjs",
