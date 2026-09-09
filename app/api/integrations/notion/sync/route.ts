@@ -4,7 +4,10 @@ import { NotionApiError, NotionPublishError, NotionSyncError, syncNovelToNotion 
 import { isTrustedMutationRequest } from "@/lib/request-security";
 import { isValidNovelRouteId } from "@/lib/studio-routes";
 import { notionDiagnostic } from "@/lib/notion-diagnostics";
+import { logNotionOperation } from "@/lib/notion-operation-log";
 import { SchemaCompatibilityError } from "@/lib/schema-compatibility";
+import { randomUUID } from "node:crypto";
+import { recordNotionHistory } from "@/lib/notion-history";
 
 type SyncBody = { novelId?: unknown; force?: unknown };
 
@@ -34,16 +37,22 @@ export async function POST(request: Request) {
     );
   }
 
+  const operationId = randomUUID();
   try {
+    logNotionOperation("started", { operationId, operation: "SYNC_NOVEL", direction: "BIDIRECTIONAL", novelId: body.novelId });
     const result = await syncNovelToNotion(body.novelId, body.force === true);
+    logNotionOperation("completed", { operationId, operation: "SYNC_NOVEL", direction: "BIDIRECTIONAL", novelId: body.novelId });
+    await recordNotionHistory({ operationId, operation: "SYNC_NOVEL", outcome: "completed", novelId: body.novelId }).catch(() => undefined);
     return NextResponse.json({
       ok: true,
       ...result,
       lastNotionSync: result.lastNotionSync?.toISOString() ?? null,
-      operationId: undefined
+      operationId
     }, { status: result.operationStatus === "syncing" ? 202 : 200 });
   } catch (error) {
-    const diagnostic = notionDiagnostic(error, "SYNC_NOVEL", "BIDIRECTIONAL", { novelId: body.novelId });
+    const diagnostic = notionDiagnostic(error, "SYNC_NOVEL", "BIDIRECTIONAL", { novelId: body.novelId }, operationId);
+    logNotionOperation("failed", { operationId, operation: "SYNC_NOVEL", direction: "BIDIRECTIONAL", novelId: body.novelId, diagnostic });
+    await recordNotionHistory({ operationId, operation: "SYNC_NOVEL", outcome: "failed", novelId: body.novelId, diagnostic }).catch(() => undefined);
     if (error instanceof SchemaCompatibilityError) {
       return NextResponse.json({ ok: false, code: error.code, message: error.message, diagnostic }, { status: 503 });
     }

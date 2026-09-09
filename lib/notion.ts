@@ -3,6 +3,9 @@ import "server-only";
 const NOTION_API_VERSION = "2026-03-11";
 const NOTION_TIMEOUT_MS = 10_000;
 const NOTION_API_URL = "https://api.notion.com";
+let recentRateLimit: { at: string; retryAfterMs: number | null } | null = null;
+
+export function getRecentNotionRateLimit() { return recentRateLimit; }
 
 export type NotionConnectionResult =
   | { ok: true; pageId: string; pageTitle: string; message: string }
@@ -19,10 +22,23 @@ export class NotionApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
-    public readonly retryAfterMs: number | null = null
+    public readonly retryAfterMs: number | null = null,
+    public readonly notionApiCode: string | null = null,
+    public readonly notionApiMessage: string | null = null,
+    public readonly endpoint: string | null = null,
+    public readonly responseReceived = false
   ) {
     super(message);
   }
+}
+
+function safeNotionErrorPayload(value: unknown) {
+  const payload = value && typeof value === "object" ? value as { code?: unknown; message?: unknown } : {};
+  const code = typeof payload.code === "string" && /^[a-z_]{2,80}$/i.test(payload.code) ? payload.code : null;
+  const message = typeof payload.message === "string"
+    ? payload.message.replace(/(bearer|token|authorization|cookie|password|secret)\s*[:=]?\s*\S+/gi, "$1: [redacted]").slice(0, 300)
+    : null;
+  return { code, message };
 }
 
 function retryAfterMilliseconds(value: string | null) {
@@ -121,11 +137,20 @@ export async function requestNotion<T>(
 
     if (!response.ok) {
       const details = connectionError(response.status);
+      let payload: unknown = null;
+      try { payload = await response.json(); } catch { /* An upstream error body is optional. */ }
+      const upstream = safeNotionErrorPayload(payload);
+      const retryAfterMs = response.status === 429 ? retryAfterMilliseconds(response.headers.get("retry-after")) : null;
+      if (response.status === 429) recentRateLimit = { at: new Date().toISOString(), retryAfterMs };
       throw new NotionApiError(
         response.status,
         details.code,
-        details.message,
-        response.status === 429 ? retryAfterMilliseconds(response.headers.get("retry-after")) : null
+        upstream.message ?? details.message,
+        retryAfterMs,
+        upstream.code,
+        upstream.message,
+        path.replace(/\?.*$/, ""),
+        true
       );
     }
 

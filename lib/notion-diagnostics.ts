@@ -4,14 +4,17 @@ export type NotionDiagnostic = {
   timestamp: string;
   direction: "PUSH" | "PULL" | "BIDIRECTIONAL";
   operation: "SYNC_NOVEL" | "SYNC_ALL" | "PULL_NOVEL";
-  stage: "FETCH_REMOTE" | "CREATE_PAGE" | "UPDATE_PAGE_CONTENT" | "READ_BLOCKS" | "UPDATE_BASELINE" | "UNKNOWN";
+  stage: "FETCH_REMOTE" | "CREATE_PAGE" | "UPDATE_PAGE" | "APPEND_BLOCKS" | "READ_BLOCKS" | "APPLY_LOCAL" | "UPDATE_BASELINE" | "UNKNOWN";
   code: string;
   notionStatus: number | null;
   retrySafe: boolean;
+  notionApiCode?: string;
+  notionApiMessage?: string;
+  endpoint?: string;
   scope?: { novelId?: string; chapterId?: string; sceneId?: string; remotePageId?: string };
 };
 
-type NotionErrorLike = { status?: unknown; code?: unknown };
+type NotionErrorLike = { status?: unknown; code?: unknown; stage?: unknown; cause?: unknown; notionApiCode?: unknown; notionApiMessage?: unknown; endpoint?: unknown };
 
 function safeErrorFields(error: unknown) {
   const candidate = error && typeof error === "object" ? error as NotionErrorLike : {};
@@ -25,10 +28,15 @@ export function notionDiagnostic(
   error: unknown,
   operation: NotionDiagnostic["operation"],
   direction: NotionDiagnostic["direction"],
-  scope?: NotionDiagnostic["scope"]
+  scope?: NotionDiagnostic["scope"],
+  operationId = randomUUID()
 ): NotionDiagnostic {
-  const operationId = randomUUID();
   const { status, code } = safeErrorFields(error);
-  const stage = code === "RATE_LIMITED" || code === "OFFLINE" || code === "TIMEOUT" ? "FETCH_REMOTE" : code.includes("PULL") ? "READ_BLOCKS" : code.includes("PUBLISH") ? "UPDATE_PAGE_CONTENT" : "UNKNOWN";
-  return { operationId, timestamp: new Date().toISOString(), direction, operation, stage, code, notionStatus: status, retrySafe: status === null || status >= 500 || status === 429, ...(scope ? { scope } : {}) };
+  const candidate = error && typeof error === "object" ? error as NotionErrorLike : {};
+  const upstream = candidate.cause && typeof candidate.cause === "object" ? candidate.cause as NotionErrorLike : candidate;
+  const stage = typeof candidate.stage === "string" && ["FETCH_REMOTE", "CREATE_PAGE", "UPDATE_PAGE", "APPEND_BLOCKS", "READ_BLOCKS", "APPLY_LOCAL", "UPDATE_BASELINE"].includes(candidate.stage) ? candidate.stage as NotionDiagnostic["stage"] : code === "RATE_LIMITED" || code === "OFFLINE" || code === "TIMEOUT" ? "FETCH_REMOTE" : code.includes("PULL") ? "READ_BLOCKS" : "UNKNOWN";
+  const upstreamCode = typeof upstream.notionApiCode === "string" ? upstream.notionApiCode : undefined;
+  const upstreamMessage = typeof upstream.notionApiMessage === "string" ? upstream.notionApiMessage : undefined;
+  const endpoint = typeof upstream.endpoint === "string" && /^\/v1\/[a-z0-9_\-/]+$/i.test(upstream.endpoint) ? upstream.endpoint : undefined;
+  return { operationId, timestamp: new Date().toISOString(), direction, operation, stage, code, notionStatus: status, retrySafe: status === null || status >= 500 || status === 429, ...(upstreamCode ? { notionApiCode: upstreamCode } : {}), ...(upstreamMessage ? { notionApiMessage: upstreamMessage } : {}), ...(endpoint ? { endpoint } : {}), ...(scope ? { scope } : {}) };
 }
