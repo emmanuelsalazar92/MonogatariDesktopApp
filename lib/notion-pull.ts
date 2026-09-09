@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHash, randomUUID } from "node:crypto";
 
-import { applyNotionChapterUpdates, NotionPullApplyError } from "@/lib/db/notion-pull";
+import { applyNotionChapterUpdates, applyNotionSceneUpdates, NotionPullApplyError } from "@/lib/db/notion-pull";
 import {
   getNotionContentBaselines,
   recordNotionPull,
@@ -13,15 +13,18 @@ import { assertNotionPageWithinRoot, NotionApiError, requestNotion } from "@/lib
 import {
   getAuthorizedNotionRootPageId,
   getNotionChapterSyncSnapshots,
+  getNotionSceneSyncSnapshots,
   NotionPublishError
 } from "@/lib/notion-publish";
 import {
   NotionRemoteContentError,
   parseCompleteNotionChapterBlocks,
+  parseCompleteNotionSceneBlocks,
   type NotionRemoteBlock,
   type RemoteSceneUpdate
 } from "@/lib/notion-pull-safety";
 import { assertSchemaCompatible } from "@/lib/schema-compatibility";
+import { classifyNotionSceneEvidence } from "@/lib/notion-scene-sync-engine";
 
 type NotionBlockList = {
   results?: unknown;
@@ -42,14 +45,18 @@ type PullTarget = {
 export type NotionPullConflict = {
   chapterId: string;
   chapterTitle: string;
+  sceneId?: string;
+  sceneTitle?: string;
   code:
     | "BASELINE_REQUIRED"
     | "CONTENT_CONFLICT"
+    | "REMOTE_CHANGES"
     | "DESTRUCTIVE_REMOTE_EMPTY"
     | "UNSUPPORTED_REMOTE_STRUCTURE"
     | "STRUCTURE_CONFLICT";
   message: string;
   localContent?: string;
+  baselineContent?: string;
   remoteContent?: string;
 };
 
@@ -58,11 +65,14 @@ export class NotionPullError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
-    public readonly conflicts: NotionPullConflict[] = []
+    public readonly conflicts: NotionPullConflict[] = [],
+    public readonly results: NotionScenePullResult[] = []
   ) {
     super(message);
   }
 }
+
+export type NotionScenePullResult = { sceneId: string; notionPageId: string; stage: "FETCH_REMOTE" | "READ_BLOCKS" | "DETECT_CHANGE" | "APPLY_LOCAL"; outcome: "APPLIED" | "UNCHANGED" | "CONFLICT" | "SKIPPED" | "FAILED"; remoteChanged: boolean; localChanged: boolean; code?: string };
 
 function blockText(block: NotionRemoteBlock) {
   const type = typeof block.type === "string" ? block.type : "unsupported";
@@ -214,12 +224,98 @@ export async function getNotionRemoteChanges(novelId: string) {
   return { changed: false as const };
 }
 
+async function pullMappedScenePages(
+  novelId: string,
+  rootPageId: string,
+  source: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>,
+  operationId: string,
+  options: { sceneId?: string; resolution?: "accept-remote" | "keep-local" | "cancel"; beforeApply?: () => Promise<void>; inspectOnly?: boolean }
+) {
+  const baselines = await getNotionContentBaselines(novelId);
+  const snapshots = new Map(getNotionSceneSyncSnapshots(source).map((snapshot) => [snapshot.sceneId, snapshot]));
+  const mappings = (await getNotionMappings(novelId)).filter((mapping) => mapping.entityType === "scene" && (!options.sceneId || mapping.localId === `scene:${options.sceneId}`));
+  if (options.sceneId && mappings.length === 0) throw new NotionPullError(404, "SCENE_MAPPING_REQUIRED", "This Scene has no Notion mapping to pull.");
+  const results: NotionScenePullResult[] = [];
+  const updates: Array<{ sceneId: string; notionPageId: string; content: string; expectedRevision: number; localBaseline: string; remote: string; allowEmptyOverwrite?: boolean }> = [];
+  const conflicts: NotionPullConflict[] = [];
+
+  for (const mapping of mappings) {
+    const sceneId = mapping.localId.replace(/^scene:/, "");
+    const scene = source.scenes.find((item) => item.id === sceneId);
+    const snapshot = snapshots.get(sceneId);
+    const baseline = baselines[sceneId];
+    if (!scene || !snapshot) throw new NotionPullError(409, "PULL_APPLY_BLOCKED", "The Scene mapping no longer matches a local Scene.", [], results);
+    let remoteRead: Awaited<ReturnType<typeof getPageBlocks>>;
+    try {
+      remoteRead = await getPageBlocks(mapping.notionPageId, rootPageId);
+      const remote = remoteSnapshot(remoteRead.blocks);
+      const parsed = parseCompleteNotionSceneBlocks(remoteRead.blocks, { id: scene.id, summary: scene.summary });
+      if (!baseline) {
+        if (options.resolution === "accept-remote") {
+          const localBaseline = JSON.stringify({ id: scene.id, chapterId: scene.chapterId, title: scene.title, summary: scene.summary, content: parsed.content, revision: scene.revision + 1 });
+          updates.push({ sceneId, notionPageId: mapping.notionPageId, content: parsed.content, expectedRevision: scene.revision, localBaseline, remote, allowEmptyOverwrite: parsed.content === "" && scene.content.trim() !== "" });
+          results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "APPLY_LOCAL", outcome: "APPLIED", remoteChanged: true, localChanged: true, code: "BASELINE_ACCEPTED_REMOTE" });
+        } else if (options.inspectOnly && options.resolution === "keep-local") {
+          results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "DETECT_CHANGE", outcome: "SKIPPED", remoteChanged: true, localChanged: true, code: "KEEP_LOCAL_CONFIRMED" });
+        } else {
+          results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "DETECT_CHANGE", outcome: "CONFLICT", remoteChanged: true, localChanged: true, code: "BASELINE_REQUIRED" });
+          conflicts.push({ chapterId: scene.chapterId, chapterTitle: source.chapters.find((chapter) => chapter.id === scene.chapterId)?.title ?? "Unknown chapter", sceneId, sceneTitle: scene.title, code: "BASELINE_REQUIRED", message: "No trustworthy last-synchronized baseline exists. Choose which complete version to keep.", localContent: scene.content, remoteContent: parsed.content });
+        }
+        continue;
+      }
+      const evidence = classifyNotionSceneEvidence({ local: snapshot.local, remote, baselineLocal: baseline.local, baselineRemote: baseline.remote, localContentNonEmpty: scene.content.trim().length > 0, remoteContentEmpty: parsed.content === "" });
+      const remoteChanged = remote !== baseline.remote;
+      const localChanged = snapshot.local !== baseline.local;
+      if (!remoteChanged) {
+        results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "DETECT_CHANGE", outcome: localChanged ? "SKIPPED" : "UNCHANGED", remoteChanged, localChanged });
+        continue;
+      }
+      const destructiveEmpty = evidence === "DESTRUCTIVE_NOTION_EMPTY";
+      if (options.inspectOnly && options.resolution === "keep-local") {
+        results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "DETECT_CHANGE", outcome: "SKIPPED", remoteChanged, localChanged, code: "KEEP_LOCAL_CONFIRMED" });
+        continue;
+      }
+      if ((options.inspectOnly || destructiveEmpty || localChanged) && options.resolution !== "accept-remote") {
+        results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "DETECT_CHANGE", outcome: "CONFLICT", remoteChanged, localChanged, code: parsed.content === "" ? "DESTRUCTIVE_REMOTE_EMPTY" : "CONTENT_CONFLICT" });
+        let baselineContent = "";
+        try { baselineContent = (JSON.parse(baseline.local) as { content?: string }).content ?? ""; } catch { /* malformed baselines are shown as unavailable */ }
+        const code = destructiveEmpty ? "DESTRUCTIVE_REMOTE_EMPTY" : localChanged ? "CONTENT_CONFLICT" : "REMOTE_CHANGES";
+        conflicts.push({ chapterId: scene.chapterId, chapterTitle: source.chapters.find((chapter) => chapter.id === scene.chapterId)?.title ?? "Unknown chapter", sceneId, sceneTitle: scene.title, code, message: destructiveEmpty ? "Notion would replace non-empty local manuscript content with an empty document." : localChanged ? "Both the local Scene and its Notion page changed since the last sync." : "Notion changed since the last sync; review it before pushing the local version.", localContent: scene.content, baselineContent, remoteContent: parsed.content });
+        continue;
+      }
+      const localBaseline = JSON.stringify({ id: scene.id, chapterId: scene.chapterId, title: scene.title, summary: scene.summary, content: parsed.content, revision: scene.revision + 1 });
+      updates.push({ sceneId, notionPageId: mapping.notionPageId, content: parsed.content, expectedRevision: scene.revision, localBaseline, remote, allowEmptyOverwrite: destructiveEmpty && options.resolution === "accept-remote" });
+      results.push({ sceneId, notionPageId: mapping.notionPageId, stage: "APPLY_LOCAL", outcome: "APPLIED", remoteChanged, localChanged });
+    } catch (error) {
+      logPullDecision({ operationId, novelId, chapterId: scene.chapterId, sceneId, pageId: mapping.notionPageId, decision: "error", reason: error instanceof Error ? error.message : "scene_pull_failed" });
+      results.push({ sceneId, notionPageId: mapping.notionPageId, stage: error instanceof NotionRemoteContentError ? "READ_BLOCKS" : "FETCH_REMOTE", outcome: "FAILED", remoteChanged: false, localChanged: false, code: error instanceof NotionRemoteContentError ? error.code : "REMOTE_FETCH_FAILED" });
+      if (error instanceof NotionRemoteContentError) throw new NotionPullError(422, error.code, error.message, [], results);
+      throw error;
+    }
+  }
+  if (conflicts.length) throw new NotionPullError(409, "PULL_CONFLICT", "Notion changes were not applied because a conflict needs review.", conflicts, results);
+  if (updates.length) {
+    await options.beforeApply?.();
+    const nextBaselines = { ...baselines };
+    for (const update of updates) nextBaselines[update.sceneId] = { local: update.localBaseline, remote: update.remote };
+    try { await applyNotionSceneUpdates(novelId, updates, nextBaselines); }
+    catch (error) {
+      for (const result of results) if (result.outcome === "APPLIED") { result.outcome = "FAILED"; result.code = "PULL_APPLY_BLOCKED"; }
+      if (error instanceof NotionPullApplyError) throw new NotionPullError(409, "PULL_APPLY_BLOCKED", "Notion content was not applied because local Scene state or its mapping changed.", [], results);
+      throw error;
+    }
+  }
+  return { operationId, direction: "PULL" as const, novelId, appliedScenes: updates.length, conflicts: 0, failures: 0, results, appliedChapters: 0, message: updates.length ? `Applied Notion changes to ${updates.length} Scene(s) in SQLite.` : "No newer Notion Scene changes were found." };
+}
+
 export async function pullNovelFromNotion(
   novelId: string,
   chapterId?: string,
   options: {
     resolution?: "accept-remote" | "keep-local" | "cancel";
     beforeApply?: () => Promise<void>;
+    sceneId?: string;
+    inspectOnly?: boolean;
   } = {}
 ) {
   assertSchemaCompatible();
@@ -230,13 +326,11 @@ export async function pullNovelFromNotion(
     throw new NotionPullError(404, "NOVEL_NOT_FOUND", "The selected novel could not be found.");
   }
 
-  // Chapter pages are now containers. They deliberately have no manuscript
-  // structure to parse once scene mappings exist; attempting the legacy
-  // positional parser here would turn a legitimate new local scene into a
-  // structural conflict. Scene-page pull parsing is introduced separately
-  // from the legacy chapter parser so old connected novels remain readable.
+  // Scene pages are the current synchronization boundary. Each mapped Scene is
+  // read and compared independently; a Pull must never report success for a
+  // legacy chapter no-op.
   if ((await getNotionMappings(novelId)).some((mapping) => mapping.entityType === "scene")) {
-    return { appliedChapters: 0, message: "Scene pages are already synchronized independently." };
+    return pullMappedScenePages(novelId, rootPageId, source, operationId, options);
   }
 
   const chapterSnapshots = new Map(

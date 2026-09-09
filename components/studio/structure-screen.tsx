@@ -3,6 +3,7 @@ import { AddStoryNoteButton } from "./note-capture";
 import { StoryNotes } from "./story-notes";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { relationshipSinceOptions, relationshipStructureSelection } from "@/lib/relationship-since";
 import { routeForPage } from "@/lib/studio-routes";
@@ -115,6 +116,7 @@ export function StructureScreen({
   onNotify: (message: string) => void;
 }) {
   const currentNovel = getCurrentNovel(data);
+  const notionSyncCenterAvailable = data.notionSyncStates.some((state) => state.novelId === currentNovel.id && state.mapped === true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const linkedSelection = React.useMemo(() => relationshipStructureSelection(searchParams,
@@ -471,6 +473,7 @@ export function StructureScreen({
         description={translate("Create and organize volumes, chapters, and scenes. Every change is saved to SQLite.")}
         action={
           <>
+            {notionSyncCenterAvailable ? <Button variant="outline" asChild><Link href={`/novels/${currentNovel.id}/sync`}>Notion Sync Center</Link></Button> : null}
             <Button onClick={() => openCreate("volume")} disabled={!currentNovel.id}>
               <FolderPlus className="size-4" />{translate("Add volume")}
             </Button>

@@ -27,6 +27,11 @@ test("normal autosaves do not create recovery checkpoints", () => {
   assert.equal(recoveryReasonForContentChange("", "new manuscript"), null);
 });
 
+test("Notion Pull checkpoints have an explicit recoverable label", () => {
+  const { recoveryCheckpointLabel } = recoveryModule();
+  assert.equal(recoveryCheckpointLabel("notion-pull", 7), "Automatic recovery — before Notion pull (before revision 7)");
+});
+
 test("automatic checkpoints carry a visible label and are deduplicated inside destructive transactions", () => {
   const recovery = read("lib/db/scene-recovery.ts");
   const recoveryRules = read("lib/scene-recovery.ts");
@@ -39,5 +44,5 @@ test("automatic checkpoints carry a visible label and are deduplicated inside de
   assert.match(recovery, /origin: \{ startsWith: "recovery:" \}/);
   assert.match(studio, /await createRecoveryCheckpoint\(tx, existing, input\.content, "scene-update"\)/);
   assert.match(studio, /createRecoveryCheckpoint\(tx, current, version\.content, "version-restore", "version-restore"\)/);
-  assert.match(notionPull, /await createRecoveryCheckpoint\(tx, scene, remote\.content, "notion-pull"\)/);
+  assert.match(notionPull, /scene\.content !== remote\.content \? "notion-pull" : undefined/);
 });

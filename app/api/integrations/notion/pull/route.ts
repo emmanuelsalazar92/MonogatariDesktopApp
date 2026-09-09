@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     }
     if (error instanceof NotionPullError) {
       return NextResponse.json(
-        { ok: false, code: error.code, message: error.message, diagnostic, conflicts: error.conflicts.map((conflict) => ({ chapterId: conflict.chapterId, chapterTitle: conflict.chapterTitle, code: conflict.code, message: conflict.message })) },
+        { ok: false, code: error.code, message: error.message, diagnostic, results: error.results, conflicts: error.conflicts.map((conflict) => ({ chapterId: conflict.chapterId, chapterTitle: conflict.chapterTitle, code: conflict.code, message: conflict.message })) },
         { status: error.status }
       );
     }

@@ -65,3 +65,14 @@ test("pagination, destructive-empty conflict, and database application all fail 
   assert.match(apply, /remote\.content === "" && scene\.content\.trim\(\) !== "" && !remote\.allowEmptyOverwrite/);
   assert.match(apply, /revision: \{ increment: 1 \}/);
 });
+
+test("mapped Scene pages use an actual pull path with explicit outcomes", () => {
+  const pull = read("lib/notion-pull.ts");
+  const apply = read("lib/db/notion-pull.ts");
+  assert.match(pull, /pullMappedScenePages/);
+  assert.match(pull, /parseCompleteNotionSceneBlocks/);
+  assert.match(pull, /appliedScenes: updates\.length/);
+  assert.doesNotMatch(pull, /Scene pages are already synchronized independently/);
+  assert.match(apply, /applyNotionSceneUpdates/);
+  assert.match(apply, /scene\.revision !== update\.expectedRevision/);
+});

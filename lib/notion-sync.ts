@@ -2,14 +2,16 @@ import "server-only";
 
 import {
   beginNotionSyncOperation,
+  completeNotionSceneOperation,
   failNotionSyncOperation,
+  getNotionContentBaselines,
   getNotionSyncState,
   markNotionSynced,
   refreshNotionSyncLease
 } from "@/lib/db/notion-sync";
 import { getNotionMappings, getNotionPublishSource, isNotionNovelConnected } from "@/lib/db/notion-publish";
 import { NotionApiError } from "@/lib/notion";
-import { NotionPublishError, publishNovelToNotion } from "@/lib/notion-publish";
+import { NotionPublishError, publishNovelToNotion, publishSceneToNotion } from "@/lib/notion-publish";
 import { NotionPullError, pullNovelFromNotion } from "@/lib/notion-pull";
 import { prisma } from "@/lib/db/prisma";
 import { notionDiagnostic, type NotionDiagnostic } from "@/lib/notion-diagnostics";
@@ -118,7 +120,8 @@ async function runNotionSync(
       ])
     ),
     snapshotRevision,
-    operationId
+    operationId,
+    result.pushedScenes
   );
 
   if (!completed.applied || !completed.state) {
@@ -211,6 +214,59 @@ export function syncNovelToNotion(
   inFlightSyncs.set(novelId, sync);
   return sync;
 }
+
+export type NotionSceneOperationMode = "PULL" | "PUSH" | "RECONCILE";
+
+export async function runNotionSceneOperation(
+  novelId: string,
+  sceneId: string,
+  mode: NotionSceneOperationMode,
+  resolution?: "KEEP_MONOGATARI" | "KEEP_NOTION"
+) {
+  assertSchemaCompatible();
+  const operation = await beginNotionSyncOperation(novelId, true);
+  if (operation.kind === "existing") throw new NotionSyncError(409, "SYNC_IN_PROGRESS", "Another Notion operation is already running for this novel.");
+  try {
+    let pullResult: Awaited<ReturnType<typeof pullNovelFromNotion>> | undefined;
+    const hasSceneMapping = (await getNotionMappings(novelId)).some((mapping) => mapping.entityType === "scene" && mapping.localId === `scene:${sceneId}`);
+    if (mode === "PULL" || ((mode === "RECONCILE" || mode === "PUSH") && hasSceneMapping)) {
+      pullResult = await pullNovelFromNotion(novelId, undefined, {
+        sceneId,
+        resolution: resolution === "KEEP_NOTION" ? "accept-remote" : resolution === "KEEP_MONOGATARI" ? "keep-local" : undefined,
+        inspectOnly: mode === "PUSH"
+      });
+    }
+    const shouldPush = mode === "PUSH" || (mode === "RECONCILE" && (!hasSceneMapping || (pullResult && "results" in pullResult && pullResult.results.some((result) => result.sceneId === sceneId && result.localChanged && !result.remoteChanged))));
+    let pushResult: Awaited<ReturnType<typeof publishSceneToNotion>> | undefined;
+    if (shouldPush) pushResult = await publishSceneToNotion(novelId, sceneId);
+    const baselines = await getNotionContentBaselines(novelId);
+    const nextBaselines = pushResult ? { ...baselines, [sceneId]: { local: pushResult.snapshot.local, remote: pushResult.snapshot.remote } } : baselines;
+    const completed = await completeNotionSceneOperation(
+      novelId,
+      nextBaselines,
+      operation.operationId!,
+      operation.snapshotRevision!,
+      pushResult
+        ? {
+            sceneId,
+            notionPageId: pushResult.page.id,
+            revision: pushResult.sceneRevision,
+            content: pushResult.snapshot.local
+          }
+        : undefined
+    );
+    if (!completed.applied) throw new NotionSyncError(409, "SYNC_STATE_CHANGED", "The Scene sync completion was ignored because the operation state changed.");
+    return { operationId: operation.operationId, direction: mode, sceneId, notionPageId: pushResult?.page.id, pullResult, message: resolution === "KEEP_MONOGATARI" ? "Monogatari version kept and pushed to Notion." : resolution === "KEEP_NOTION" ? "Notion version kept and applied to Monogatari." : mode === "PULL" ? "Scene pull completed." : mode === "PUSH" ? "Scene push completed." : "Scene reconciliation completed." };
+  } catch (error) {
+    await failNotionSyncOperation(novelId, operation.operationId!, error instanceof NotionPullError && error.code === "PULL_CONFLICT" ? "remote-changes" : "error");
+    throw error;
+  }
+}
+
+export function syncSceneToNotion(novelId: string, sceneId: string) { return runNotionSceneOperation(novelId, sceneId, "PUSH"); }
+export function pullSceneFromNotion(novelId: string, sceneId: string) { return runNotionSceneOperation(novelId, sceneId, "PULL"); }
+export function reconcileSceneWithNotion(novelId: string, sceneId: string) { return runNotionSceneOperation(novelId, sceneId, "RECONCILE"); }
+export function resolveNotionSceneConflict(novelId: string, sceneId: string, resolution: "KEEP_MONOGATARI" | "KEEP_NOTION") { return runNotionSceneOperation(novelId, sceneId, resolution === "KEEP_MONOGATARI" ? "PUSH" : "PULL", resolution); }
 
 /** The sole entry point permitted to create a novel's Notion mapping. */
 export async function initialPublishNovelToNotion(novelId: string) {
