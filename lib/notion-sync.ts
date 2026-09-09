@@ -12,6 +12,8 @@ import { NotionApiError } from "@/lib/notion";
 import { NotionPublishError, publishNovelToNotion } from "@/lib/notion-publish";
 import { NotionPullError, pullNovelFromNotion } from "@/lib/notion-pull";
 import { prisma } from "@/lib/db/prisma";
+import { notionDiagnostic, type NotionDiagnostic } from "@/lib/notion-diagnostics";
+import { assertSchemaCompatible } from "@/lib/schema-compatibility";
 
 const inFlightSyncs = new Map<string, Promise<NotionSyncResult>>();
 
@@ -149,6 +151,7 @@ export function syncNovelToNotion(
   force = false,
   options: { protectRemoteChanges?: boolean } = {}
 ) {
+  assertSchemaCompatible();
   const current = inFlightSyncs.get(novelId);
   if (current) return current;
 
@@ -211,6 +214,7 @@ export function syncNovelToNotion(
 
 /** The sole entry point permitted to create a novel's Notion mapping. */
 export async function initialPublishNovelToNotion(novelId: string) {
+  assertSchemaCompatible();
   if (await isNotionNovelConnected(novelId)) {
     throw new NotionSyncError(409, "NOVEL_ALREADY_CONNECTED", "This novel is already connected to Notion.");
   }
@@ -235,14 +239,15 @@ export async function initialPublishNovelToNotion(novelId: string) {
 
 /** Sync only explicitly connected novels; local-only novels are never considered. */
 export async function syncAllConnectedNovels() {
+  assertSchemaCompatible();
   const connections = await prisma.notionMapping.findMany({ where: { entityType: "novel" }, select: { novelId: true } });
-  const results: Array<{ novelId: string; ok: boolean; message: string }> = [];
+  const results: Array<{ novelId: string; ok: boolean; message: string; diagnostic?: NotionDiagnostic }> = [];
   for (const { novelId } of connections) {
     try {
       const result = await syncNovelToNotion(novelId, false);
       results.push({ novelId, ok: result.operationStatus !== "error" && result.operationStatus !== "remote-changes", message: result.message });
     } catch (error) {
-      results.push({ novelId, ok: false, message: error instanceof Error ? error.message : "Sync failed." });
+      results.push({ novelId, ok: false, message: "Monogatari could not sync this novel to Notion.", diagnostic: notionDiagnostic(error, "SYNC_ALL", "BIDIRECTIONAL", { novelId }) });
     }
   }
   return results;

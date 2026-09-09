@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { initialPublishNovelToNotion, NotionApiError, NotionPublishError, NotionSyncError } from "@/lib/notion-sync";
 import { isTrustedMutationRequest } from "@/lib/request-security";
 import { isValidNovelRouteId } from "@/lib/studio-routes";
+import { SchemaCompatibilityError } from "@/lib/schema-compatibility";
 
 type ConnectBody = { novelId?: unknown; mode?: unknown };
 
@@ -28,6 +29,9 @@ export async function POST(request: Request) {
     const result = await initialPublishNovelToNotion(body.novelId);
     return NextResponse.json({ ok: true, ...result, lastNotionSync: result.lastNotionSync?.toISOString() ?? null });
   } catch (error) {
+    if (error instanceof SchemaCompatibilityError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: 503 });
+    }
     if (error instanceof NotionPublishError || error instanceof NotionApiError || error instanceof NotionSyncError) {
       return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status });
     }

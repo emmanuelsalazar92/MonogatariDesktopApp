@@ -21,6 +21,7 @@ import {
   type NotionRemoteBlock,
   type RemoteSceneUpdate
 } from "@/lib/notion-pull-safety";
+import { assertSchemaCompatible } from "@/lib/schema-compatibility";
 
 type NotionBlockList = {
   results?: unknown;
@@ -221,6 +222,7 @@ export async function pullNovelFromNotion(
     beforeApply?: () => Promise<void>;
   } = {}
 ) {
+  assertSchemaCompatible();
   const operationId = randomUUID();
   const rootPageId = await getAuthorizedNotionRootPageId();
   const source = await getNotionPublishSource(novelId);

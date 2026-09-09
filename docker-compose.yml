@@ -1,7 +1,13 @@
 services:
   monogatari:
     image: ghcr.io/${MONOGATARI_IMAGE_OWNER:-replace-me}/monogatari:${MONOGATARI_TAG:-edge}
-    build: .
+    build:
+      context: .
+      args:
+        MONOGATARI_VERSION: ${MONOGATARI_VERSION:-unknown}
+        MONOGATARI_BUILD_TAG: ${MONOGATARI_BUILD_TAG:-edge}
+        MONOGATARI_GIT_SHA: ${MONOGATARI_GIT_SHA:-unknown}
+        MONOGATARI_BUILD_TIME: ${MONOGATARI_BUILD_TIME:-unknown}
     ports:
       - "${MONOGATARI_PORT:-3010}:3000"
     environment:
