@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { NotionApiError, NotionPublishError, NotionSyncError, syncNovelToNotion } from "@/lib/notion-sync";
 import { isTrustedMutationRequest } from "@/lib/request-security";
 import { isValidNovelRouteId } from "@/lib/studio-routes";
+import { notionDiagnostic } from "@/lib/notion-diagnostics";
+import { SchemaCompatibilityError } from "@/lib/schema-compatibility";
 
 type SyncBody = { novelId?: unknown; force?: unknown };
 
@@ -41,15 +43,19 @@ export async function POST(request: Request) {
       operationId: undefined
     }, { status: result.operationStatus === "syncing" ? 202 : 200 });
   } catch (error) {
+    const diagnostic = notionDiagnostic(error, "SYNC_NOVEL", "BIDIRECTIONAL", { novelId: body.novelId });
+    if (error instanceof SchemaCompatibilityError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message, diagnostic }, { status: 503 });
+    }
     if (error instanceof NotionPublishError || error instanceof NotionApiError || error instanceof NotionSyncError) {
       return NextResponse.json(
-        { ok: false, code: error.code, message: error.message },
+        { ok: false, code: error.code, message: error.message, diagnostic },
         { status: error.status }
       );
     }
 
     return NextResponse.json(
-      { ok: false, code: "SYNC_FAILED", message: "Monogatari could not sync this novel to Notion." },
+      { ok: false, code: "SYNC_FAILED", message: "Monogatari could not sync this novel to Notion.", diagnostic },
       { status: 500 }
     );
   }

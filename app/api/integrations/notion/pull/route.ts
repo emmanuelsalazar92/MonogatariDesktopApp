@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { NotionApiError } from "@/lib/notion";
 import { NotionPullError, pullNovelFromNotion } from "@/lib/notion-pull";
 import { NotionPublishError } from "@/lib/notion-publish";
+import { notionDiagnostic } from "@/lib/notion-diagnostics";
+import { SchemaCompatibilityError } from "@/lib/schema-compatibility";
 import { isTrustedMutationRequest } from "@/lib/request-security";
 
 type PullBody = { novelId?: unknown; chapterId?: unknown };
@@ -35,20 +37,27 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
+    const diagnostic = notionDiagnostic(error, "PULL_NOVEL", "PULL", {
+      novelId: typeof body.novelId === "string" ? body.novelId : undefined,
+      chapterId: typeof body.chapterId === "string" ? body.chapterId : undefined
+    });
+    if (error instanceof SchemaCompatibilityError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message, diagnostic }, { status: 503 });
+    }
     if (error instanceof NotionPullError) {
       return NextResponse.json(
-        { ok: false, code: error.code, message: error.message, conflicts: error.conflicts },
+        { ok: false, code: error.code, message: error.message, diagnostic, conflicts: error.conflicts.map((conflict) => ({ chapterId: conflict.chapterId, chapterTitle: conflict.chapterTitle, code: conflict.code, message: conflict.message })) },
         { status: error.status }
       );
     }
     if (error instanceof NotionApiError || error instanceof NotionPublishError) {
       return NextResponse.json(
-        { ok: false, code: error.code, message: error.message },
+        { ok: false, code: error.code, message: error.message, diagnostic },
         { status: error.status }
       );
     }
     return NextResponse.json(
-      { ok: false, code: "PULL_FAILED", message: "Monogatari could not update from Notion." },
+      { ok: false, code: "PULL_FAILED", message: "Monogatari could not update from Notion.", diagnostic },
       { status: 500 }
     );
   }
