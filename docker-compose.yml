@@ -13,6 +13,7 @@ services:
     environment:
       MONOGATARI_DATA_DIR: /data
       NOTION_API_TOKEN: ${NOTION_API_TOKEN:-}
+      MONOGATARI_MONITOR_TOKEN: ${MONOGATARI_MONITOR_TOKEN:-}
       MONOGATARI_TRUSTED_ORIGINS: ${MONOGATARI_TRUSTED_ORIGINS:-}
     volumes:
       - monogatari-data:/data

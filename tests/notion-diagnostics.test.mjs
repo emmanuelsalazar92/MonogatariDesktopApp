@@ -45,3 +45,22 @@ test("unknown errors use a safe generic diagnostic code", () => {
   assert.equal(diagnostic.retrySafe, true);
   assert.equal(JSON.stringify(diagnostic).includes("unsafe"), false);
 });
+
+test("a staged Notion validation error retains the safe upstream diagnostic", () => {
+  const { notionDiagnostic } = loadDiagnostics();
+  const diagnostic = notionDiagnostic({
+    status: 400,
+    code: "NOTION_ERROR",
+    stage: "APPEND_BLOCKS",
+    cause: {
+      notionApiCode: "validation_error",
+      notionApiMessage: "body.children[0].paragraph must be a valid block",
+      endpoint: "/v1/blocks/page-123/children"
+    }
+  }, "SYNC_NOVEL", "BIDIRECTIONAL", { novelId: "novel-1", sceneId: "scene-1" });
+  assert.equal(diagnostic.stage, "APPEND_BLOCKS");
+  assert.equal(diagnostic.notionApiCode, "validation_error");
+  assert.equal(diagnostic.notionApiMessage, "body.children[0].paragraph must be a valid block");
+  assert.equal(diagnostic.endpoint, "/v1/blocks/page-123/children");
+  assert.deepEqual(diagnostic.scope, { novelId: "novel-1", sceneId: "scene-1" });
+});

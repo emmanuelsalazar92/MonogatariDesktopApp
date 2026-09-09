@@ -29,7 +29,9 @@ export class NotionPublishError extends Error {
   constructor(
     public readonly status: number,
     public readonly code: string,
-    message: string
+    message: string,
+    public readonly stage: "FETCH_REMOTE" | "CREATE_PAGE" | "UPDATE_PAGE" | "APPEND_BLOCKS" | "UPDATE_BASELINE" | "UNKNOWN" = "UNKNOWN",
+    public readonly cause: NotionApiError | null = null
   ) {
     super(message);
   }
@@ -120,6 +122,15 @@ function sceneBlocks(scene: { summary: string; content: string }) {
   ];
 }
 
+async function publishStage<T>(stage: NotionPublishError["stage"], work: () => Promise<T>) {
+  try { return await work(); }
+  catch (error) {
+    if (error instanceof NotionPublishError) throw error;
+    if (error instanceof NotionApiError) throw new NotionPublishError(error.status, error.code, error.message, stage, error);
+    throw error;
+  }
+}
+
 function blockText(block: NotionBlock) {
   const type = typeof block.type === "string" ? block.type : "unsupported";
   const content = block[type] as { rich_text?: Array<{ plain_text?: string; text?: { content?: string } }> } | undefined;
@@ -179,32 +190,32 @@ export function getNotionChapterSyncSnapshots(
 }
 
 async function createPage(parentPageId: string, title: string) {
-  return requestNotion<NotionPage>("/v1/pages", {
+  return publishStage("CREATE_PAGE", () => requestNotion<NotionPage>("/v1/pages", {
     method: "POST",
     body: {
       parent: { page_id: parentPageId },
       properties: { title: { title: richText(title) } }
     }
-  });
+  }));
 }
 
 async function updatePage(pageId: string, title: string, eraseContent: boolean) {
-  return requestNotion<NotionPage>(`/v1/pages/${pageId}`, {
+  return publishStage("UPDATE_PAGE", () => requestNotion<NotionPage>(`/v1/pages/${pageId}`, {
     method: "PATCH",
     body: {
       properties: { title: { title: richText(title) } },
       archived: false,
       ...(eraseContent ? { erase_content: true } : {})
     }
-  });
+  }));
 }
 
 async function appendBlocks(pageId: string, blocks: NotionBlock[]) {
   for (let index = 0; index < blocks.length; index += MAX_BLOCKS_PER_REQUEST) {
-    await requestNotion(`/v1/blocks/${pageId}/children`, {
+    await publishStage("APPEND_BLOCKS", () => requestNotion(`/v1/blocks/${pageId}/children`, {
       method: "PATCH",
       body: { children: blocks.slice(index, index + MAX_BLOCKS_PER_REQUEST) }
-    });
+    }));
   }
 }
 
@@ -212,7 +223,7 @@ export async function publishNovelToNotion(
   novelId: string,
   sourceOverride?: NonNullable<Awaited<ReturnType<typeof getNotionPublishSource>>>
 ) {
-  const parentRootPageId = await getAuthorizedNotionRootPageId();
+  const parentRootPageId = await publishStage("FETCH_REMOTE", () => getAuthorizedNotionRootPageId());
 
   const source = sourceOverride ?? (await getNotionPublishSource(novelId));
   if (!source) {
@@ -245,7 +256,7 @@ export async function publishNovelToNotion(
 
     if (mapped) {
       try {
-        await assertNotionPageWithinRoot(mapped.notionPageId, parentRootPageId);
+        await publishStage("FETCH_REMOTE", () => assertNotionPageWithinRoot(mapped.notionPageId, parentRootPageId));
         page = await updatePage(mapped.notionPageId, input.title, input.replaceContent ?? Boolean(input.blocks));
         updatedPages += 1;
       } catch (error) {
@@ -366,8 +377,8 @@ export async function publishNovelToNotion(
     const activeSceneIds = new Set(source.scenes.map((scene) => `scene:${scene.id}`));
     for (const mapping of mappingRows) {
       if (mapping.entityType !== "scene" || activeSceneIds.has(mapping.localId) || mapping.remoteArchivedAt) continue;
-      await assertNotionPageWithinRoot(mapping.notionPageId, parentRootPageId);
-      await requestNotion(`/v1/pages/${mapping.notionPageId}`, { method: "PATCH", body: { archived: true } });
+      await publishStage("FETCH_REMOTE", () => assertNotionPageWithinRoot(mapping.notionPageId, parentRootPageId));
+      await publishStage("UPDATE_PAGE", () => requestNotion(`/v1/pages/${mapping.notionPageId}`, { method: "PATCH", body: { archived: true } }));
       await upsertNotionMapping({
         localId: mapping.localId,
         entityType: mapping.entityType,
