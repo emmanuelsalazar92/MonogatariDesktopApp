@@ -98,3 +98,24 @@ export function parseCompleteNotionChapterBlocks(blocks: NotionRemoteBlock[], lo
     })
   };
 }
+
+/** Parses the intentionally small Scene-page document shape produced by sync. */
+export function parseCompleteNotionSceneBlocks(blocks: NotionRemoteBlock[], localScene: LocalScene) {
+  const parsed: ParsedBlock[] = blocks.map((block) => {
+    const type = block.type;
+    if (block.has_children === true) throw new NotionRemoteContentError("UNSUPPORTED_REMOTE_CONTENT", "Nested Notion blocks cannot be safely imported.");
+    if (type === "divider") return { type, text: "" };
+    if (type !== "heading_2" && type !== "paragraph") throw new NotionRemoteContentError("UNSUPPORTED_REMOTE_CONTENT", "The Notion Scene page contains a block type Monogatari cannot safely import.");
+    return { type, text: readRichText(block, type) };
+  });
+  const manuscript = parsed.findIndex((block) => block.type === "heading_2" && block.text.trim() === "Manuscript");
+  if (manuscript < 0) throw new NotionRemoteContentError("REMOTE_STRUCTURE_INVALID", "The Notion Scene page is missing its Manuscript heading.");
+  const summary = parsed.findIndex((block) => block.type === "heading_2" && block.text.trim() === "Summary");
+  if (summary >= 0 && summary > manuscript) throw new NotionRemoteContentError("REMOTE_STRUCTURE_INVALID", "The Notion Scene page has an invalid Summary section.");
+  return {
+    localSceneId: localScene.id,
+    content: parsed.slice(manuscript + 1).filter((block) => block.type === "paragraph").map((block) => block.text).join("\n\n"),
+    contentState: "complete" as const,
+    allowEmptyOverwrite: false
+  };
+}

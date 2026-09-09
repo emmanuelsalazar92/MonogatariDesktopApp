@@ -16,6 +16,13 @@ export type NotionChapterBaseline = {
 
 export type NotionContentBaselines = Record<string, NotionChapterBaseline>;
 
+export type NotionScenePushCompletion = {
+  sceneId: string;
+  notionPageId: string;
+  revision: number;
+  content: string;
+};
+
 export type NotionSyncOperation = {
   kind: "started" | "existing" | "skipped";
   operationId?: string;
@@ -141,7 +148,8 @@ export async function markNotionSynced(
   novelId: string,
   baselines: NotionContentBaselines | undefined,
   syncedRevision: number,
-  operationId: string
+  operationId: string,
+  pushedScenes: NotionScenePushCompletion[] = []
 ) {
   return prisma.$transaction(async (tx) => {
     const current = await tx.notionSyncState.findUnique({ where: { novelId } });
@@ -154,6 +162,26 @@ export async function markNotionSynced(
       return { applied: false, state: current };
     }
 
+    if (pushedScenes.length) {
+      const sceneIds = pushedScenes.map((scene) => scene.sceneId);
+      const localIds = pushedScenes.map((scene) => `scene:${scene.sceneId}`);
+      const [scenes, mappings] = await Promise.all([
+        tx.scene.findMany({ where: { id: { in: sceneIds }, archived: false, chapter: { volume: { novelId } } }, select: { id: true, revision: true } }),
+        tx.notionMapping.findMany({ where: { localId: { in: localIds }, entityType: "scene", novelId } })
+      ]);
+      const sceneById = new Map(scenes.map((scene) => [scene.id, scene]));
+      const mappingById = new Map(mappings.map((mapping) => [mapping.localId, mapping]));
+      if (pushedScenes.some((pushed) => sceneById.get(pushed.sceneId)?.revision !== pushed.revision || mappingById.get(`scene:${pushed.sceneId}`)?.notionPageId !== pushed.notionPageId)) {
+        return { applied: false, state: current };
+      }
+      for (const pushed of pushedScenes) {
+        await tx.notionMapping.update({
+          where: { localId: `scene:${pushed.sceneId}` },
+          data: { lastSyncedRevision: pushed.revision, lastSyncedContent: pushed.content, lastSyncedAt: new Date(), remoteArchivedAt: null }
+        });
+      }
+    }
+
     const state = await tx.notionSyncState.update({
       where: { novelId },
       data: {
@@ -161,6 +189,80 @@ export async function markNotionSynced(
         lastNotionSync: new Date(),
         lastSyncedRevision: syncedRevision,
         ...(baselines ? { lastKnownContent: JSON.stringify(baselines) } : {}),
+        syncStatus: "idle",
+        syncOperationId: null,
+        syncStartedAt: null,
+        syncLeaseExpiresAt: null,
+        syncSnapshotRevision: null,
+        lastSyncError: null
+      }
+    });
+    return { applied: true, state };
+  });
+}
+
+/**
+ * Completes a Scene-scoped operation without claiming that unrelated Scenes
+ * were synchronized. The novel remains dirty while any active Scene lacks a
+ * mapping or has a revision newer than its mapping.
+ */
+export async function completeNotionSceneOperation(
+  novelId: string,
+  baselines: NotionContentBaselines,
+  operationId: string,
+  snapshotRevision: number,
+  pushedScene?: NotionScenePushCompletion
+) {
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.notionSyncState.findUnique({ where: { novelId } });
+    if (!current || current.syncStatus !== "syncing" || current.syncOperationId !== operationId || current.syncSnapshotRevision !== snapshotRevision) {
+      return { applied: false, state: current };
+    }
+
+    if (pushedScene) {
+      const [scene, mapping] = await Promise.all([
+        tx.scene.findFirst({
+          where: { id: pushedScene.sceneId, archived: false, chapter: { volume: { novelId } } },
+          select: { revision: true }
+        }),
+        tx.notionMapping.findUnique({ where: { localId: `scene:${pushedScene.sceneId}` } })
+      ]);
+      if (
+        !scene ||
+        scene.revision !== pushedScene.revision ||
+        !mapping ||
+        mapping.entityType !== "scene" ||
+        mapping.novelId !== novelId ||
+        mapping.notionPageId !== pushedScene.notionPageId
+      ) {
+        return { applied: false, state: current };
+      }
+      await tx.notionMapping.update({
+        where: { localId: `scene:${pushedScene.sceneId}` },
+        data: {
+          lastSyncedRevision: pushedScene.revision,
+          lastSyncedContent: pushedScene.content,
+          lastSyncedAt: new Date(),
+          remoteArchivedAt: null
+        }
+      });
+    }
+
+    const [scenes, mappings] = await Promise.all([
+      tx.scene.findMany({ where: { archived: false, chapter: { volume: { novelId } } }, select: { id: true, revision: true } }),
+      tx.notionMapping.findMany({ where: { novelId, entityType: "scene" }, select: { localId: true, lastSyncedRevision: true } })
+    ]);
+    const mappingByScene = new Map(mappings.map((mapping) => [mapping.localId.replace(/^scene:/, ""), mapping]));
+    const hasPendingScenes = scenes.some((scene) => {
+      const mapping = mappingByScene.get(scene.id);
+      return !mapping || scene.revision > mapping.lastSyncedRevision;
+    });
+    const state = await tx.notionSyncState.update({
+      where: { novelId },
+      data: {
+        isDirty: current.revision !== snapshotRevision || hasPendingScenes,
+        lastNotionSync: new Date(),
+        lastKnownContent: JSON.stringify(baselines),
         syncStatus: "idle",
         syncOperationId: null,
         syncStartedAt: null,

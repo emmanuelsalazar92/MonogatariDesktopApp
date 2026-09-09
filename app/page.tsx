@@ -1356,6 +1356,7 @@ function PrivateNovelStudioContent() {
         ok?: boolean;
         message?: string;
         appliedChapters?: number;
+        appliedScenes?: number;
         conflicts?: Array<Partial<NotionConflictPreview> & { message?: string }>;
       };
 
@@ -1384,7 +1385,7 @@ function PrivateNovelStudioContent() {
       setNotionAutosyncRetryAt(0);
       await refreshStudioData(false);
       showToast(
-        result.appliedChapters ? `Updated ${result.appliedChapters} chapter(s) from Notion` : "Notion is already up to date"
+        result.appliedScenes ? `Updated ${result.appliedScenes} Scene(s) from Notion` : result.appliedChapters ? `Updated ${result.appliedChapters} chapter(s) from Notion` : "Notion is already up to date"
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not update this novel from Notion.";

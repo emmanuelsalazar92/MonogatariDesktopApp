@@ -41,7 +41,7 @@ export async function applyNotionChapterUpdates(
         if (remote.content === "" && scene.content.trim() !== "" && !remote.allowEmptyOverwrite) {
           throw new NotionPullApplyError("remote empty content requires explicit conflict resolution");
         }
-        await createRecoveryCheckpoint(tx, scene, remote.content, "notion-pull");
+        await createRecoveryCheckpoint(tx, scene, remote.content, "notion-pull", scene.content !== remote.content ? "notion-pull" : undefined);
       }
 
       await Promise.all(
@@ -84,5 +84,36 @@ export async function applyNotionChapterUpdates(
         updatedAt: new Date()
       }
     });
+  });
+}
+
+export async function applyNotionSceneUpdates(
+  novelId: string,
+  updates: Array<{ sceneId: string; notionPageId: string; content: string; expectedRevision: number; localBaseline: string; allowEmptyOverwrite?: boolean }>,
+  baselines?: Record<string, { local: string; remote: string }>
+) {
+  return prisma.$transaction(async (tx) => {
+    for (const update of updates) {
+      const scene = await tx.scene.findUniqueOrThrow({ where: { id: update.sceneId }, include: { chapter: { include: { volume: true } } } });
+      if (scene.chapter.volume.novelId !== novelId || scene.archived) throw new NotionPullApplyError("scene does not belong to the selected novel");
+      if (scene.revision !== update.expectedRevision) throw new NotionPullApplyError("scene changed locally while the Notion pull was in progress");
+      const mapping = await tx.notionMapping.findUnique({ where: { localId: `scene:${scene.id}` } });
+      if (!mapping || mapping.entityType !== "scene" || mapping.novelId !== novelId || mapping.notionPageId !== update.notionPageId) throw new NotionPullApplyError("scene mapping changed while the Notion pull was in progress");
+      if (update.content === "" && scene.content.trim() !== "" && !update.allowEmptyOverwrite) throw new NotionPullApplyError("remote empty content requires explicit conflict resolution");
+      await createRecoveryCheckpoint(tx, scene, update.content, "notion-pull", scene.content !== update.content ? "notion-pull" : undefined);
+      const revision = scene.revision + 1;
+      await tx.scene.update({ where: { id: scene.id }, data: { content: update.content, wordCount: countWords(update.content), revision } });
+      await tx.notionMapping.update({ where: { localId: mapping.localId }, data: { lastSyncedRevision: revision, lastSyncedContent: update.localBaseline } });
+    }
+    const chapters = await tx.chapter.findMany({ where: { volume: { novelId } }, include: { scenes: { select: { wordCount: true } } } });
+    await Promise.all(chapters.map((chapter) => tx.chapter.update({ where: { id: chapter.id }, data: { wordCount: chapter.scenes.reduce((total, scene) => total + scene.wordCount, 0) } })));
+    await tx.novel.update({ where: { id: novelId }, data: { wordCount: chapters.reduce((total, chapter) => total + chapter.scenes.reduce((sum, scene) => sum + scene.wordCount, 0), 0), updatedAt: new Date() } });
+    if (baselines) {
+      await tx.notionSyncState.upsert({
+        where: { novelId },
+        update: { lastKnownContent: JSON.stringify(baselines), lastNotionSync: new Date() },
+        create: { novelId, isDirty: true, lastKnownContent: JSON.stringify(baselines), lastNotionSync: new Date() }
+      });
+    }
   });
 }

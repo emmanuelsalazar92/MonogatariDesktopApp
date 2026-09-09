@@ -7,7 +7,7 @@ import { basename } from "node:path";
 
 import { databasePath, prisma, runtimeDataDirectory } from "@/lib/db/prisma";
 import { getRecentNotionRateLimit, isNotionConfigured, NotionApiError, requestNotion } from "@/lib/notion";
-import { classifyNotionHealth, classifyNotionRootAccess } from "@/lib/notion-monitor-health";
+import { classifyNotionHealth, classifyNotionRootAccess, deriveNotionSyncContractHealth } from "@/lib/notion-monitor-health";
 import { getNotionRootPageId } from "@/lib/db/notion-publish";
 import { normalizeNotionPageId } from "@/lib/notion";
 import { inspectSchemaCompatibility } from "@/lib/schema-compatibility";
@@ -28,16 +28,17 @@ async function check(id: string, label: string, work: () => Promise<MonitorCheck
   catch (error) { return failed(id, label, safeMessage(error), "Review the deployment logs and configuration."); }
 }
 
-async function notionMonitorChecks(): Promise<MonitorCheck[]> {
+async function notionMonitorChecks(history: NotionHistoryEvent[]): Promise<MonitorCheck[]> {
   if (!isNotionConfigured()) return [
     warning("notion-connectivity", "Notion connectivity", "Notion is not configured on this server.", "Configure NOTION_API_TOKEN to enable Notion checks."),
     { id: "notion-authentication", label: "Notion authentication", status: "unknown", detail: "No Notion token is configured." },
     { id: "notion-sync-contract", label: "Notion sync contract", status: "unknown", detail: "No Notion token is configured." },
     classifyNotionRootAccess(undefined, false)
   ];
-  try { await requestNotion<{ id: string }>("/users/me"); }
+  try { await requestNotion<{ id: string }>("/v1/users/me"); }
   catch (error) { return [...classifyNotionHealth(error as NotionApiError), { id: "notion-root-access", label: "Notion root page access", status: "unknown", detail: "Root-page access was not checked because authentication did not complete." }]; }
   const health = classifyNotionHealth();
+  health[2] = deriveNotionSyncContractHealth(history);
   const configuredRoot = normalizeNotionPageId((await getNotionRootPageId()) ?? "");
   if (!configuredRoot) return [...health, classifyNotionRootAccess(undefined, false)];
   try { await requestNotion<{ id: string }>(`/v1/pages/${configuredRoot}`); return [...health, classifyNotionRootAccess()]; }
@@ -148,6 +149,7 @@ async function notionMappingChecks(): Promise<MonitorCheck[]> {
 }
 
 export async function runRuntimeDiagnostics(): Promise<MonitorReport> {
+  const history = await getNotionHistory();
   const checks = await Promise.all([
     check("application", "Application", async () => healthy("application", "Application", "Diagnostics endpoint is responding.")),
     check("internal-api", "Internal API", internalApiHealth),
@@ -163,7 +165,7 @@ export async function runRuntimeDiagnostics(): Promise<MonitorReport> {
       return result.compatible ? healthy("schema", "Database schema", result.detail) : failed("schema", "Database schema", `[${result.code}] ${result.detail}`, result.action);
     }),
     check("storage", "Persistent storage", storageHealth),
-    ...(await notionMonitorChecks()),
+    ...(await notionMonitorChecks(history)),
     ...(await notionMappingChecks()),
     check("mappings", "Notion mappings", async () => {
       const [connected, scenes, mapped] = await Promise.all([prisma.notionMapping.count({ where: { entityType: "novel" } }), prisma.scene.count({ where: { archived: false } }), prisma.notionMapping.count({ where: { entityType: "scene" } })]);
@@ -177,7 +179,6 @@ export async function runRuntimeDiagnostics(): Promise<MonitorReport> {
   const { overall, capabilities } = deriveMonitorHealth(checks, isNotionConfigured());
   let databaseBytes = 0;
   try { databaseBytes = (await stat(databasePath)).size; } catch { /* storage check supplies the actionable state */ }
-  const history = await getNotionHistory();
   const lastSyncByNovel = new Map<string, NotionHistoryEvent>();
   for (const event of history) if (event.novelId && !lastSyncByNovel.has(event.novelId)) lastSyncByNovel.set(event.novelId, event);
   const [connected, syncStates] = await Promise.all([prisma.notionMapping.findMany({ where: { entityType: "novel" }, select: { novelId: true } }), prisma.notionSyncState.findMany({ select: { novelId: true, lastNotionSync: true, syncStatus: true } })]);

@@ -172,6 +172,8 @@ export function NovelOverviewScreen({
         {syncStatus.kind === "conflict" ? <Button type="button" variant="outline" className="shrink-0" disabled={syncing} aria-busy={syncing} onClick={onReviewNotionChanges}>{syncing ? "Checking Notion…" : translate("Review conflict")}</Button> : null}
       </section>
 
+      {notionSyncState?.mapped ? <div className="flex justify-end"><Button variant="ghost" size="sm" asChild><Link href={`/novels/${currentNovel.id}/sync`}>Open Notion Sync Center</Link></Button></div> : null}
+
       {connecting ? (
         <section className="rounded-lg border border-primary/30 bg-primary/5 p-4" aria-labelledby="connect-notion-heading">
           <h2 id="connect-notion-heading" className="font-medium text-foreground">{translate(`Connect “${currentNovel.title}” to Notion`)}</h2>

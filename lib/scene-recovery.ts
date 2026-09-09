@@ -2,7 +2,7 @@ export const RECOVERY_MINIMUM_PREVIOUS_CHARACTERS = 1_000;
 export const RECOVERY_MINIMUM_REMOVED_CHARACTERS = 500;
 export const RECOVERY_MAXIMUM_REMAINING_RATIO = 0.4;
 
-export type RecoveryReason = "content-emptied" | "major-content-reduction" | "version-restore";
+export type RecoveryReason = "content-emptied" | "major-content-reduction" | "notion-pull" | "version-restore";
 
 export function recoveryReasonForContentChange(previous: string, next: string): RecoveryReason | null {
   if (!previous.trim() || previous === next) return null;
@@ -25,6 +25,8 @@ export function recoveryCheckpointLabel(reason: RecoveryReason, baseRevision: nu
     ? "content emptied"
     : reason === "major-content-reduction"
       ? "major content reduction"
+      : reason === "notion-pull"
+        ? "before Notion pull"
       : "before version restore";
   return `Automatic recovery — ${description} (before revision ${baseRevision})`;
 }

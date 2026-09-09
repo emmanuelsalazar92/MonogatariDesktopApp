@@ -2,10 +2,41 @@ export type NotionHealthStatus = "healthy" | "warning" | "failed" | "unknown";
 export type NotionHealthCheck = { id: "notion-connectivity" | "notion-authentication" | "notion-sync-contract" | "notion-root-access"; label: string; status: NotionHealthStatus; detail: string; action?: string };
 
 type NotionFailure = { status?: number; code?: string; responseReceived?: boolean; notionApiCode?: string | null };
+export type NotionSyncContractEvidence = { at: string; operation: string; outcome: "completed" | "failed"; notionStatus?: number | null; code?: string; stage?: string };
 
 const healthy = (id: NotionHealthCheck["id"], label: string, detail: string): NotionHealthCheck => ({ id, label, status: "healthy", detail });
 const warning = (id: NotionHealthCheck["id"], label: string, detail: string, action?: string): NotionHealthCheck => ({ id, label, status: "warning", detail, action });
 const failed = (id: NotionHealthCheck["id"], label: string, detail: string, action?: string): NotionHealthCheck => ({ id, label, status: "failed", detail, action });
+
+const syncOperations = new Set(["SYNC_SCENE", "PUSH_SCENE", "PULL_SCENE", "RECONCILE_SCENE", "SYNC_NOVEL", "SYNC_ALL", "INITIAL_PUBLISH"]);
+
+/**
+ * Resolves the sync contract from the newest operation that exercised it.
+ * Failure history remains useful for troubleshooting, but is deliberately not
+ * allowed to override newer success evidence.
+ */
+export function deriveNotionSyncContractHealth(history: NotionSyncContractEvidence[]): NotionHealthCheck {
+  const latest = history
+    .filter((event) => syncOperations.has(event.operation))
+    .reduce<NotionSyncContractEvidence | undefined>((newest, event) => !newest || Date.parse(event.at) > Date.parse(newest.at) ? event : newest, undefined);
+
+  if (!latest) return {
+    id: "notion-sync-contract",
+    label: "Notion sync contract",
+    status: "unknown",
+    detail: "No completed or failed Notion sync operation is recorded yet, so the sync contract has not been exercised.",
+    action: "Run a Notion sync to verify the current sync contract."
+  };
+  if (latest.outcome === "completed") return healthy("notion-sync-contract", "Notion sync contract", `Latest ${latest.operation} operation completed successfully at ${latest.at}.`);
+  if (latest.notionStatus === 400) return failed("notion-sync-contract", "Notion sync contract", `Latest ${latest.operation} operation was rejected by Notion (${latest.code ?? "validation error"}${latest.stage ? ` at ${latest.stage}` : ""}).`, "Review the Sync diagnostic stage and Notion validation detail.");
+  return {
+    id: "notion-sync-contract",
+    label: "Notion sync contract",
+    status: "unknown",
+    detail: `Latest ${latest.operation} operation failed${latest.notionStatus ? ` with HTTP ${latest.notionStatus}` : ""}, but it does not establish a current sync-contract validation failure.`,
+    action: "Retry the sync and review its diagnostic if the failure persists."
+  };
+}
 
 export function classifyNotionHealth(error?: NotionFailure): NotionHealthCheck[] {
   if (!error) return [
